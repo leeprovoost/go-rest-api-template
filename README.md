@@ -6,9 +6,15 @@ Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
 
 ## Overview of the code
 
-TODO
+### Code Structure
 
-### Data structures
+TO DO
+
+### Main Function
+
+TO DO
+
+### Data structure
 
 We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports.
 
@@ -73,9 +79,29 @@ Last but not least, we want to handle two special cases:
 
 When someone hits our API, without a specified route, then we can handle that with either a standard 404 (not found), or any other type of feedback.
 
-We also want to set up a health check that monitoring tools like Sensu can call: `GET /healthcheck`. The health check route can return a 200 OK when the serivce is up and running, including some extra stats. Your DevOps colleagues will be very grateful for this.
+We also want to set up a health check that monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 200 OK when the serivce is up and running, including some extra stats. Your DevOps colleagues will be very grateful for this.
 
 ### Route Handlers
+
+TO DO
+
+### Mock Data
+
+TO DO
+
+### Testing
+
+TO DO
+
+### Security
+
+TO DO
+
+### Bluemix / Cloud Foundry
+
+TO DO
+
+### Other
 
 TO DO
 
