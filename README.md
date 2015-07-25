@@ -1,5 +1,7 @@
 # go-rest-template-bluemix
 
+*WORK IN PROGRESS*
+
 Reusable template for building REST Web Services in Golang (deployed on IBM Bluemix / Cloud Foundry)
 
 Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
@@ -18,7 +20,7 @@ TO DO
 
 We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports.
 
-```
+```golang
 type User struct {
   Id              int    `json:"id"`
   FirstName       string `json:"first_name"`
@@ -56,7 +58,7 @@ When we want to retrieve an specific passport, we don't need to prefix the route
 
 Once you have the API design sorted, it's just a matter of creating the code that gets called when a specific route is hit. We implement those with Handlers.
 
-```
+```golang
   router.HandleFunc("/c", UsersHandler).Methods("GET")
   router.HandleFunc("/users/{uid}", UsersHandler).Methods("GET")
   router.HandleFunc("/users", UsersHandler).Methods("POST")
@@ -72,7 +74,7 @@ Once you have the API design sorted, it's just a matter of creating the code tha
 
 Last but not least, we want to handle two special cases:
 
-```
+```golang
   router.HandleFunc("/", HomeHandler)
   router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
 ```
