@@ -8,12 +8,12 @@ Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
 
 TODO
 
-### Passport struct
+### Data structures
 
-We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a customer and a customer can have one or more passports.
+We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports.
 
 ```
-type Customer struct {
+type User struct {
   Id              int    `json:"id"`
   FirstName       string `json:"first_name"`
   LastName        string `json:"last_name"`
@@ -33,6 +33,20 @@ type Passport struct {
 The first time you create a struct, you may not be aware that uppercasing and lowercasing your field names have a meaning in Go. It's similar to public and private members in Java. Uppercase = public, lowercase = private. There are some good discussions on Stackoverflow about [this](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character). The gist is that if field names with a lowercase won't be visible to json.Marshal.
 
 You may not want to expose your data to the consumer of your web service in this format, so you can override the way your fields are marshalled by adding ``json:"first_name"`` to each field with the desired name.
+
+### API Routes
+
+Now that we have defined the data model, we need to translate that to a REST interface:
+
+* Retrieve a list of all users: `GET /users`
+* Retrieve the details of an individual user: `GET /users/{uid}` -> {uid} allows us to create a variable, named uid, that we can use in our code. An example of this url would be `GET /users/1`
+* Create a new user: `POST /users`
+* Update a user: `PUT /users/{uid}`
+* Delete a user: `DELETE /users/{uid}`
+
+We now need to do the same for handling passports. Don't forget that a passport belongs to a user, so to retrieve a list of all passports for a given user, we would use `GET /users/{uid}/passports`.
+
+When we want to retrieve an specific passport, we don't need to prefix the route with `/users/{uid}` anymore because we know exactly which passport we want to retrieve. So, instead of `GET /users/{uid}/passports/{pid}`, we can just use `GET /passports/{pid}`.
 
 ## Useful references
 

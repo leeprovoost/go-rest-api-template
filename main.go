@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Customer struct {
+type User struct {
 	Id              int    `json:"id"`
 	FirstName       string `json:"first_name"`
 	LastName        string `json:"last_name"`
@@ -45,7 +45,7 @@ func main() {
 	router.HandleFunc("/", HomeHandler)
 	router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
 
-	router.HandleFunc("/users", UsersHandler).Methods("GET")
+	router.HandleFunc("/c", UsersHandler).Methods("GET")
 	router.HandleFunc("/users/{uid}", UsersHandler).Methods("GET")
 	router.HandleFunc("/users", UsersHandler).Methods("POST")
 	router.HandleFunc("/users/{uid}", UsersHandler).Methods("PUT")
