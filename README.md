@@ -6,9 +6,13 @@ Reusable template for building REST Web Services in Golang (deployed on IBM Blue
 
 Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
 
-## Overview of the code
+## Overview
 
 ### Code Structure
+
+TO DO
+
+### Live Code Reloading
 
 TO DO
 
@@ -86,6 +90,8 @@ We also want to set up a health check that monitoring tools like [Sensu](https:/
 ### Route Handlers
 
 TO DO
+
+* Use render for generating JSON, see https://github.com/unrolled/render/issues/7 for use of global variable
 
 ### Mock Data
 

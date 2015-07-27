@@ -6,6 +6,7 @@ import (
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
+	"github.com/unrolled/render"
 )
 
 type User struct {
@@ -24,6 +25,9 @@ type Passport struct {
 	CustomerId   int    `json:"customer_id"`
 }
 
+var Data map[string]User
+var Render *render.Render
+
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "Nothing to see here. #kthxbai")
 }
@@ -33,7 +37,7 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func UsersHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "Handling Users")
+	Render.JSON(w, http.StatusOK, Data)
 }
 
 func PassportsHandler(w http.ResponseWriter, req *http.Request) {
@@ -41,11 +45,18 @@ func PassportsHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+	// creae mock data
+	Data = make(map[string]User)
+	Data["1"] = User{1, "John", "Doe", "31-12-1985", "London"}
+	Data["2"] = User{2, "Jane", "Doe", "01-01-1992", "Milton Keynes"}
+
+	Render = render.New()
 	router := mux.NewRouter()
+
 	router.HandleFunc("/", HomeHandler)
 	router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
 
-	router.HandleFunc("/c", UsersHandler).Methods("GET")
+	router.HandleFunc("/users", UsersHandler).Methods("GET")
 	router.HandleFunc("/users/{uid}", UsersHandler).Methods("GET")
 	router.HandleFunc("/users", UsersHandler).Methods("POST")
 	router.HandleFunc("/users/{uid}", UsersHandler).Methods("PUT")
