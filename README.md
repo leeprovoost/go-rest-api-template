@@ -6,6 +6,20 @@ Reusable template for building REST Web Services in Golang (deployed on IBM Blue
 
 Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
 
+## Dependencies
+
+### Godep
+
+In order to manage package dependencies, we're using the [Godep](https://github.com/tools/godep) package tool.
+
+Install Godep on your system:
+
+```
+go get github.com/tools/godep
+```
+
+When you add new packages, just use the standard `go get package` first, edit your code, then run the `godep save`. It will add an extra entry to `Godeps/Godeps.json`.
+
 ## Overview
 
 ### Code Structure
