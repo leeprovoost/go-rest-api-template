@@ -25,7 +25,7 @@ type Passport struct {
 	CustomerId   int    `json:"customer_id"`
 }
 
-var Data map[string]User
+var userList []User
 var Render *render.Render
 
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
@@ -36,8 +36,28 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "HandleHealthchecks")
 }
 
-func UsersHandler(w http.ResponseWriter, req *http.Request) {
-	Render.JSON(w, http.StatusOK, Data)
+func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
+	// wrap the list (slice) of users in a proper JSON object (key/value)
+	responseObject := make(map[string][]User)
+	responseObject["users"] = userList
+	Render.JSON(w, http.StatusOK, responseObject)
+}
+
+func GetUserHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "TO DO")
+}
+
+func CreateUserHandler(w http.ResponseWriter, req *http.Request) {
+	userList = append(userList, User{3, "Davide", "Tassinari", "01-01-1992", "Bologna"})
+	Render.JSON(w, http.StatusOK, userList)
+}
+
+func UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "TO DO")
+}
+
+func DeleteUserHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "TO DO")
 }
 
 func PassportsHandler(w http.ResponseWriter, req *http.Request) {
@@ -46,9 +66,9 @@ func PassportsHandler(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	// creae mock data
-	Data = make(map[string]User)
-	Data["1"] = User{1, "John", "Doe", "31-12-1985", "London"}
-	Data["2"] = User{2, "Jane", "Doe", "01-01-1992", "Milton Keynes"}
+	userList = make([]User, 0)
+	userList = append(userList, User{0, "John", "Doe", "31-12-1985", "London"})
+	userList = append(userList, User{1, "Jane", "Doe", "01-01-1992", "Milton Keynes"})
 
 	Render = render.New()
 	router := mux.NewRouter()
@@ -56,11 +76,11 @@ func main() {
 	router.HandleFunc("/", HomeHandler)
 	router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
 
-	router.HandleFunc("/users", UsersHandler).Methods("GET")
-	router.HandleFunc("/users/{uid}", UsersHandler).Methods("GET")
-	router.HandleFunc("/users", UsersHandler).Methods("POST")
-	router.HandleFunc("/users/{uid}", UsersHandler).Methods("PUT")
-	router.HandleFunc("/users/{uid}", UsersHandler).Methods("DELETE")
+	router.HandleFunc("/users", ListUsersHandler).Methods("GET")
+	router.HandleFunc("/users/{uid}", GetUserHandler).Methods("GET")
+	router.HandleFunc("/users", CreateUserHandler).Methods("POST")
+	router.HandleFunc("/users/{uid}", UpdateUserHandler).Methods("PUT")
+	router.HandleFunc("/users/{uid}", DeleteUserHandler).Methods("DELETE")
 
 	router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("GET")
 	router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("GET")

@@ -87,15 +87,15 @@ When someone hits our API, without a specified route, then we can handle that wi
 
 We also want to set up a health check that monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 200 OK when the serivce is up and running, including some extra stats. Your DevOps colleagues will be very grateful for this.
 
+### Mock Data
+
+TO DO
+
 ### Route Handlers
 
 TO DO
 
 * Use render for generating JSON, see https://github.com/unrolled/render/issues/7 for use of global variable
-
-### Mock Data
-
-TO DO
 
 ### Testing
 
