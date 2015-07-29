@@ -22,10 +22,18 @@ type Passport struct {
 	DateOfIssue  string `json:"date_of_issue"`
 	DateOfExpiry string `json:"date_of_expiry"`
 	Authority    string `json:"authority"`
-	CustomerId   int    `json:"customer_id"`
+	UserId       int    `json:"user_id"`
 }
 
-var userList []User
+type Database struct {
+	UserList  []User
+	MaxUserId int
+}
+
+var db Database
+
+// var userList []User
+// var maxUserId int // to mimic database Id
 var Render *render.Render
 
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
@@ -37,19 +45,22 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
-	// wrap the list (slice) of users in a proper JSON object (key/value)
+	//Render.JSON(w, http.StatusOK, ServiceGetUserList)
 	responseObject := make(map[string][]User)
-	responseObject["users"] = userList
+	responseObject["users"] = db.UserList
 	Render.JSON(w, http.StatusOK, responseObject)
 }
 
 func GetUserHandler(w http.ResponseWriter, req *http.Request) {
+	//ServiceGetUserById(1)
 	fmt.Fprintf(w, "TO DO")
 }
 
 func CreateUserHandler(w http.ResponseWriter, req *http.Request) {
-	userList = append(userList, User{3, "Davide", "Tassinari", "01-01-1992", "Bologna"})
-	Render.JSON(w, http.StatusOK, userList)
+	// userList = append(userList, User{3, "Davide", "Tassinari", "01-01-1992", "Bologna"})
+	// responseObject := make(map[string][]User)
+	// responseObject["users"] = userList
+	// Render.JSON(w, http.StatusOK, responseObject)
 }
 
 func UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
@@ -65,10 +76,11 @@ func PassportsHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	// creae mock data
-	userList = make([]User, 0)
+	// Initialise mock database
+	userList := make([]User, 0)
 	userList = append(userList, User{0, "John", "Doe", "31-12-1985", "London"})
 	userList = append(userList, User{1, "Jane", "Doe", "01-01-1992", "Milton Keynes"})
+	db = Database{userList, 1}
 
 	Render = render.New()
 	router := mux.NewRouter()
@@ -94,3 +106,28 @@ func main() {
 	fmt.Println("Starting server on :3009")
 	n.Run(":3009")
 }
+
+// DB helper functions, move later to another file
+
+// func ServiceGetUserList() map[string][]User {
+// 	responseObject := make(map[string][]User)
+// 	responseObject["users"] = db.UserList
+// 	return responseObject
+// }
+
+// func ServiceGetUserById(id int) User {
+// 	var u User
+// 	for _, value := range userList {
+// 		if value.Id == id {
+
+// 		}
+// 	}
+// 	return u
+// }
+
+// func DbCreateUser(u User) map[string][]User {
+// 	userList = append(userList, User{3, "Davide", "Tassinari", "01-01-1992", "Bologna"})
+// 	responseObject := make(map[string][]User)
+// 	responseObject["users"] = userList
+// 	return responseObject
+// }
