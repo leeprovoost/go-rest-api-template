@@ -1,6 +1,8 @@
+// Example REST API for managing passports
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -41,6 +43,16 @@ func (db *Database) List() map[string][]User {
 	return responseObject
 }
 
+// Retrieve a single JSON document
+func (db *Database) Get(i int) (User, error) {
+	user, ok := db.UserList[i]
+	if ok {
+		return user, nil
+	} else {
+		return user, errors.New("User does not exist")
+	}
+}
+
 var db *Database
 var Render *render.Render
 
@@ -57,8 +69,12 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func GetUserHandler(w http.ResponseWriter, req *http.Request) {
-	//ServiceGetUserById(1)
-	fmt.Fprintf(w, "TO DO")
+	u, e := db.Get(3)
+	if e == nil {
+		Render.JSON(w, http.StatusOK, u)
+	} else {
+		Render.JSON(w, http.StatusNotFound, e)
+	}
 }
 
 func CreateUserHandler(w http.ResponseWriter, req *http.Request) {
