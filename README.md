@@ -119,6 +119,8 @@ TO DO
 
 TO DO
 
+* CORS: https://github.com/rs/cors/blob/master/examples/negroni/server.go
+
 ### Bluemix / Cloud Foundry
 
 TO DO
