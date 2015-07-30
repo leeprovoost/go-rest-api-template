@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
@@ -69,7 +70,9 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func GetUserHandler(w http.ResponseWriter, req *http.Request) {
-	u, e := db.Get(3)
+	vars := mux.Vars(req)
+	uid, _ := strconv.Atoi(vars["uid"])
+	u, e := db.Get(uid)
 	if e == nil {
 		Render.JSON(w, http.StatusOK, u)
 	} else {
