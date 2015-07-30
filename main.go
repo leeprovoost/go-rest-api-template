@@ -68,6 +68,17 @@ func (db *Database) Add(u User) User {
 	return newUser
 }
 
+// Delete a user
+func (db *Database) Delete(i int) (bool, error) {
+	_, ok := db.UserList[i]
+	if ok {
+		delete(db.UserList, i)
+		return true, nil
+	} else {
+		return false, errors.New("Could not delete this user")
+	}
+}
+
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "Nothing to see here. #kthxbai")
 }
@@ -83,17 +94,19 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
 func GetUserHandler(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	uid, _ := strconv.Atoi(vars["uid"])
-	u, e := db.Get(uid)
-	if e == nil {
-		Render.JSON(w, http.StatusOK, u)
+	user, err := db.Get(uid)
+	if err == nil {
+		Render.JSON(w, http.StatusOK, user)
 	} else {
-		Render.JSON(w, http.StatusNotFound, e)
+		Render.JSON(w, http.StatusNotFound, err)
 	}
 }
 
 func CreateUserHandler(w http.ResponseWriter, req *http.Request) {
-	u := User{-1, "Davide", "Tassinari", "01-01-1992", "Bologna"}
-	db.Add(u)
+	// TO DO read user object from body
+	user := User{-1, "Davide", "Tassinari", "01-01-1992", "Bologna"}
+	user = db.Add(user)
+	Render.JSON(w, http.StatusCreated, user)
 	fmt.Println(db.List())
 }
 
@@ -102,7 +115,15 @@ func UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func DeleteUserHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "TO DO")
+	vars := mux.Vars(req)
+	uid, _ := strconv.Atoi(vars["uid"])
+	ok, err := db.Delete(uid)
+	if ok {
+		// TO DO return empty body?
+		Render.JSON(w, http.StatusOK, nil)
+	} else {
+		Render.JSON(w, http.StatusNotFound, err)
+	}
 }
 
 func PassportsHandler(w http.ResponseWriter, req *http.Request) {
