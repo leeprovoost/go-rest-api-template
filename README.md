@@ -135,3 +135,4 @@ TO DO
 * http://alpacalunchbox.com/building-lightweight-apis-with-go/
 * https://gist.github.com/danesparza/eb3a63ab55a7cd33923e
 * http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character
+* http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/

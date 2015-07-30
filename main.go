@@ -26,14 +26,22 @@ type Passport struct {
 }
 
 type Database struct {
-	UserList  []User
+	UserList  map[int]User
 	MaxUserId int
 }
 
-var db Database
+// List returns a list of JSON documents
+func (db *Database) List() map[string][]User {
+	var list []User = make([]User, 0)
+	for _, v := range db.UserList {
+		list = append(list, v)
+	}
+	responseObject := make(map[string][]User)
+	responseObject["users"] = list
+	return responseObject
+}
 
-// var userList []User
-// var maxUserId int // to mimic database Id
+var db *Database
 var Render *render.Render
 
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
@@ -45,10 +53,7 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
-	//Render.JSON(w, http.StatusOK, ServiceGetUserList)
-	responseObject := make(map[string][]User)
-	responseObject["users"] = db.UserList
-	Render.JSON(w, http.StatusOK, responseObject)
+	Render.JSON(w, http.StatusOK, db.List())
 }
 
 func GetUserHandler(w http.ResponseWriter, req *http.Request) {
@@ -75,13 +80,14 @@ func PassportsHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "Handling Passports")
 }
 
-func main() {
-	// Initialise mock database
-	userList := make([]User, 0)
-	userList = append(userList, User{0, "John", "Doe", "31-12-1985", "London"})
-	userList = append(userList, User{1, "Jane", "Doe", "01-01-1992", "Milton Keynes"})
-	db = Database{userList, 1}
+func init() {
+	list := make(map[int]User)
+	list[0] = User{0, "John", "Doe", "31-12-1985", "London"}
+	list[1] = User{1, "Jane", "Doe", "01-01-1992", "Milton Keynes"}
+	db = &Database{list, 1}
+}
 
+func main() {
 	Render = render.New()
 	router := mux.NewRouter()
 
@@ -106,28 +112,3 @@ func main() {
 	fmt.Println("Starting server on :3009")
 	n.Run(":3009")
 }
-
-// DB helper functions, move later to another file
-
-// func ServiceGetUserList() map[string][]User {
-// 	responseObject := make(map[string][]User)
-// 	responseObject["users"] = db.UserList
-// 	return responseObject
-// }
-
-// func ServiceGetUserById(id int) User {
-// 	var u User
-// 	for _, value := range userList {
-// 		if value.Id == id {
-
-// 		}
-// 	}
-// 	return u
-// }
-
-// func DbCreateUser(u User) map[string][]User {
-// 	userList = append(userList, User{3, "Davide", "Tassinari", "01-01-1992", "Bologna"})
-// 	responseObject := make(map[string][]User)
-// 	responseObject["users"] = userList
-// 	return responseObject
-// }
