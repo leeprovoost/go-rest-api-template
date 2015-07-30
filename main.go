@@ -54,8 +54,19 @@ func (db *Database) Get(i int) (User, error) {
 	}
 }
 
-var db *Database
-var Render *render.Render
+// Add a User JSON document, returns the JSON document with the generated id
+func (db *Database) Add(u User) User {
+	db.MaxUserId = db.MaxUserId + 1
+	newUser := User{
+		Id:              db.MaxUserId,
+		FirstName:       u.FirstName,
+		LastName:        u.LastName,
+		DateOfBirth:     u.DateOfBirth,
+		LocationOfBirth: u.LocationOfBirth,
+	}
+	db.UserList[db.MaxUserId] = newUser
+	return newUser
+}
 
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "Nothing to see here. #kthxbai")
@@ -81,10 +92,9 @@ func GetUserHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateUserHandler(w http.ResponseWriter, req *http.Request) {
-	// userList = append(userList, User{3, "Davide", "Tassinari", "01-01-1992", "Bologna"})
-	// responseObject := make(map[string][]User)
-	// responseObject["users"] = userList
-	// Render.JSON(w, http.StatusOK, responseObject)
+	u := User{-1, "Davide", "Tassinari", "01-01-1992", "Bologna"}
+	db.Add(u)
+	fmt.Println(db.List())
 }
 
 func UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
@@ -98,6 +108,9 @@ func DeleteUserHandler(w http.ResponseWriter, req *http.Request) {
 func PassportsHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "Handling Passports")
 }
+
+var db *Database
+var Render *render.Render
 
 func init() {
 	list := make(map[int]User)
