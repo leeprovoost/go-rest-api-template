@@ -77,7 +77,7 @@ When we want to retrieve an specific passport, we don't need to prefix the route
 Once you have the API design sorted, it's just a matter of creating the code that gets called when a specific route is hit. We implement those with Handlers.
 
 ```golang
-  router.HandleFunc("/c", UsersHandler).Methods("GET")
+  router.HandleFunc("/users", UsersHandler).Methods("GET")
   router.HandleFunc("/users/{uid}", UsersHandler).Methods("GET")
   router.HandleFunc("/users", UsersHandler).Methods("POST")
   router.HandleFunc("/users/{uid}", UsersHandler).Methods("PUT")
