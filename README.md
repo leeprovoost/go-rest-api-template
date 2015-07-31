@@ -8,6 +8,15 @@ Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
 
 ## Dependencies
 
+### Knowledge of Go
+
+If you're new to programming in Go, I would highly recommend you to read the following two resources:
+
+* [A Tour of Go](https://tour.golang.org/welcome/1)
+* [Effective Go](https://golang.org/doc/effective_go.html)
+
+You can work your way through those in two to three days.
+
 ### Godep
 
 In order to manage package dependencies, we're using the [Godep](https://github.com/tools/godep) package tool.
