@@ -80,6 +80,18 @@ func (db *Database) Delete(i int) (bool, error) {
 	}
 }
 
+// Update an existing user
+func (db *Database) Update(u User) (User, error) {
+	id := u.Id
+	user, ok := db.UserList[i]
+	if ok {
+		db.UserList[i] = user
+		return db.UserList[i], nil
+	} else {
+		return nil, errors.New("User does not exist")
+	}
+}
+
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "Nothing to see here. #kthxbai")
 }

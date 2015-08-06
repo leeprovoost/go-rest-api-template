@@ -29,13 +29,13 @@ go get github.com/tools/godep
 
 When you add new packages, just use the standard `go get package` first, edit your code, then run the `godep save`. It will add an extra entry to `Godeps/Godeps.json`.
 
-## Overview
-
-### Code Structure
+### Live Code Reloading
 
 TO DO
 
-### Live Code Reloading
+## Overview
+
+### Code Structure
 
 TO DO
 
@@ -155,7 +155,7 @@ func GetUserHandler(w http.ResponseWriter, req *http.Request) {
 }
 ```
 
-This reads the uid variable from the route (`/users/{uid}`), converts the string to an integer and then looks up the user in our UserList by ID. If the user does not exsit we return a 404 and an error object. If the user exists, we return a JSON object with the user.
+This reads the uid variable from the route (`/users/{uid}`), converts the string to an integer and then looks up the user in our UserList by ID. If the user does not exit, we return a 404 and an error object. If the user exists, we return a 200 and a JSON object with the user.
 
 Example:
 
