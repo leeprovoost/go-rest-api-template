@@ -124,6 +124,79 @@ TO DO
 
 TO DO
 
+Let's start with some simple curl tests:
+
+Retrieve list of users:
+
+```
+curl -X GET http://localhost:3009/users | python -mjson.tool
+```
+
+That should result in the following result:
+
+```
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   228  100   228    0     0  41996      0 --:--:-- --:--:-- --:--:-- 45600
+{
+    "users": [
+        {
+            "date_of_birth": "31-12-1985",
+            "first_name": "John",
+            "id": 0,
+            "last_name": "Doe",
+            "location_of_birth": "London"
+        },
+        {
+            "date_of_birth": "01-01-1992",
+            "first_name": "Jane",
+            "id": 1,
+            "last_name": "Doe",
+            "location_of_birth": "Milton Keynes"
+        }
+    ]
+}
+```
+
+Get a specific user:
+
+```
+curl -X GET http://localhost:3009/users/0 | python -mjson.tool
+```
+
+Results in:
+
+```
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   104  100   104    0     0   6625      0 --:--:-- --:--:-- --:--:--  6933
+{
+    "date_of_birth": "31-12-1985",
+    "first_name": "John",
+    "id": 0,
+    "last_name": "Doe",
+    "location_of_birth": "London"
+}
+```
+
+Adding a user:
+
+```
+TODO
+```
+
+Deleting a user:
+
+```
+TODO
+```
+
+Updating an existing user:
+
+```
+TODO
+```
+
 ### Security
 
 TO DO
