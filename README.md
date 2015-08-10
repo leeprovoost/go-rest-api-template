@@ -130,11 +130,45 @@ We will now create a global database variable so that it's accessible across our
 var db *Database
 ```
 
-Returning a list of users is quite easy, it's just showing the UserList:
+In order to make it a bit more useful, we will initialise it with some user objects.Luckily, we can make use of the `init` function that gets automatically called when you start the application:
+
+```
+func init() {
+  list := make(map[int]User)
+  list[0] = User{0, "John", "Doe", "31-12-1985", "London"}
+  list[1] = User{1, "Jane", "Doe", "01-01-1992", "Milton Keynes"}
+  db = &Database{list, 1}
+}
+```
+
+Now, returning a list of users is quite easy, it's just showing the UserList:
 
 ```
 func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
   Render.JSON(w, http.StatusOK, db.List())
+}
+```
+
+This will return the following to the client:
+
+```
+{
+    "users": [
+        {
+            "date_of_birth": "31-12-1985",
+            "first_name": "John",
+            "id": 0,
+            "last_name": "Doe",
+            "location_of_birth": "London"
+        },
+        {
+            "date_of_birth": "01-01-1992",
+            "first_name": "Jane",
+            "id": 1,
+            "last_name": "Doe",
+            "location_of_birth": "Milton Keynes"
+        }
+    ]
 }
 ```
 
@@ -277,3 +311,4 @@ TO DO
 * https://gist.github.com/danesparza/eb3a63ab55a7cd33923e
 * http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character
 * http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/
+* Read JSON POST body: http://stackoverflow.com/questions/15672556/handling-json-post-request-in-go

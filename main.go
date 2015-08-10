@@ -2,8 +2,10 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -116,6 +118,14 @@ func GetUserHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateUserHandler(w http.ResponseWriter, req *http.Request) {
+	decoder := json.NewDecoder(req.Body)
+	var u User
+	err := decoder.Decode(&u)
+	if err != nil {
+		// return wrong request HTTP error?
+		panic()
+	}
+	log.Println(u)
 	// TO DO read user object from body
 	user := User{-1, "Davide", "Tassinari", "01-01-1992", "Bologna"}
 	user = db.Add(user)
