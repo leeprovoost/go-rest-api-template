@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -85,12 +84,12 @@ func (db *Database) Delete(i int) (bool, error) {
 // Update an existing user
 func (db *Database) Update(u User) (User, error) {
 	id := u.Id
-	user, ok := db.UserList[i]
+	user, ok := db.UserList[id]
 	if ok {
-		db.UserList[i] = user
-		return db.UserList[i], nil
+		db.UserList[id] = user
+		return db.UserList[id], nil
 	} else {
-		return nil, errors.New("User does not exist")
+		return user, errors.New("User does not exist")
 	}
 }
 
@@ -122,15 +121,12 @@ func CreateUserHandler(w http.ResponseWriter, req *http.Request) {
 	var u User
 	err := decoder.Decode(&u)
 	if err != nil {
-		// return wrong request HTTP error?
-		panic()
+		Render.JSON(w, http.StatusBadRequest, err)
+	} else {
+		user := User{-1, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
+		user = db.Add(user)
+		Render.JSON(w, http.StatusCreated, user)
 	}
-	log.Println(u)
-	// TO DO read user object from body
-	user := User{-1, "Davide", "Tassinari", "01-01-1992", "Bologna"}
-	user = db.Add(user)
-	Render.JSON(w, http.StatusCreated, user)
-	fmt.Println(db.List())
 }
 
 func UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
