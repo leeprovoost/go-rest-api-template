@@ -304,11 +304,11 @@ TO DO
 
 ## Useful references
 
-* https://github.com/codegangsta/negroni
 * http://vluxe.io/golang-web-api.html
 * https://github.com/msanterre/canoe/blob/master/main.go
 * http://alpacalunchbox.com/building-lightweight-apis-with-go/
 * https://gist.github.com/danesparza/eb3a63ab55a7cd33923e
-* http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character
-* http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/
+* Structs and JSON formatting: http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character
+* Undertanding method receivers and pointers: http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/
 * Read JSON POST body: http://stackoverflow.com/questions/15672556/handling-json-post-request-in-go
+* Writing modular GO REST APIs: http://thenewstack.io/make-a-restful-json-api-go/
