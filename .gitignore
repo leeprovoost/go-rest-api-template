@@ -2,6 +2,8 @@
 *.o
 *.a
 *.so
+gin-bin
+go-rest-template-bluemix
 
 # Folders
 _obj

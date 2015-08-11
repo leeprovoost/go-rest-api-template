@@ -39,6 +39,14 @@ TO DO
 
 TO DO
 
+### How to run
+
+`go run main.go` works fine if you have a single file you're working on, but once you have multiple files you'll have to start using the proper go build tool and run the compiled executable.
+
+```
+go build && ./go-rest-template-bluemix
+```
+
 ### Main Function
 
 TO DO
