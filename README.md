@@ -153,7 +153,7 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
 }
 ```
 
-This healt check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelein where you can check whether your newly deployed API is running. More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this.
+This healt check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
 
 ### Mock Data
 
