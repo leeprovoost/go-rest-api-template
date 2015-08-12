@@ -37,7 +37,7 @@ TO DO
 
 ### Code Structure
 
-Main server file:
+Main server file (bootstrapping of http server and router):
 
 ```
 main.go
@@ -49,7 +49,7 @@ Route handlers:
 handlers.go
 ```
 
-Data models:
+Data model descriptions:
 
 ```
 passport.go
