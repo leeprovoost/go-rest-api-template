@@ -37,7 +37,30 @@ TO DO
 
 ### Code Structure
 
-TO DO
+Main server file:
+
+```
+main.go
+```
+
+Route handlers:
+
+```
+handlers.go
+```
+
+Data models:
+
+```
+passport.go
+user.go
+```
+
+Mock database with operations:
+
+```
+database.go
+```
 
 ### How to run
 
