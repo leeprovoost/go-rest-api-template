@@ -1,61 +1,66 @@
 package main
 
-import "errors"
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
 
-// List returns a list of JSON documents
-func (db *Database) List() map[string][]User {
-	var list []User = make([]User, 0)
-	for _, v := range db.UserList {
-		list = append(list, v)
-	}
-	responseObject := make(map[string][]User)
-	responseObject["users"] = list
-	return responseObject
+	"github.com/gorilla/mux"
+)
+
+func HomeHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "Nothing to see here. #kthxbai")
 }
 
-// Retrieve a single JSON document
-func (db *Database) Get(i int) (User, error) {
-	user, ok := db.UserList[i]
-	if ok {
-		return user, nil
+func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "HandleHealthchecks")
+}
+
+func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
+	Render.JSON(w, http.StatusOK, db.List())
+}
+
+func GetUserHandler(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	uid, _ := strconv.Atoi(vars["uid"])
+	user, err := db.Get(uid)
+	if err == nil {
+		Render.JSON(w, http.StatusOK, user)
 	} else {
-		return user, errors.New("User does not exist")
+		Render.JSON(w, http.StatusNotFound, err)
 	}
 }
 
-// Add a User JSON document, returns the JSON document with the generated id
-func (db *Database) Add(u User) User {
-	db.MaxUserId = db.MaxUserId + 1
-	newUser := User{
-		Id:              db.MaxUserId,
-		FirstName:       u.FirstName,
-		LastName:        u.LastName,
-		DateOfBirth:     u.DateOfBirth,
-		LocationOfBirth: u.LocationOfBirth,
-	}
-	db.UserList[db.MaxUserId] = newUser
-	return newUser
-}
-
-// Delete a user
-func (db *Database) Delete(i int) (bool, error) {
-	_, ok := db.UserList[i]
-	if ok {
-		delete(db.UserList, i)
-		return true, nil
+func CreateUserHandler(w http.ResponseWriter, req *http.Request) {
+	decoder := json.NewDecoder(req.Body)
+	var u User
+	err := decoder.Decode(&u)
+	if err != nil {
+		Render.JSON(w, http.StatusBadRequest, err)
 	} else {
-		return false, errors.New("Could not delete this user")
+		user := User{-1, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
+		user = db.Add(user)
+		Render.JSON(w, http.StatusCreated, user)
 	}
 }
 
-// Update an existing user
-func (db *Database) Update(u User) (User, error) {
-	id := u.Id
-	user, ok := db.UserList[id]
+func UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "TO DO")
+}
+
+func DeleteUserHandler(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	uid, _ := strconv.Atoi(vars["uid"])
+	ok, err := db.Delete(uid)
 	if ok {
-		db.UserList[id] = user
-		return db.UserList[id], nil
+		// TO DO return empty body?
+		Render.JSON(w, http.StatusOK, nil)
 	} else {
-		return user, errors.New("User does not exist")
+		Render.JSON(w, http.StatusNotFound, err)
 	}
+}
+
+func PassportsHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "Handling Passports")
 }
