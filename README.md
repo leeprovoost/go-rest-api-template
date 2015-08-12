@@ -199,7 +199,7 @@ Example:
 }
 ```
 
-### API Routes
+### API routes and route handlers
 
 Now that we have defined the data model, we need to translate that to a REST interface:
 
@@ -247,12 +247,6 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
 ```
 
 This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
-
-### Route Handlers
-
-TO DO
-
-* Use render for generating JSON, see https://github.com/unrolled/render/issues/7 for use of global variable
 
 ### Testing your routes with curl commands
 
@@ -357,3 +351,4 @@ TO DO
 * Undertanding method receivers and pointers: http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/
 * Read JSON POST body: http://stackoverflow.com/questions/15672556/handling-json-post-request-in-go
 * Writing modular GO REST APIs: http://thenewstack.io/make-a-restful-json-api-go/
+* Use render for generating JSON, see https://github.com/unrolled/render/issues/7 for use of global variable
