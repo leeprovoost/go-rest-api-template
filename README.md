@@ -76,11 +76,11 @@ Third-party packages:
 go build && ./go-rest-template-bluemix
 ```
 
-### Main Function
+### main.go
 
 TO DO
 
-### Data structure
+### Data model
 
 We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports.
 
@@ -106,56 +106,7 @@ The first time you create a struct, you may not be aware that uppercasing and lo
 
 You may not want to expose your data to the consumer of your web service in this format, so you can override the way your fields are marshalled by adding ``json:"first_name"`` to each field with the desired name.
 
-### API Routes
-
-Now that we have defined the data model, we need to translate that to a REST interface:
-
-* Retrieve a list of all users: `GET /users` -> The `GET` just refers to the HTTP action you would use. If you want to test this in the command line, then you can use curl: `curl -X GET http://localhost:3009/users` or `curl -X POST http://localhost:3009/users`
-* Retrieve the details of an individual user: `GET /users/{uid}` -> {uid} allows us to create a variable, named uid, that we can use in our code. An example of this url would be `GET /users/1`
-* Create a new user: `POST /users`
-* Update a user: `PUT /users/{uid}`
-* Delete a user: `DELETE /users/{uid}`
-
-We now need to do the same for handling passports. Don't forget that a passport belongs to a user, so to retrieve a list of all passports for a given user, we would use `GET /users/{uid}/passports`.
-
-When we want to retrieve an specific passport, we don't need to prefix the route with `/users/{uid}` anymore because we know exactly which passport we want to retrieve. So, instead of `GET /users/{uid}/passports/{pid}`, we can just use `GET /passports/{pid}`.
-
-Once you have the API design sorted, it's just a matter of creating the code that gets called when a specific route is hit. We implement those with Handlers.
-
-```golang
-  router.HandleFunc("/users", UsersHandler).Methods("GET")
-  router.HandleFunc("/users/{uid}", UsersHandler).Methods("GET")
-  router.HandleFunc("/users", UsersHandler).Methods("POST")
-  router.HandleFunc("/users/{uid}", UsersHandler).Methods("PUT")
-  router.HandleFunc("/users/{uid}", UsersHandler).Methods("DELETE")
-
-  router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("GET")
-  router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("GET")
-  router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("POST")
-  router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("PUT")
-  router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("DELETE")
-```
-
-Last but not least, we want to handle two special cases:
-
-```golang
-  router.HandleFunc("/", HomeHandler)
-  router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
-```
-
-When someone hits our API, without a specified route, then we can handle that with either a standard 404 (not found), or any other type of feedback.
-
-We also want to set up a health check that monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 204 OK when the serivce is up and running, including some extra stats. A 204 means "Hey, I got your request, all is fine and I have nothing else to say". It essentially tells your client that there is no body content.
-
-```
-func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
-  Render.Text(w, http.StatusNoContent, "")
-}
-```
-
-This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
-
-### Mock Data
+### Operations on our (mock) data
 
 I wanted to create a template REST API that didn't depend on a database, so started with a simple in-memory database that we can work with.
 
@@ -247,6 +198,55 @@ Example:
     "location_of_birth": "London"
 }
 ```
+
+### API Routes
+
+Now that we have defined the data model, we need to translate that to a REST interface:
+
+* Retrieve a list of all users: `GET /users` -> The `GET` just refers to the HTTP action you would use. If you want to test this in the command line, then you can use curl: `curl -X GET http://localhost:3009/users` or `curl -X POST http://localhost:3009/users`
+* Retrieve the details of an individual user: `GET /users/{uid}` -> {uid} allows us to create a variable, named uid, that we can use in our code. An example of this url would be `GET /users/1`
+* Create a new user: `POST /users`
+* Update a user: `PUT /users/{uid}`
+* Delete a user: `DELETE /users/{uid}`
+
+We now need to do the same for handling passports. Don't forget that a passport belongs to a user, so to retrieve a list of all passports for a given user, we would use `GET /users/{uid}/passports`.
+
+When we want to retrieve an specific passport, we don't need to prefix the route with `/users/{uid}` anymore because we know exactly which passport we want to retrieve. So, instead of `GET /users/{uid}/passports/{pid}`, we can just use `GET /passports/{pid}`.
+
+Once you have the API design sorted, it's just a matter of creating the code that gets called when a specific route is hit. We implement those with Handlers.
+
+```golang
+  router.HandleFunc("/users", UsersHandler).Methods("GET")
+  router.HandleFunc("/users/{uid}", UsersHandler).Methods("GET")
+  router.HandleFunc("/users", UsersHandler).Methods("POST")
+  router.HandleFunc("/users/{uid}", UsersHandler).Methods("PUT")
+  router.HandleFunc("/users/{uid}", UsersHandler).Methods("DELETE")
+
+  router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("GET")
+  router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("GET")
+  router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("POST")
+  router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("PUT")
+  router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("DELETE")
+```
+
+Last but not least, we want to handle two special cases:
+
+```golang
+  router.HandleFunc("/", HomeHandler)
+  router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
+```
+
+When someone hits our API, without a specified route, then we can handle that with either a standard 404 (not found), or any other type of feedback.
+
+We also want to set up a health check that monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 204 OK when the serivce is up and running, including some extra stats. A 204 means "Hey, I got your request, all is fine and I have nothing else to say". It essentially tells your client that there is no body content.
+
+```
+func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
+  Render.Text(w, http.StatusNoContent, "")
+}
+```
+
+This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
 
 ### Route Handlers
 
