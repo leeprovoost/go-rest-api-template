@@ -14,7 +14,7 @@ func HomeHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "HandleHealthchecks")
+	Render.Text(w, http.StatusNoContent, "")
 }
 
 func ListUsersHandler(w http.ResponseWriter, req *http.Request) {

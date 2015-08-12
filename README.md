@@ -145,7 +145,15 @@ Last but not least, we want to handle two special cases:
 
 When someone hits our API, without a specified route, then we can handle that with either a standard 404 (not found), or any other type of feedback.
 
-We also want to set up a health check that monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 200 OK when the serivce is up and running, including some extra stats. Your DevOps colleagues will be very grateful for this.
+We also want to set up a health check that monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 204 OK when the serivce is up and running, including some extra stats. A 204 means "Hey, I got your request, all is fine and I have nothing else to say". It essentially tells your client that there is no body content.
+
+```
+func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
+  Render.Text(w, http.StatusNoContent, "")
+}
+```
+
+This healt check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelein where you can check whether your newly deployed API is running. More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this.
 
 ### Mock Data
 
