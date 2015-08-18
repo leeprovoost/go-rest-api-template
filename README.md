@@ -51,7 +51,7 @@ TO DO
 go build && ./go-rest-template-bluemix
 ```
 
-## Code deevp dive
+## Code deep dive
 
 ### Code Structure
 
