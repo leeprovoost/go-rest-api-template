@@ -46,7 +46,20 @@ func CreateUserHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "TO DO")
+	decoder := json.NewDecoder(req.Body)
+	var u User
+	err := decoder.Decode(&u)
+	if err != nil {
+		Render.JSON(w, http.StatusBadRequest, err)
+	} else {
+		user := User{u.Id, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
+		user, err = db.Update(user)
+		if err != nil {
+			Render.JSON(w, http.StatusOK, user)
+		} else {
+			Render.JSON(w, http.StatusNotFound, err)
+		}
+	}
 }
 
 func DeleteUserHandler(w http.ResponseWriter, req *http.Request) {
