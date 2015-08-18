@@ -333,9 +333,9 @@ Updating an existing user:
 TO DO
 ```
 
-### Test Automation
+### Testing
 
-TO DO
+TO DO test database layer, test handlers, test HTTP
 
 ### Security
 
@@ -362,3 +362,6 @@ TO DO
 * Read JSON POST body: http://stackoverflow.com/questions/15672556/handling-json-post-request-in-go
 * Writing modular GO REST APIs: http://thenewstack.io/make-a-restful-json-api-go/
 * Use render for generating JSON, see https://github.com/unrolled/render/issues/7 for use of global variable
+* Testing techniques: https://talks.golang.org/2014/testing.slide#1
+* Testing Go HTTP API: http://dennissuratna.com/testing-in-go/
+* Great overview of HTTP response codes: http://stackoverflow.com/a/2342631
