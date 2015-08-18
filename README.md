@@ -6,7 +6,11 @@ Reusable template for building REST Web Services in Golang (deployed on IBM Blue
 
 Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
 
-## Dependencies
+## Introduction
+
+### Why?
+
+TO DO
 
 ### Knowledge of Go
 
@@ -17,7 +21,11 @@ If you're new to programming in Go, I would highly recommend you to read the fol
 
 You can work your way through those in two to three days.
 
-### Godep
+### Development tools
+
+TO DO SublimeText, GoSublime, etc.
+
+### Manage dependencies
 
 In order to manage package dependencies, we're using the [Godep](https://github.com/tools/godep) package tool.
 
@@ -29,11 +37,21 @@ go get github.com/tools/godep
 
 When you add new packages, just use the standard `go get package` first, edit your code, then run the `godep save`. It will add an extra entry to `Godeps/Godeps.json`.
 
+TO DO add some thoughts on Go 1.5 vendoring
+
 ### Live Code Reloading
 
 TO DO
 
-## Overview
+### How to run
+
+`go run main.go` works fine if you have a single file you're working on, but once you have multiple files you'll have to start using the proper go build tool and run the compiled executable.
+
+```
+go build && ./go-rest-template-bluemix
+```
+
+## Code deevp dive
 
 ### Code Structure
 
@@ -66,14 +84,6 @@ Third-party packages:
 
 ```
 /Godeps
-```
-
-### How to run
-
-`go run main.go` works fine if you have a single file you're working on, but once you have multiple files you'll have to start using the proper go build tool and run the compiled executable.
-
-```
-go build && ./go-rest-template-bluemix
 ```
 
 ### main.go
