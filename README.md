@@ -1,8 +1,8 @@
-# go-rest-template-bluemix
+# go-rest-api-template
 
 *WORK IN PROGRESS*
 
-Reusable template for building REST Web Services in Golang (deployed on IBM Bluemix / Cloud Foundry)
+Reusable template for building REST Web Services in Golang
 
 Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
 
