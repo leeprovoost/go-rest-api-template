@@ -23,3 +23,19 @@ func TestList(t *testing.T) {
 		t.Errorf("Expected 2 elements in the list, only counting %v.", count)
 	}
 }
+
+func TestGet(t *testing.T) {
+	t.Errorf("Test not implemented.")
+}
+
+func TestAdd(t *testing.T) {
+	t.Errorf("Test not implemented.")
+}
+
+func TestDelete(t *testing.T) {
+	t.Errorf("Test not implemented.")
+}
+
+func TestUpdate(t *testing.T) {
+	t.Errorf("Test not implemented.")
+}
