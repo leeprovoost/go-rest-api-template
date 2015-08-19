@@ -337,6 +337,14 @@ TO DO
 
 TO DO test database layer, test handlers, test HTTP
 
+```
+go test -v
+```
+
+```
+go test -cover
+```
+
 ### Security
 
 TO DO
