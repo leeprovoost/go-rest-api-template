@@ -10,11 +10,12 @@ Reusable template for building REST Web Services in Golang. Uses gorilla/mux as 
 
 After writing many REST APIs with Java Dropwizard, Node.js/Express and Go, I wanted to distill my lessons learned into a reusable template for writing REST APIs, in the Go language (my favourite).
 
-It's mainly for myself. I don't want to keep on reinventing the wheel and just want to get the foundation of my REST API 'ready to go' so I can focus on the business logic and integration with other systems and data stores.
+It's mainly for myself. I don't want to keep reinventing the wheel and just want to get the foundation of my REST API 'ready to go' so I can focus on the business logic and integration with other systems and data stores.
 
-Just to be clear: this is not a freameowrk, library, package or anything like that. This tries to use a couple of very good Go packages and libraries that I like and cobbled together.
+Just to be clear: this is not a freameowrk, library, package or anything like that. This tries to use a couple of very good Go packages and libraries that I like and cobbled them together.
 
 The main ones are:
+
 * [gorilla/mux](http://www.gorillatoolkit.org/pkg/mux) for routing
 * [negroni](https://github.com/codegangsta/negroni) as a middleware handler
 * [testify](https://github.com/stretchr/testify) for writing easier test assertions
@@ -34,7 +35,15 @@ You can work your way through those in two to three days. I wouldn't advise buyi
 
 ### Development tools
 
-TO DO SublimeText, GoSublime, etc.
+I've tried many different IDEs and it seems like it's a common Go newbie [frustration](https://groups.google.com/forum/#!topic/golang-nuts/6ZgrZsPzHr0). Coming from Java, I've tried "proper" IDEs like [LiteIDE](https://github.com/visualfc/liteide) and IntelliJ with the [golang plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin) but never really fell in love with those.
+
+I am a big fan of SublimeText that I've been using extensively for Node.js development so I set up my environment with:
+
+* [Sublime Text 3](http://www.sublimetext.com/3) editor
+* [GoSublime](https://github.com/DisposaBoy/GoSublime) plugin
+* [GitGutter](https://github.com/jisaacks/GitGutter) to see git diffs in gutter
+
+I have tried Atom with the [go-plus](https://github.com/joefitzgerald/go-plus) in the past, but was never good enough to push Sublime Text aside for me. I have to admit that I haven't tried it in a while and Atom is maturing rapidly so please feel free to give it a go.
 
 ### Manage dependencies
 
@@ -47,8 +56,6 @@ go get github.com/tools/godep
 ```
 
 When you add new packages, just use the standard `go get package` first, edit your code, then run the `godep save`. It will add an extra entry to `Godeps/Godeps.json`.
-
-TO DO add some thoughts on Go 1.5 vendoring
 
 ### Live Code Reloading
 
