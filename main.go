@@ -6,8 +6,6 @@ import (
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
-	"github.com/phyber/negroni-gzip/gzip"
-	"github.com/rs/cors"
 	"github.com/unrolled/render"
 )
 
@@ -40,11 +38,6 @@ func main() {
 	router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("DELETE")
 
 	n := negroni.Classic()
-	n.Use(gzip.Gzip(gzip.DefaultCompression))
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-	})
-	n.Use(c)
 	n.UseHandler(router)
 	fmt.Println("Starting server on :3009")
 	n.Run(":3009")

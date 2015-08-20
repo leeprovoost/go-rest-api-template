@@ -346,26 +346,6 @@ go test -v
 go test -cover
 ```
 
-### Extra bits
-
-TO DO
-
-CORS: https://github.com/rs/cors/blob/master/examples/negroni/server.go
-
-```
-  c := cors.New(cors.Options{
-    AllowedOrigins: []string{"*"},
-  })
-  n.Use(c)
-```
-
-GZIP: https://github.com/phyber/negroni-gzip
-
-```
-  n := negroni.Classic()
-  n.Use(gzip.Gzip(gzip.DefaultCompression))
-```
-
 ### Environment Variables
 
 TO DO
