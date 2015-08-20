@@ -335,16 +335,122 @@ TO DO
 
 ### Testing
 
-TO DO test database layer, test handlers, test HTTP
-Using testify package https://github.com/stretchr/testify
+There are lots of opinions on testing, how much you should be testing, which layers of your applications, etc. When I'm working with micro services, I tend to focus on two types of tests to start with: testing the data access layer and testing the actual HTTP service.
+
+In this example, we want to test the List, Add, Get, Update and Delete operations on our in-memory document database. The data access code is stored in the `database.go` file, so following Go convention we will create a new file called `database_test.go`.
+
+In the `database_test.go` file, we have two sections:
+
+First, we're going to create a common initialiser, this code sets up our database, inserts a couple of test records and then fires off the tests:
+
+```
+func TestMain(m *testing.M) {
+  list := make(map[int]User)
+  list[0] = User{0, "John", "Doe", "31-12-1985", "London"}
+  list[1] = User{1, "Jane", "Doe", "01-01-1992", "Milton Keynes"}
+  db = &Database{list, 1}
+  retCode := m.Run()
+  os.Exit(retCode)
+}
+```
+Once this is ready, we can start writing tests. Let's have a look at the easiest one where we list the elements in our database:
+
+```
+func TestList(t *testing.T) {
+  list := db.List()
+  count := len(list["users"])
+  assert.Equal(t, 2, count, "There should be 2 items in the list.")
+}
+```
+
+This first calls the `db.List()` function, which returns a list of users. We then count the number of elements and last but not least we then check whether that count equals 2.
+
+In standard Go, you would actually write something like:
+
+```
+if 2 != count {
+  t.Errorf("Expected 2 elements in the list, instead got %v", count)
+}
+```
+
+However there is a neat Go package called [testify](https://github.com/stretchr/testify) that gives you assertions like Java and that's why we can write cleaner test code like:
+
+```
+assert.Equal(t, 2, count, "There should be 2 items in the list.")
+```
+
+The `TestList` is only testing for a positive result, but we really need to test for failures as well.
+
+This is our test code for the Delete functionality:
+
+```
+func TestDeleteSuccess(t *testing.T) {
+  ok, err := db.Delete(1)
+  assert.Equal(t, true, ok, "they should be equal")
+  assert.Nil(t, err)
+}
+
+func TestDeleteFail(t *testing.T) {
+  ok, err := db.Delete(10)
+  assert.Equal(t, false, ok, "they should be equal")
+  assert.NotNil(t, err)
+}
+```
+
+The first test function `TestDeleteSuccess` tries to delete a known existing user, with Id 1. We're expecting that the error object is Nil. The second test function `TestDeleteFail` tries to look up a non-existing user with Id 10, and as expected, this should return an actual Error object.
+
+How do we run the tests?
+
+Simple:
+
+```
+go test
+```
+
+If you want more verbosity. then:
 
 ```
 go test -v
 ```
 
+Which will give you:
+
+```
+=== RUN TestList
+--- PASS: TestList (0.00s)
+=== RUN TestGetSuccess
+--- PASS: TestGetSuccess (0.00s)
+=== RUN TestGetFail
+--- PASS: TestGetFail (0.00s)
+=== RUN TestAdd
+--- PASS: TestAdd (0.00s)
+=== RUN TestUpdateSuccess
+--- PASS: TestUpdateSuccess (0.00s)
+=== RUN TestUpdateFail
+--- PASS: TestUpdateFail (0.00s)
+=== RUN TestDeleteSuccess
+--- PASS: TestDeleteSuccess (0.00s)
+=== RUN TestDeleteFail
+--- PASS: TestDeleteFail (0.00s)
+PASS
+ok    github.com/leeprovoost/go-rest-api-template 0.008s
+```
+
+Do you want to get some more info on your code coverage? No worries, Go has you covered (no pun intended):
+
 ```
 go test -cover
 ```
+
+This will give you:
+
+```
+PASS
+coverage: 34.9% of statements
+ok    github.com/leeprovoost/go-rest-api-template 0.009s
+```
+
+TO DO Testing the HTTP service
 
 ### Environment Variables
 
