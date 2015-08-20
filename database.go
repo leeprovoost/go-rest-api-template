@@ -44,6 +44,18 @@ func (db *Database) Add(u User) User {
 	return newUser
 }
 
+// Update an existing user
+func (db *Database) Update(u User) (User, error) {
+	id := u.Id
+	_, ok := db.UserList[id]
+	if ok {
+		db.UserList[id] = u
+		return db.UserList[id], nil
+	} else {
+		return u, errors.New("User does not exist")
+	}
+}
+
 // Delete a user
 func (db *Database) Delete(i int) (bool, error) {
 	_, ok := db.UserList[i]
@@ -52,17 +64,5 @@ func (db *Database) Delete(i int) (bool, error) {
 		return true, nil
 	} else {
 		return false, errors.New("Could not delete this user")
-	}
-}
-
-// Update an existing user
-func (db *Database) Update(u User) (User, error) {
-	id := u.Id
-	user, ok := db.UserList[id]
-	if ok {
-		db.UserList[id] = user
-		return db.UserList[id], nil
-	} else {
-		return user, errors.New("User does not exist")
 	}
 }

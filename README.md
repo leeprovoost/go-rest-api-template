@@ -336,6 +336,7 @@ TO DO
 ### Testing
 
 TO DO test database layer, test handlers, test HTTP
+Using testify package https://github.com/stretchr/testify
 
 ```
 go test -v
