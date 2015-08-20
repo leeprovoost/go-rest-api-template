@@ -2,15 +2,26 @@
 
 *WORK IN PROGRESS*
 
-Reusable template for building REST Web Services in Golang
-
-Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
+Reusable template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
 
 ## Introduction
 
 ### Why?
 
-TO DO
+After writing many REST APIs with Java Dropwizard, Node.js/Express and Go, I wanted to distill my lessons learned into a reusable template for writing REST APIs, in the Go language (my favourite).
+
+It's mainly for myself. I don't want to keep on reinventing the wheel and just want to get the foundation of my REST API 'ready to go' so I can focus on the business logic and integration with other systems and data stores.
+
+Just to be clear: this is not a freameowrk, library, package or anything like that. This tries to use a couple of very good Go packages and libraries that I like and cobbled together.
+
+The main ones are:
+* [gorilla/mux](http://www.gorillatoolkit.org/pkg/mux) for routing
+* [negroni](https://github.com/codegangsta/negroni) as a middleware handler
+* [testify](https://github.com/stretchr/testify) for writing easier test assertions
+* [godep](https://github.com/tools/godep) for dependency management
+* [render](https://github.com/unrolled/render) for HTTP response rendering
+
+Whilst working on this, I've tried to write up as much as my thought process as possible, everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR, raise an issue or contact me on twitter [@leeprovoost](https://twitter.com/leeprovoost).
 
 ### Knowledge of Go
 
@@ -19,7 +30,7 @@ If you're new to programming in Go, I would highly recommend you to read the fol
 * [A Tour of Go](https://tour.golang.org/welcome/1)
 * [Effective Go](https://golang.org/doc/effective_go.html)
 
-You can work your way through those in two to three days.
+You can work your way through those in two to three days. I wouldn't advise buying any books right now. I unfortunately did and I have yet to open them. If you really want to get some books, there is a [github](https://github.com/dariubs/GoBooks) repo that tries to list the main ones.
 
 ### Development tools
 
@@ -48,7 +59,7 @@ TO DO
 `go run main.go` works fine if you have a single file you're working on, but once you have multiple files you'll have to start using the proper go build tool and run the compiled executable.
 
 ```
-go build && ./go-rest-template-bluemix
+go build && ./go-rest-api-template
 ```
 
 ## Code deep dive
@@ -80,6 +91,12 @@ Mock database with operations:
 database.go
 ```
 
+Tests:
+
+```
+database_test.go
+```
+
 Third-party packages:
 
 ```
@@ -94,7 +111,7 @@ TO DO
 
 We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports.
 
-```golang
+```
 type User struct {
   Id              int    `json:"id"`
   FirstName       string `json:"first_name"`
@@ -407,7 +424,7 @@ Simple:
 go test
 ```
 
-If you want more verbosity. then:
+If you want it more verbose, then:
 
 ```
 go test -v
