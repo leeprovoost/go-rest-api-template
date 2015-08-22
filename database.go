@@ -2,6 +2,14 @@ package main
 
 import "errors"
 
+type DataStore interface {
+	List() map[string]User
+	Get(i int) (User, error)
+	Add(u User) User
+	Update(u User) (User, error)
+	Delete(i int) (bool, error)
+}
+
 type Database struct {
 	UserList  map[int]User
 	MaxUserId int
