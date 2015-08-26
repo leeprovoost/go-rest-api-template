@@ -267,7 +267,9 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
 }
 ```
 
-This will return the following to the client:
+BTW, notice the `Render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
+
+So, this will return the following to the client:
 
 ```
 {
@@ -289,8 +291,6 @@ This will return the following to the client:
     ]
 }
 ```
-
-BTW, notice the `Render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
 
 It may surprise you that we are returning a JSON object that holds an array with multiple JSON objects, rather than an array with multiple JSON objects, as seen in the example below:
 
@@ -408,6 +408,14 @@ That should result in the following result:
     ]
 }
 ```
+
+The `| python -mjson.tool` at the end is for pretty printing (formatting). It essentially tells to pipe the output of the curl command to the SJON formatting tool. If we only typed `curl -X GET http://localhost:3009/users` then we'd have something like this:
+
+```
+{"users":[{"id":0,"firstName":"John","lastName":"Doe","dateOfBirth":"31-12-1985","locationOfBirth":"London"},{"id":1,"firstName":"Jane","lastName":"Doe","dateOfBirth":"01-01-1992","locationOfBirth":"Milton Keynes"}]}
+```
+
+So not that easy to read as the earlier nicely formatted example.
 
 Get a specific user:
 
