@@ -123,24 +123,24 @@ We are going to use a travel Passport for our example. I've chosen Id as the uni
 ```
 type User struct {
   Id              int    `json:"id"`
-  FirstName       string `json:"first_name"`
-  LastName        string `json:"last_name"`
-  DateOfBirth     string `json:"date_of_birth"`
-  LocationOfBirth string `json:"location_of_birth"`
+  FirstName       string `json:"firstName"`
+  LastName        string `json:"lastName"`
+  DateOfBirth     string `json:"dateOfBirth"`
+  LocationOfBirth string `json:"locationOfBirth"`
 }
 
 type Passport struct {
   Id           string `json:"id"`
-  DateOfIssue  string `json:"date_of_issue"`
-  DateOfExpiry string `json:"date_of_expiry"`
+  DateOfIssue  string `json:"dateOfIssue"`
+  DateOfExpiry string `json:"dateOfExpiry"`
   Authority    string `json:"authority"`
-  CustomerId   int    `json:"customer_id"`
+  UserId       int    `json:"userId"`
 }
 ```
 
 The first time you create a struct, you may not be aware that uppercasing and lowercasing your field names have a meaning in Go. It's similar to public and private members in Java. Uppercase = public, lowercase = private. There are some good discussions on Stackoverflow about [this](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character). The gist is that if field names with a lowercase won't be visible to json.Marshal.
 
-You may not want to expose your data to the consumer of your web service in this format, so you can override the way your fields are marshalled by adding ``json:"first_name"`` to each field with the desired name.
+You may not want to expose your data to the consumer of your web service in this format, so you can override the way your fields are marshalled by adding ``json:"firstName"`` to each field with the desired name. I admit that in the past I had the habit of using underscores for my json field names, e.g. `first_name`. However after reading [this](http://www.slideshare.net/stormpath/rest-jsonapis) excellent presentation on API design, I got reminded that the JS in JSON stands for JavaScript and in the JavaScript world, it's common to use camelCasing so the preffered way of writing the same fieldname would be: `firstName`.
 
 ### Operations on our (mock) data
 
@@ -273,18 +273,18 @@ This will return the following to the client:
 {
     "users": [
         {
-            "date_of_birth": "31-12-1985",
-            "first_name": "John",
-            "id": 0,
-            "last_name": "Doe",
-            "location_of_birth": "London"
+            "dateOfBirth": "01-01-1992",
+            "firstName": "Jane",
+            "id": 1,
+            "lastName": "Doe",
+            "locationOfBirth": "Milton Keynes"
         },
         {
-            "date_of_birth": "01-01-1992",
-            "first_name": "Jane",
-            "id": 1,
-            "last_name": "Doe",
-            "location_of_birth": "Milton Keynes"
+            "dateOfBirth": "31-12-1985",
+            "firstName": "John",
+            "id": 0,
+            "lastName": "Doe",
+            "locationOfBirth": "London"
         }
     ]
 }
@@ -298,18 +298,18 @@ It may surprise you that we are returning a JSON object that holds an array with
 {
     [
         {
-            "date_of_birth": "31-12-1985",
-            "first_name": "John",
-            "id": 0,
-            "last_name": "Doe",
-            "location_of_birth": "London"
+            "dateOfBirth": "01-01-1992",
+            "firstName": "Jane",
+            "id": 1,
+            "lastName": "Doe",
+            "locationOfBirth": "Milton Keynes"
         },
         {
-            "date_of_birth": "01-01-1992",
-            "first_name": "Jane",
-            "id": 1,
-            "last_name": "Doe",
-            "location_of_birth": "Milton Keynes"
+            "dateOfBirth": "31-12-1985",
+            "firstName": "John",
+            "id": 0,
+            "lastName": "Doe",
+            "locationOfBirth": "London"
         }
     ]
 }
@@ -325,18 +325,18 @@ Example:
     "limit":  25,
     "users":  [
         {
-            "date_of_birth": "31-12-1985",
-            "first_name": "John",
-            "id": 0,
-            "last_name": "Doe",
-            "location_of_birth": "London"
+            "dateOfBirth": "01-01-1992",
+            "firstName": "Jane",
+            "id": 1,
+            "lastName": "Doe",
+            "locationOfBirth": "Milton Keynes"
         },
         {
-            "date_of_birth": "01-01-1992",
-            "first_name": "Jane",
-            "id": 1,
-            "last_name": "Doe",
-            "location_of_birth": "Milton Keynes"
+            "dateOfBirth": "31-12-1985",
+            "firstName": "John",
+            "id": 0,
+            "lastName": "Doe",
+            "locationOfBirth": "London"
         }
     ]
 }
@@ -363,11 +363,11 @@ Example:
 
 ```
 {
-    "date_of_birth": "31-12-1985",
-    "first_name": "John",
-    "id": 0,
-    "last_name": "Doe",
-    "location_of_birth": "London"
+    "dateOfBirth": "01-01-1992",
+    "firstName": "Jane",
+    "id": 1,
+    "lastName": "Doe",
+    "locationOfBirth": "Milton Keynes"
 }
 ```
 
@@ -388,22 +388,22 @@ That should result in the following result:
 ```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-100   228  100   228    0     0  41996      0 --:--:-- --:--:-- --:--:-- 45600
+100   216  100   216    0     0  14466      0 --:--:-- --:--:-- --:--:-- 15428
 {
     "users": [
         {
-            "date_of_birth": "31-12-1985",
-            "first_name": "John",
-            "id": 0,
-            "last_name": "Doe",
-            "location_of_birth": "London"
+            "dateOfBirth": "01-01-1992",
+            "firstName": "Jane",
+            "id": 1,
+            "lastName": "Doe",
+            "locationOfBirth": "Milton Keynes"
         },
         {
-            "date_of_birth": "01-01-1992",
-            "first_name": "Jane",
-            "id": 1,
-            "last_name": "Doe",
-            "location_of_birth": "Milton Keynes"
+            "dateOfBirth": "31-12-1985",
+            "firstName": "John",
+            "id": 0,
+            "lastName": "Doe",
+            "locationOfBirth": "London"
         }
     ]
 }
@@ -422,11 +422,11 @@ Results in:
                                  Dload  Upload   Total   Spent    Left  Speed
 100   104  100   104    0     0   6625      0 --:--:-- --:--:-- --:--:--  6933
 {
-    "date_of_birth": "31-12-1985",
-    "first_name": "John",
-    "id": 0,
-    "last_name": "Doe",
-    "location_of_birth": "London"
+    "dateOfBirth": "01-01-1992",
+    "firstName": "Jane",
+    "id": 1,
+    "lastName": "Doe",
+    "locationOfBirth": "Milton Keynes"
 }
 ```
 
