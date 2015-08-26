@@ -290,7 +290,57 @@ This will return the following to the client:
 }
 ```
 
-Notice the `Render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
+BTW, notice the `Render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
+
+It may surprise you that we are returning a JSON object that holds an array with multiple JSON objects, rather than an array with multiple JSON objects, as seen in the example below:
+
+```
+{
+    [
+        {
+            "date_of_birth": "31-12-1985",
+            "first_name": "John",
+            "id": 0,
+            "last_name": "Doe",
+            "location_of_birth": "London"
+        },
+        {
+            "date_of_birth": "01-01-1992",
+            "first_name": "Jane",
+            "id": 1,
+            "last_name": "Doe",
+            "location_of_birth": "Milton Keynes"
+        }
+    ]
+}
+```
+
+They're both valid and there are lots of views and opinions (as always in developer / architecture communities!), but the reason why I prefer to wrap the array in a JSON object is because later on we can easily add more data without causing significant changes to the client. What if we want to add the concept of pagination to our API?
+
+Example:
+
+```
+{
+    "offset": 0,
+    "limit":  25,
+    "users":  [
+        {
+            "date_of_birth": "31-12-1985",
+            "first_name": "John",
+            "id": 0,
+            "last_name": "Doe",
+            "location_of_birth": "London"
+        },
+        {
+            "date_of_birth": "01-01-1992",
+            "first_name": "Jane",
+            "id": 1,
+            "last_name": "Doe",
+            "location_of_birth": "Milton Keynes"
+        }
+    ]
+}
+```
 
 Another example is the retrieval of a specific object:
 
@@ -320,6 +370,8 @@ Example:
     "location_of_birth": "London"
 }
 ```
+
+We add the attributes of the user object to the root of the JSON response, rather than wrapping it up in an explicit JSON object. I can quite easily add extra data to the response, without breaking the existing data.
 
 ### Testing your routes with curl commands
 
@@ -529,3 +581,4 @@ TO DO
 * Testing techniques: https://talks.golang.org/2014/testing.slide#1
 * Testing Go HTTP API: http://dennissuratna.com/testing-in-go/
 * Great overview of HTTP response codes: http://stackoverflow.com/a/2342631
+* Design beautifulREST + JSON APIs
