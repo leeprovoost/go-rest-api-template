@@ -8,11 +8,11 @@ Reusable template for building REST Web Services in Golang. Uses gorilla/mux as 
 
 ### Why?
 
-After writing many REST APIs with Java Dropwizard, Node.js/Express and Go, I wanted to distill my lessons learned into a reusable template for writing REST APIs, in the Go language (my favourite).
+After writing many REST APIs with Java Dropwizard, Node.js/Express and Go, I wanted to distil my lessons learned into a reusable template for writing REST APIs, in the Go language (my favourite).
 
 It's mainly for myself. I don't want to keep reinventing the wheel and just want to get the foundation of my REST API 'ready to go' so I can focus on the business logic and integration with other systems and data stores.
 
-Just to be clear: this is not a freameowrk, library, package or anything like that. This tries to use a couple of very good Go packages and libraries that I like and cobbled them together.
+Just to be clear: this is not a framework, library, package or anything like that. This tries to use a couple of very good Go packages and libraries that I like and cobbled them together.
 
 The main ones are:
 
@@ -22,7 +22,7 @@ The main ones are:
 * [godep](https://github.com/tools/godep) for dependency management
 * [render](https://github.com/unrolled/render) for HTTP response rendering
 
-Whilst working on this, I've tried to write up as much as my thought process as possible, everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR, raise an issue or contact me on twitter [@leeprovoost](https://twitter.com/leeprovoost).
+Whilst working on this I've tried to write up as much as my thought process as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR, raise an issue or contact me on twitter [@leeprovoost](https://twitter.com/leeprovoost).
 
 ### Knowledge of Go
 
@@ -138,7 +138,7 @@ type Passport struct {
 }
 ```
 
-The first time you create a struct, you may not be aware that uppercasing and lowercasing your field names have a meaning in Go. It's similar to public and private members in Java. Uppercase = public, lowercase = private. There are some good discussions on Stackoverflow about [this](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character). The gist is that if field names with a lowercase won't be visible to json.Marshal.
+The first time you create a struct, you may not be aware that uppercasing and lowercasing your field names have a meaning in Go. It's similar to public and private members in Java. Uppercase = public, lowercase = private. There are some good discussions on Stackoverflow about [this](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character). The gist is that field names that start with a lowercase letter will not be visible to json.Marshal.
 
 You may not want to expose your data to the consumer of your web service in this format, so you can override the way your fields are marshalled by adding ``json:"firstName"`` to each field with the desired name. I admit that in the past I had the habit of using underscores for my json field names, e.g. `first_name`. However after reading [this](http://www.slideshare.net/stormpath/rest-jsonapis) excellent presentation on API design, I got reminded that the JS in JSON stands for JavaScript and in the JavaScript world, it's common to use camelCasing so the preffered way of writing the same fieldname would be: `firstName`.
 
@@ -581,12 +581,12 @@ TO DO
 
 ## Useful references
 
-* Structs and JSON formatting: http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character
-* Undertanding method receivers and pointers: http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/
-* Read JSON POST body: http://stackoverflow.com/questions/15672556/handling-json-post-request-in-go
-* Writing modular GO REST APIs: http://thenewstack.io/make-a-restful-json-api-go/
-* Use render for generating JSON, see https://github.com/unrolled/render/issues/7 for use of global variable
-* Testing techniques: https://talks.golang.org/2014/testing.slide#1
-* Testing Go HTTP API: http://dennissuratna.com/testing-in-go/
-* Great overview of HTTP response codes: http://stackoverflow.com/a/2342631
-* Design beautifulREST + JSON APIs
+* [Structs and JSON formatting](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character)
+* [Undertanding method receivers and pointers](http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/)
+* [Read JSON POST body](http://stackoverflow.com/questions/15672556/handling-json-post-request-in-go)
+* [Writing modular GO REST APIs](http://thenewstack.io/make-a-restful-json-api-go/)
+* [Use render for generating JSON](https://github.com/unrolled/render/issues/7) for use of global variable
+* [Testing techniques](https://talks.golang.org/2014/testing.slide#1)
+* [Testing Go HTTP API](http://dennissuratna.com/testing-in-go/)
+* [Great overview of HTTP response codes](http://stackoverflow.com/a/2342631)
+* Design beautiful REST + JSON APIs
