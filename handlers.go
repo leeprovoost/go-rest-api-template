@@ -76,4 +76,5 @@ func DeleteUserHandler(w http.ResponseWriter, req *http.Request) {
 
 func PassportsHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "Handling Passports - Not implemented yet")
+	Render.Text(w, http.StatusNotImplemented, "")
 }
