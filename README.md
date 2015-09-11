@@ -2,7 +2,7 @@
 
 *WORK IN PROGRESS*
 
-Reusable template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler.
+Reusable template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.5.
 
 ## Introduction
 
@@ -589,4 +589,5 @@ TO DO
 * [Testing techniques](https://talks.golang.org/2014/testing.slide#1)
 * [Testing Go HTTP API](http://dennissuratna.com/testing-in-go/)
 * [Great overview of HTTP response codes](http://stackoverflow.com/a/2342631)
-* Design beautiful REST + JSON APIs
+* [Design beautiful REST + JSON APIs](http://www.slideshare.net/stormpath/rest-jsonapis)
+* Go and datetime parsing/formatting: [ISO 8601, the International Standard for the representation of dates and times](http://www.w3.org/TR/NOTE-datetime), [Go by Example: Time Formatting / Parsing](https://gobyexample.com/time-formatting-parsing), [JSON datetime formatting](http://stackoverflow.com/a/15952652), [src/time/format.go](http://golang.org/src/time/format.go)
