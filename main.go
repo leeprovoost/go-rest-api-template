@@ -2,7 +2,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
@@ -12,9 +15,20 @@ import (
 var Render *render.Render
 
 func init() {
+	// read JSON fixtures file
+	var jsonObject map[string][]User
+	file, err := ioutil.ReadFile("./fixtures.json")
+	if err != nil {
+		fmt.Printf("File error: %v\n", err)
+	}
+	err = json.Unmarshal(file, &jsonObject)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// load data in database
 	list := make(map[int]User)
-	list[0] = User{0, "John", "Doe", "31-12-1985", "London"}
-	list[1] = User{1, "Jane", "Doe", "01-01-1992", "Milton Keynes"}
+	list[0] = jsonObject["users"][0]
+	list[1] = jsonObject["users"][1]
 	db = &Database{list, 1}
 }
 

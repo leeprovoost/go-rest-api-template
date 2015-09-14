@@ -10,7 +10,7 @@ import (
 )
 
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "Nothing to see here. #kthxbai")
+	Render.Text(w, http.StatusNoContent, "")
 }
 
 func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {

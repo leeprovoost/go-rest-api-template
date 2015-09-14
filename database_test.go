@@ -3,14 +3,17 @@ package main
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
 	list := make(map[int]User)
-	list[0] = User{0, "John", "Doe", "31-12-1985", "London"}
-	list[1] = User{1, "Jane", "Doe", "01-01-1992", "Milton Keynes"}
+	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
+	list[0] = User{0, "John", "Doe", dt, "London"}
+	dt, _ = time.Parse(time.RFC3339, "1992-01-01T00:00:00Z")
+	list[1] = User{1, "Jane", "Doe", dt, "Milton Keynes"}
 	db = &Database{list, 1}
 	retCode := m.Run()
 	os.Exit(retCode)
@@ -23,12 +26,13 @@ func TestList(t *testing.T) {
 }
 
 func TestGetSuccess(t *testing.T) {
+	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u, err := db.Get(0)
 	if assert.Nil(t, err) {
 		assert.Equal(t, 0, u.Id, "they should be equal")
 		assert.Equal(t, "John", u.FirstName, "they should be equal")
 		assert.Equal(t, "Doe", u.LastName, "they should be equal")
-		assert.Equal(t, "31-12-1985", u.DateOfBirth, "they should be equal")
+		assert.Equal(t, dt, u.DateOfBirth, "they should be equal")
 		assert.Equal(t, "London", u.LocationOfBirth, "they should be equal")
 	}
 }
@@ -39,10 +43,11 @@ func TestGetFail(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
+	dt, _ := time.Parse(time.RFC3339, "1972-03-07T00:00:00Z")
 	u := User{
 		FirstName:       "Apple",
 		LastName:        "Jack",
-		DateOfBirth:     "07-03-1972",
+		DateOfBirth:     dt,
 		LocationOfBirth: "Cambridge",
 	}
 	u = db.Add(u)
@@ -55,11 +60,12 @@ func TestAdd(t *testing.T) {
 }
 
 func TestUpdateSuccess(t *testing.T) {
+	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u := User{
 		Id:              0,
 		FirstName:       "John",
 		LastName:        "2 Doe",
-		DateOfBirth:     "31-12-1985",
+		DateOfBirth:     dt,
 		LocationOfBirth: "Southend",
 	}
 	// check if there are no errors
@@ -69,16 +75,17 @@ func TestUpdateSuccess(t *testing.T) {
 	assert.Equal(t, 0, u2.Id, "they should be equal")
 	assert.Equal(t, "John", u2.FirstName, "they should be equal")
 	assert.Equal(t, "2 Doe", u2.LastName, "they should be equal")
-	assert.Equal(t, "31-12-1985", u2.DateOfBirth, "they should be equal")
+	assert.Equal(t, dt, u2.DateOfBirth, "they should be equal")
 	assert.Equal(t, "Southend", u2.LocationOfBirth, "they should be equal")
 }
 
 func TestUpdateFail(t *testing.T) {
+	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u := User{
 		Id:              20,
 		FirstName:       "John",
 		LastName:        "2 Doe",
-		DateOfBirth:     "31-12-1985",
+		DateOfBirth:     dt,
 		LocationOfBirth: "Southend",
 	}
 	_, err := db.Update(u)

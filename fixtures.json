@@ -1,0 +1,18 @@
+{
+  "users": [
+    {
+        "dateOfBirth": "1985-12-31T00:00:00Z",
+        "firstName": "John",
+        "id": 0,
+        "lastName": "Doe",
+        "locationOfBirth": "London"
+    },
+    {
+        "dateOfBirth": "1992-01-01T00:00:00Z",
+        "firstName": "Jane",
+        "id": 1,
+        "lastName": "Doe",
+        "locationOfBirth": "Milton Keynes"
+    }
+  ]
+}
