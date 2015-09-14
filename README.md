@@ -122,25 +122,27 @@ We are going to use a travel Passport for our example. I've chosen Id as the uni
 
 ```
 type User struct {
-  Id              int    `json:"id"`
-  FirstName       string `json:"firstName"`
-  LastName        string `json:"lastName"`
-  DateOfBirth     string `json:"dateOfBirth"`
-  LocationOfBirth string `json:"locationOfBirth"`
+  Id              int       `json:"id"`
+  FirstName       string    `json:"firstName"`
+  LastName        string    `json:"lastName"`
+  DateOfBirth     time.Time `json:"dateOfBirth"`
+  LocationOfBirth string    `json:"locationOfBirth"`
 }
 
 type Passport struct {
-  Id           string `json:"id"`
-  DateOfIssue  string `json:"dateOfIssue"`
-  DateOfExpiry string `json:"dateOfExpiry"`
-  Authority    string `json:"authority"`
-  UserId       int    `json:"userId"`
+  Id           string    `json:"id"`
+  DateOfIssue  time.Time `json:"dateOfIssue"`
+  DateOfExpiry time.Time `json:"dateOfExpiry"`
+  Authority    string    `json:"authority"`
+  UserId       int       `json:"userId"`
 }
 ```
 
 The first time you create a struct, you may not be aware that uppercasing and lowercasing your field names have a meaning in Go. It's similar to public and private members in Java. Uppercase = public, lowercase = private. There are some good discussions on Stackoverflow about [this](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character). The gist is that field names that start with a lowercase letter will not be visible to json.Marshal.
 
 You may not want to expose your data to the consumer of your web service in this format, so you can override the way your fields are marshalled by adding ``json:"firstName"`` to each field with the desired name. I admit that in the past I had the habit of using underscores for my json field names, e.g. `first_name`. However after reading [this](http://www.slideshare.net/stormpath/rest-jsonapis) excellent presentation on API design, I got reminded that the JS in JSON stands for JavaScript and in the JavaScript world, it's common to use camelCasing so the preffered way of writing the same fieldname would be: `firstName`.
+
+Note the use of `time.Time` for the dates instead of using a standard `string` type. We'll discuss the pain of marshalling and unmarshalling of JSON dates a bit later.
 
 ### Operations on our (mock) data
 
@@ -195,16 +197,29 @@ We will now create a global database variable so that it's accessible across our
 var db *Database
 ```
 
-In order to make it a bit more useful, we will initialise it with some user objects.Luckily, we can make use of the `init` function that gets automatically called when you start the application. This init() function will be in our `main.go` file when you start up the server:
+In order to make it a bit more useful, we will initialise it with some user objects. Luckily, we can make use of the `init` function that gets automatically called when you start the application. This init() function will be in our `main.go` file when you start up the server:
 
 ```
 func init() {
+  // read JSON fixtures file
+  var jsonObject map[string][]User
+  file, err := ioutil.ReadFile("./fixtures.json")
+  if err != nil {
+    fmt.Printf("File error: %v\n", err)
+  }
+  err = json.Unmarshal(file, &jsonObject)
+  if err != nil {
+    log.Fatal(err)
+  }
+  // load data in database
   list := make(map[int]User)
-  list[0] = User{0, "John", "Doe", "31-12-1985", "London"}
-  list[1] = User{1, "Jane", "Doe", "01-01-1992", "Milton Keynes"}
+  list[0] = jsonObject["users"][0]
+  list[1] = jsonObject["users"][1]
   db = &Database{list, 1}
 }
 ```
+
+TODO: Add info on marshalling time
 
 We now need to implement the various methods from our DataStore interface.
 
