@@ -219,6 +219,33 @@ func init() {
 }
 ```
 
+We are first going to load the data from a `fixtures.json` file:
+
+```
+{
+  "users": [
+    {
+        "dateOfBirth": "1985-12-31T00:00:00Z",
+        "firstName": "John",
+        "id": 0,
+        "lastName": "Doe",
+        "locationOfBirth": "London"
+    },
+    {
+        "dateOfBirth": "1992-01-01T00:00:00Z",
+        "firstName": "Jane",
+        "id": 1,
+        "lastName": "Doe",
+        "locationOfBirth": "Milton Keynes"
+    }
+  ]
+}
+```
+
+What we have here is a map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be respresented as: `map[string][]User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
+
+The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`?
+
 TODO: Add info on marshalling time
 
 We now need to implement the various methods from our DataStore interface.
