@@ -41,16 +41,16 @@ func main() {
 	router.HandleFunc("/metrics", MetricsHandler).Methods("GET")
 
 	router.HandleFunc("/users", ListUsersHandler).Methods("GET")
-	router.HandleFunc("/users/{uid}", GetUserHandler).Methods("GET")
+	router.HandleFunc("/users/{uid:[0-9]+}", GetUserHandler).Methods("GET")
 	router.HandleFunc("/users", CreateUserHandler).Methods("POST")
-	router.HandleFunc("/users/{uid}", UpdateUserHandler).Methods("PUT")
-	router.HandleFunc("/users/{uid}", DeleteUserHandler).Methods("DELETE")
+	router.HandleFunc("/users/{uid:[0-9]+}", UpdateUserHandler).Methods("PUT")
+	router.HandleFunc("/users/{uid:[0-9]+}", DeleteUserHandler).Methods("DELETE")
 
 	router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("GET")
-	router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("GET")
+	router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("GET")
 	router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("POST")
-	router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("PUT")
-	router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("DELETE")
+	router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("PUT")
+	router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("DELETE")
 
 	n := negroni.Classic()
 	n.UseHandler(router)

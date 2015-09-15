@@ -283,25 +283,28 @@ When we want to retrieve an specific passport, we don't need to prefix the route
 
 Once you have the API design sorted, it's just a matter of creating the code that gets called when a specific route is hit. We implement those with Handlers.
 
-```golang
-  router.HandleFunc("/users", UsersHandler).Methods("GET")
-  router.HandleFunc("/users/{uid}", UsersHandler).Methods("GET")
-  router.HandleFunc("/users", UsersHandler).Methods("POST")
-  router.HandleFunc("/users/{uid}", UsersHandler).Methods("PUT")
-  router.HandleFunc("/users/{uid}", UsersHandler).Methods("DELETE")
+```
+  router.HandleFunc("/users", ListUsersHandler).Methods("GET")
+  router.HandleFunc("/users/{uid:[0-9]+}", GetUserHandler).Methods("GET")
+  router.HandleFunc("/users", CreateUserHandler).Methods("POST")
+  router.HandleFunc("/users/{uid:[0-9]+}", UpdateUserHandler).Methods("PUT")
+  router.HandleFunc("/users/{uid:[0-9]+}", DeleteUserHandler).Methods("DELETE")
 
   router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("GET")
-  router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("GET")
+  router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("GET")
   router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("POST")
-  router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("PUT")
-  router.HandleFunc("/passports/{pid}", PassportsHandler).Methods("DELETE")
+  router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("PUT")
+  router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("DELETE")
 ```
 
-Last but not least, we want to handle two special cases:
+In order to make our code more robust, I've added pattern matching in the routes.  This `[0-9]+` pattern says that we only accept digits from 0 to 9 and we can have one or more digits. Everything else will most likely trigger an HTTP 404 Not Found status code being returned to the client.
 
-```golang
+Last but not least, we want to handle some special cases:
+
+```
   router.HandleFunc("/", HomeHandler)
   router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
+  router.HandleFunc("/metrics", MetricsHandler).Methods("GET")
 ```
 
 When someone hits our API, without a specified route, then we can handle that with either a standard 404 (not found), or any other type of feedback.
@@ -315,6 +318,8 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
 ```
 
 This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
+
+TO DO add Metrics info
 
 Let's have a look at interacting with our data. Returning a list of users is quite easy, it's just showing the UserList:
 

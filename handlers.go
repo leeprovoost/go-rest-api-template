@@ -14,7 +14,7 @@ func HomeHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
-	Render.Text(w, http.StatusNotImplemented, "")
+	Render.Text(w, http.StatusNoContent, "")
 }
 
 func MetricsHandler(w http.ResponseWriter, req *http.Request) {
