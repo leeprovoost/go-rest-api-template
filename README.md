@@ -45,18 +45,6 @@ I am a big fan of SublimeText that I've been using extensively for Node.js devel
 
 I have tried Atom with the [go-plus](https://github.com/joefitzgerald/go-plus) in the past, but was never good enough to push Sublime Text aside for me. I have to admit that I haven't tried it in a while and Atom is maturing rapidly so please feel free to give it a go.
 
-### Manage dependencies
-
-In order to manage package dependencies, we're using the [Godep](https://github.com/tools/godep) package tool.
-
-Install Godep on your system:
-
-```
-go get github.com/tools/godep
-```
-
-When you add new packages, just use the standard `go get package` first, edit your code, then run the `godep save`. It will add an extra entry to `Godeps/Godeps.json`.
-
 ### Live Code Reloading
 
 TO DO
