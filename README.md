@@ -98,10 +98,11 @@ Mock database with operations:
 database.go
 ```
 
-Tests:
+Tests and test data:
 
 ```
 database_test.go
+fixtures.json
 ```
 
 Third-party packages:
