@@ -10,11 +10,15 @@ import (
 )
 
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
-	Render.Text(w, http.StatusNoContent, "")
+	Render.Text(w, http.StatusNotImplemented, "")
 }
 
 func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
-	Render.Text(w, http.StatusNoContent, "")
+	Render.Text(w, http.StatusNotImplemented, "")
+}
+
+func MetricsHandler(w http.ResponseWriter, req *http.Request) {
+	Render.Text(w, http.StatusNotImplemented, "")
 }
 
 func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
@@ -68,7 +72,7 @@ func DeleteUserHandler(w http.ResponseWriter, req *http.Request) {
 	ok, err := db.Delete(uid)
 	if ok {
 		// TO DO return empty body?
-		Render.JSON(w, http.StatusOK, nil)
+		Render.Text(w, http.StatusNoContent, "")
 	} else {
 		Render.JSON(w, http.StatusNotFound, err)
 	}

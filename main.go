@@ -38,6 +38,7 @@ func main() {
 
 	router.HandleFunc("/", HomeHandler)
 	router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
+	router.HandleFunc("/metrics", MetricsHandler).Methods("GET")
 
 	router.HandleFunc("/users", ListUsersHandler).Methods("GET")
 	router.HandleFunc("/users/{uid}", GetUserHandler).Methods("GET")
