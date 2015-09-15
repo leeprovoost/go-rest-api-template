@@ -144,7 +144,7 @@ You may not want to expose your data to the consumer of your web service in this
 
 Note the use of `time.Time` for the dates instead of using a standard `string` type. We'll discuss the pain of marshalling and unmarshalling of JSON dates a bit later.
 
-### Operations on our (mock) data
+### Operations on our (mock) database
 
 I wanted to create a template REST API that didn't depend on a database, so started with a simple in-memory database that we can work with. The good thing is that this will be the start of a so-called data access layer that abstracts away the underlying data store. We can achieve that by starting with creating an interface (which is a good practice in Go anyway):
 
@@ -244,9 +244,23 @@ We are first going to load the data from a `fixtures.json` file:
 
 What we have here is a map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be respresented as: `map[string][]User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
 
-The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`?
+The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`? The first is discouraged altogether because that's an European way of writing dates and will cause confusion around the world. Not this particular example, but imagine you have 3-4-2015. Is it third of April or fourth of March? Unfortunately there isn't an "enforced standard" for dates in JSON, so I've tried to use one that is commonly used and also understood by Go's `json.Marshaler` and `json.Unmarshaler` to avoid that we have to write our own custom marshaler/unarshaler.
 
-TODO: Add info on marshalling time
+If you have a look at Go's `time/format` [code](http://golang.org/src/time/format.go) then you'll see on line 54:
+
+```
+54    RFC3339     = "2006-01-02T15:04:05Z07:00"
+```
+
+That's the one we need. It has the following format:
+
+```
+year-month-day
+T (for time)
+hour:minutes:seconds
+Z (for time zone)
+offset from UTC
+```
 
 We now need to implement the various methods from our DataStore interface.
 
@@ -317,14 +331,14 @@ So, this will return the following to the client:
 {
     "users": [
         {
-            "dateOfBirth": "01-01-1992",
+            "dateOfBirth": "1992-01-01T00:00:00Z",
             "firstName": "Jane",
             "id": 1,
             "lastName": "Doe",
             "locationOfBirth": "Milton Keynes"
         },
         {
-            "dateOfBirth": "31-12-1985",
+            "dateOfBirth": "1985-12-31T00:00:00Z",
             "firstName": "John",
             "id": 0,
             "lastName": "Doe",
@@ -340,14 +354,14 @@ It may surprise you that we are returning a JSON object that holds an array with
 {
     [
         {
-            "dateOfBirth": "01-01-1992",
+            "dateOfBirth": "1992-01-01T00:00:00Z",
             "firstName": "Jane",
             "id": 1,
             "lastName": "Doe",
             "locationOfBirth": "Milton Keynes"
         },
         {
-            "dateOfBirth": "31-12-1985",
+            "dateOfBirth": "1985-12-31T00:00:00Z",
             "firstName": "John",
             "id": 0,
             "lastName": "Doe",
@@ -367,14 +381,14 @@ Example:
     "limit":  25,
     "users":  [
         {
-            "dateOfBirth": "01-01-1992",
+            "dateOfBirth": "1992-01-01T00:00:00Z",
             "firstName": "Jane",
             "id": 1,
             "lastName": "Doe",
             "locationOfBirth": "Milton Keynes"
         },
         {
-            "dateOfBirth": "31-12-1985",
+            "dateOfBirth": "1985-12-31T00:00:00Z",
             "firstName": "John",
             "id": 0,
             "lastName": "Doe",
@@ -405,7 +419,7 @@ Example:
 
 ```
 {
-    "dateOfBirth": "01-01-1992",
+    "dateOfBirth": "1992-01-01T00:00:00Z",
     "firstName": "Jane",
     "id": 1,
     "lastName": "Doe",
@@ -434,14 +448,14 @@ That should result in the following result:
 {
     "users": [
         {
-            "dateOfBirth": "01-01-1992",
+            "dateOfBirth": "1992-01-01T00:00:00Z",
             "firstName": "Jane",
             "id": 1,
             "lastName": "Doe",
             "locationOfBirth": "Milton Keynes"
         },
         {
-            "dateOfBirth": "31-12-1985",
+            "dateOfBirth": "1985-12-31T00:00:00Z",
             "firstName": "John",
             "id": 0,
             "lastName": "Doe",
@@ -454,7 +468,7 @@ That should result in the following result:
 The `| python -mjson.tool` at the end is for pretty printing (formatting). It essentially tells to pipe the output of the curl command to the SJON formatting tool. If we only typed `curl -X GET http://localhost:3009/users` then we'd have something like this:
 
 ```
-{"users":[{"id":0,"firstName":"John","lastName":"Doe","dateOfBirth":"31-12-1985","locationOfBirth":"London"},{"id":1,"firstName":"Jane","lastName":"Doe","dateOfBirth":"01-01-1992","locationOfBirth":"Milton Keynes"}]}
+{"users":[{"id":0,"firstName":"John","lastName":"Doe","dateOfBirth":"1985-12-31T00:00:00Z","locationOfBirth":"London"},{"id":1,"firstName":"Jane","lastName":"Doe","dateOfBirth":"1992-01-01T00:00:00Z","locationOfBirth":"Milton Keynes"}]}
 ```
 
 So not that easy to read as the earlier nicely formatted example.
@@ -472,7 +486,7 @@ Results in:
                                  Dload  Upload   Total   Spent    Left  Speed
 100   104  100   104    0     0   6625      0 --:--:-- --:--:-- --:--:--  6933
 {
-    "dateOfBirth": "01-01-1992",
+    "dateOfBirth": "1992-01-01T00:00:00Z",
     "firstName": "Jane",
     "id": 1,
     "lastName": "Doe",
@@ -511,8 +525,8 @@ First, we're going to create a common initialiser, this code sets up our databas
 ```
 func TestMain(m *testing.M) {
   list := make(map[int]User)
-  list[0] = User{0, "John", "Doe", "31-12-1985", "London"}
-  list[1] = User{1, "Jane", "Doe", "01-01-1992", "Milton Keynes"}
+  list[0] = User{0, "John", "Doe", "1985-12-31T00:00:00Z", "London"}
+  list[1] = User{1, "Jane", "Doe", "1992-01-01T00:00:00Z", "Milton Keynes"}
   db = &Database{list, 1}
   retCode := m.Run()
   os.Exit(retCode)
