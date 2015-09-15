@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -10,6 +10,7 @@ import (
 )
 
 func HomeHandler(w http.ResponseWriter, req *http.Request) {
+	log.Println("Home - Not implemented yet")
 	Render.Text(w, http.StatusNotImplemented, "")
 }
 
@@ -18,6 +19,7 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func MetricsHandler(w http.ResponseWriter, req *http.Request) {
+	log.Println("Metrics - Not implemented yet")
 	Render.Text(w, http.StatusNotImplemented, "")
 }
 
@@ -79,6 +81,6 @@ func DeleteUserHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func PassportsHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "Handling Passports - Not implemented yet")
+	log.Println("Handling Passports - Not implemented yet")
 	Render.Text(w, http.StatusNotImplemented, "")
 }

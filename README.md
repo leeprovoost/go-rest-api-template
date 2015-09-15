@@ -206,7 +206,7 @@ func init() {
   var jsonObject map[string][]User
   file, err := ioutil.ReadFile("./fixtures.json")
   if err != nil {
-    fmt.Printf("File error: %v\n", err)
+    log.Fatalf("File error: %v\n", err)
   }
   err = json.Unmarshal(file, &jsonObject)
   if err != nil {
@@ -243,7 +243,16 @@ We are first going to load the data from a `fixtures.json` file:
 }
 ```
 
-What we have here is a map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be respresented as: `map[string][]User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
+When we can't load the file, we will stop the bootstrapping of the application. This is taken care of by Go's log handler, which fires off a fatal error:
+
+```
+  file, err := ioutil.ReadFile("./fixtures.json")
+  if err != nil {
+    log.Fatalf("File error: %v\n", err)
+  }
+```
+
+The `fixtures.json` file contains a JSON representation of a Go map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be respresented as: `map[string][]User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
 
 The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`? The first is discouraged altogether because that's an European way of writing dates and will cause confusion around the world. Not this particular example, but imagine you have 3-4-2015. Is it third of April or fourth of March? Unfortunately there isn't an "enforced standard" for dates in JSON, so I've tried to use one that is commonly used and also understood by Go's `json.Marshaler` and `json.Unmarshaler` to avoid that we have to write our own custom marshaler/unarshaler.
 

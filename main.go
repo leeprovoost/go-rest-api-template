@@ -19,7 +19,7 @@ func init() {
 	var jsonObject map[string][]User
 	file, err := ioutil.ReadFile("./fixtures.json")
 	if err != nil {
-		fmt.Printf("File error: %v\n", err)
+		log.Fatalf("File error: %v\n", err)
 	}
 	err = json.Unmarshal(file, &jsonObject)
 	if err != nil {
