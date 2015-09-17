@@ -638,6 +638,40 @@ TO DO Testing the HTTP service
 
 TO DO
 
+## Metrics
+
+Something that is often overlooked is ensuring that you have a deep insight in your application metrics. I admit that in the past I was mainly looking at server metrics like memory consumption, CPU usage, swap, etc. Once I started building micro-services using Coda Hale's excelent Java [Dropwizard framework](http://www.dropwizard.io/), I got to know his [metrics](https://dropwizard.github.io/metrics/3.1.0/) library that gave me insight in the application and JVM metrics as an engineer.
+
+As a start, you could look into two metrics: average response times for either your whole APU (or for a specific route) and the various HTTP status codes being returned. The important thing here is that you hook this up with a monitoring tool (e.g. Sensu) so that the tool periodically pings your metrics endpoint (in this example: http://localhost:3009/metrics) and look at trends. We're less interested in an individual snapshot. We will always have the occasional HTTP 404 being returend. However, if after a deployment you start seeing a spike in HTTP 404 codes being returned, then that should give you an indication that something might be wrong.
+
+I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) package but admit that I haven't used it in anger in a production enviornment.
+
+TODO add code snippet and potentially update the routing code
+
+```
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   392  100   392    0     0  27724      0 --:--:-- --:--:-- --:--:-- 28000
+{
+    "average_response_time": "93.247\u00b5s",
+    "average_response_time_sec": 9.324700000000001e-05,
+    "count": 0,
+    "pid": 71093,
+    "status_code_count": {},
+    "time": "2015-09-16 08:27:26.958487627 +0100 BST",
+    "total_count": 15,
+    "total_response_time": "1.398705ms",
+    "total_response_time_sec": 0.001398705,
+    "total_status_code_count": {
+        "200": 14,
+        "404": 1
+    },
+    "unixtime": 1442388446,
+    "uptime": "3m53.321206056s",
+    "uptime_sec": 233.321206056
+}
+```
+
 ## Useful references
 
 * [Structs and JSON formatting](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character)
@@ -650,3 +684,4 @@ TO DO
 * [Great overview of HTTP response codes](http://stackoverflow.com/a/2342631)
 * [Design beautiful REST + JSON APIs](http://www.slideshare.net/stormpath/rest-jsonapis)
 * Go and datetime parsing/formatting: [ISO 8601, the International Standard for the representation of dates and times](http://www.w3.org/TR/NOTE-datetime), [Go by Example: Time Formatting / Parsing](https://gobyexample.com/time-formatting-parsing), [JSON datetime formatting](http://stackoverflow.com/a/15952652), [src/time/format.go](http://golang.org/src/time/format.go)
+* [How to pass a parameter to a Http handler function](https://groups.google.com/forum/#!topic/golang-nuts/SGn1gd290zI)

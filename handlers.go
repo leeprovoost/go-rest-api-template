@@ -18,9 +18,11 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
 	Render.Text(w, http.StatusNoContent, "")
 }
 
-func MetricsHandler(w http.ResponseWriter, req *http.Request) {
-	log.Println("Metrics - Not implemented yet")
-	Render.Text(w, http.StatusNotImplemented, "")
+func MetricsHandler(w http.ResponseWriter, req *http.Request, env Env) {
+	w.Header().Set("Content-Type", "application/json")
+	stats := env.Metrics.Data()
+	b, _ := json.Marshal(stats)
+	w.Write(b)
 }
 
 func ListUsersHandler(w http.ResponseWriter, req *http.Request) {

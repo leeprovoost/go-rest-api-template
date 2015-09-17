@@ -6,11 +6,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
+	"github.com/thoas/stats"
 	"github.com/unrolled/render"
 )
+
+type Env struct {
+	Metrics *stats.Stats
+}
 
 var Render *render.Render
 
@@ -33,12 +39,18 @@ func init() {
 }
 
 func main() {
+	env := Env{
+		Metrics: stats.New(),
+	}
+
 	Render = render.New()
 	router := mux.NewRouter()
 
 	router.HandleFunc("/", HomeHandler)
 	router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
-	router.HandleFunc("/metrics", MetricsHandler).Methods("GET")
+	router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		MetricsHandler(w, r, env)
+	}).Methods("GET")
 
 	router.HandleFunc("/users", ListUsersHandler).Methods("GET")
 	router.HandleFunc("/users/{uid:[0-9]+}", GetUserHandler).Methods("GET")
@@ -53,6 +65,7 @@ func main() {
 	router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("DELETE")
 
 	n := negroni.Classic()
+	n.Use(env.Metrics)
 	n.UseHandler(router)
 	fmt.Println("Starting server on :3009")
 	n.Run(":3009")
