@@ -281,27 +281,92 @@ When we want to retrieve an specific passport, we don't need to prefix the route
 Once you have the API design sorted, it's just a matter of creating the code that gets called when a specific route is hit. We implement those with Handlers.
 
 ```
-  router.HandleFunc("/users", ListUsersHandler).Methods("GET")
-  router.HandleFunc("/users/{uid:[0-9]+}", GetUserHandler).Methods("GET")
-  router.HandleFunc("/users", CreateUserHandler).Methods("POST")
-  router.HandleFunc("/users/{uid:[0-9]+}", UpdateUserHandler).Methods("PUT")
-  router.HandleFunc("/users/{uid:[0-9]+}", DeleteUserHandler).Methods("DELETE")
+  router.HandleFunc("/users", makeHandler(env, ListUsersHandler)).Methods("GET")
+  router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, GetUserHandler)).Methods("GET")
+  router.HandleFunc("/users", makeHandler(env, CreateUserHandler)).Methods("POST")
+  router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, UpdateUserHandler)).Methods("PUT")
+  router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, DeleteUserHandler)).Methods("DELETE")
 
-  router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("GET")
-  router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("GET")
-  router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("POST")
-  router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("PUT")
-  router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("DELETE")
+  router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("GET")
+  router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("GET")
+  router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("POST")
+  router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("PUT")
+  router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("DELETE")
 ```
 
 In order to make our code more robust, I've added pattern matching in the routes.  This `[0-9]+` pattern says that we only accept digits from 0 to 9 and we can have one or more digits. Everything else will most likely trigger an HTTP 404 Not Found status code being returned to the client.
 
-Last but not least, we want to handle some special cases:
+Most Go code that show HandleFunc examples, will show something slightly different, something more like this:
 
 ```
-  router.HandleFunc("/", HomeHandler)
-  router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
-  router.HandleFunc("/metrics", MetricsHandler).Methods("GET")
+  router.HandleFunc("/users", ListUsersHandler).Methods("GET")
+```
+
+So Go's HandleFunc function takes two arguments, one string that defines the route and a second argument of the type `http.HandleFunc(w http.ResponseWriter, r *http.Request)`. This works very well, but doesn't allow you to pass any extra data to your handlers. So for instance when you want to use the `unrolled/render` package, then you'd have to define in your `main.go` file a global variable like this: `var Render  *render.Render`, then initialise that in your `func main()` so that your handlers can access this global variable later on. Using global variables in Go is not a good practice (there are exceptions like certain database drivers, but that's a different discussion).
+
+So our initial handler function for returning a list of users was:
+
+```
+func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
+  Render.JSON(w, http.StatusOK, db.List())
+}
+```
+
+Where the `Render` variable is a global variable. We'd prefer to pass the Render variable to that function so will rewrite it to:
+
+```
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, render Render) {
+  render.JSON(w, http.StatusOK, db.List())
+}
+```
+
+Perfect. Or, is it? What if we want to pass more variables to the handler function? Like Metrics? Or some environment variables? We'd continuously have to change ALL our handlers and the type signature will become quite long and hard to maintain. An alternative is to create a server or an environment struct and use that as a container for our variables we want to pass around the system.
+
+In our `main.go` we'd add:
+
+```
+type Env struct {
+  Metrics *stats.Stats
+  Render  *render.Render
+}
+```
+
+And in our `func main()` function we initialise that struct:
+
+```
+func main() {
+  env := Env{
+    Metrics: stats.New(),
+    Render:  render.New(),
+  }
+  // ...
+}
+```
+
+Our handler looks now like this:
+
+```
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, env Env) {
+  env.Render.JSON(w, http.StatusOK, db.List())
+}
+```
+
+The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, Env` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our environment struct and our handlers with the special type signature and converts it to unc(w http.ResponseWriter, r *http.Request):
+
+```
+func makeHandler(env Env, fn func(http.ResponseWriter, *http.Request, Env)) http.HandlerFunc {
+  return func(w http.ResponseWriter, r *http.Request) {
+    fn(w, r, env)
+  }
+}
+```
+
+When you look at the overview of the handlers in `main.go`, you will notice a couple of special routes:
+
+```
+  router.HandleFunc("/", makeHandler(env, HomeHandler))
+  router.HandleFunc("/healthcheck", makeHandler(env, HealthcheckHandler)).Methods("GET")
+  router.HandleFunc("/metrics", makeHandler(env, MetricsHandler)).Methods("GET")
 ```
 
 When someone hits our API, without a specified route, then we can handle that with either a standard 404 (not found), or any other type of feedback.
@@ -309,20 +374,20 @@ When someone hits our API, without a specified route, then we can handle that wi
 We also want to set up a health check that monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 204 OK when the serivce is up and running, including some extra stats. A 204 means "Hey, I got your request, all is fine and I have nothing else to say". It essentially tells your client that there is no body content.
 
 ```
-func HealthcheckHandler(w http.ResponseWriter, req *http.Request) {
-  Render.Text(w, http.StatusNoContent, "")
+func HealthcheckHandler(w http.ResponseWriter, req *http.Request, env Env) {
+  env.Render.Text(w, http.StatusNoContent, "")
 }
 ```
 
 This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
 
-TO DO add Metrics info
+We will skip the `/metrics` route for a second and keep that for the end of the article.
 
 Let's have a look at interacting with our data. Returning a list of users is quite easy, it's just showing the UserList:
 
 ```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
-  Render.JSON(w, http.StatusOK, db.List())
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, env Env) {
+  env.Render.JSON(w, http.StatusOK, db.List())
 }
 ```
 
@@ -404,14 +469,14 @@ Example:
 Another example is the retrieval of a specific object:
 
 ```
-func GetUserHandler(w http.ResponseWriter, req *http.Request) {
+func GetUserHandler(w http.ResponseWriter, req *http.Request, env Env) {
   vars := mux.Vars(req)
   uid, _ := strconv.Atoi(vars["uid"])
   user, err := db.Get(uid)
   if err == nil {
-    Render.JSON(w, http.StatusOK, user)
+    env.Render.JSON(w, http.StatusOK, user)
   } else {
-    Render.JSON(w, http.StatusNotFound, err)
+    env.Render.JSON(w, http.StatusNotFound, err)
   }
 }
 ```
@@ -638,7 +703,7 @@ TO DO Testing the HTTP service
 
 TO DO
 
-## Metrics
+### Metrics
 
 Something that is often overlooked is ensuring that you have a deep insight in your application metrics. I admit that in the past I was mainly looking at server metrics like memory consumption, CPU usage, swap, etc. Once I started building micro-services using Coda Hale's excelent Java [Dropwizard framework](http://www.dropwizard.io/), I got to know his [metrics](https://dropwizard.github.io/metrics/3.1.0/) library that gave me insight in the application and JVM metrics as an engineer.
 
