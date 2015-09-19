@@ -160,12 +160,12 @@ What this tells us is that it is expecting an integer as an argument (which will
 An example of how this could be used is the following:
 
 ```
-  user, err := db.Get(uid)
-  if err == nil {
-    Render.JSON(w, http.StatusOK, user)
-  } else {
-    Render.JSON(w, http.StatusNotFound, err)
-  }
+user, err := db.Get(uid)
+if err == nil {
+  Render.JSON(w, http.StatusOK, user)
+} else {
+  Render.JSON(w, http.StatusNotFound, err)
+}
 ```
 
 We check whether the error object is nil. If it is, then we return a HTTP 200 OK, if not then we return HTTP 404 NOT FOUND. Let's go into more detail when we talk about our API handlers.
@@ -234,10 +234,10 @@ We are first going to load the data from a `fixtures.json` file:
 When we can't load the file, we will stop the bootstrapping of the application. This is taken care of by Go's log handler, which fires off a fatal error:
 
 ```
-  file, err := ioutil.ReadFile("./fixtures.json")
-  if err != nil {
-    log.Fatalf("File error: %v\n", err)
-  }
+file, err := ioutil.ReadFile("./fixtures.json")
+if err != nil {
+  log.Fatalf("File error: %v\n", err)
+}
 ```
 
 The `fixtures.json` file contains a JSON representation of a Go map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be respresented as: `map[string][]User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
@@ -281,17 +281,17 @@ When we want to retrieve an specific passport, we don't need to prefix the route
 Once you have the API design sorted, it's just a matter of creating the code that gets called when a specific route is hit. We implement those with Handlers.
 
 ```
-  router.HandleFunc("/users", makeHandler(env, ListUsersHandler)).Methods("GET")
-  router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, GetUserHandler)).Methods("GET")
-  router.HandleFunc("/users", makeHandler(env, CreateUserHandler)).Methods("POST")
-  router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, UpdateUserHandler)).Methods("PUT")
-  router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, DeleteUserHandler)).Methods("DELETE")
+router.HandleFunc("/users", makeHandler(env, ListUsersHandler)).Methods("GET")
+router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, GetUserHandler)).Methods("GET")
+router.HandleFunc("/users", makeHandler(env, CreateUserHandler)).Methods("POST")
+router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, UpdateUserHandler)).Methods("PUT")
+router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, DeleteUserHandler)).Methods("DELETE")
 
-  router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("GET")
-  router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("GET")
-  router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("POST")
-  router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("PUT")
-  router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("DELETE")
+router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("GET")
+router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("GET")
+router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("POST")
+router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("PUT")
+router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("DELETE")
 ```
 
 In order to make our code more robust, I've added pattern matching in the routes.  This `[0-9]+` pattern says that we only accept digits from 0 to 9 and we can have one or more digits. Everything else will most likely trigger an HTTP 404 Not Found status code being returned to the client.
@@ -299,7 +299,7 @@ In order to make our code more robust, I've added pattern matching in the routes
 Most Go code that show HandleFunc examples, will show something slightly different, something more like this:
 
 ```
-  router.HandleFunc("/users", ListUsersHandler).Methods("GET")
+router.HandleFunc("/users", ListUsersHandler).Methods("GET")
 ```
 
 So Go's HandleFunc function takes two arguments, one string that defines the route and a second argument of the type `http.HandleFunc(w http.ResponseWriter, r *http.Request)`. This works very well, but doesn't allow you to pass any extra data to your handlers. So for instance when you want to use the `unrolled/render` package, then you'd have to define in your `main.go` file a global variable like this: `var Render  *render.Render`, then initialise that in your `func main()` so that your handlers can access this global variable later on. Using global variables in Go is not a good practice (there are exceptions like certain database drivers, but that's a different discussion).
@@ -364,9 +364,9 @@ func makeHandler(env Env, fn func(http.ResponseWriter, *http.Request, Env)) http
 When you look at the overview of the handlers in `main.go`, you will notice a couple of special routes:
 
 ```
-  router.HandleFunc("/", makeHandler(env, HomeHandler))
-  router.HandleFunc("/healthcheck", makeHandler(env, HealthcheckHandler)).Methods("GET")
-  router.HandleFunc("/metrics", makeHandler(env, MetricsHandler)).Methods("GET")
+router.HandleFunc("/", makeHandler(env, HomeHandler))
+router.HandleFunc("/healthcheck", makeHandler(env, HealthcheckHandler)).Methods("GET")
+router.HandleFunc("/metrics", makeHandler(env, MetricsHandler)).Methods("GET")
 ```
 
 When someone hits our API, without a specified route, then we can handle that with either a standard 404 (not found), or any other type of feedback.
