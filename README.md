@@ -649,6 +649,31 @@ I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) pa
 TODO add code snippet and potentially update the routing code
 
 ```
+type Env struct {
+  Metrics *stats.Stats
+  Render  *render.Render
+}
+```
+
+```
+func main() {
+  env := Env{
+    Metrics: stats.New(),
+    Render:  render.New(),
+  }
+  router := mux.NewRouter()
+  // ...
+}
+```
+
+```
+func MetricsHandler(w http.ResponseWriter, req *http.Request, env Env) {
+  stats := env.Metrics.Data()
+  env.Render.JSON(w, http.StatusOK, stats)
+}
+```
+
+```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100   392  100   392    0     0  27724      0 --:--:-- --:--:-- --:--:-- 28000
@@ -685,3 +710,6 @@ TODO add code snippet and potentially update the routing code
 * [Design beautiful REST + JSON APIs](http://www.slideshare.net/stormpath/rest-jsonapis)
 * Go and datetime parsing/formatting: [ISO 8601, the International Standard for the representation of dates and times](http://www.w3.org/TR/NOTE-datetime), [Go by Example: Time Formatting / Parsing](https://gobyexample.com/time-formatting-parsing), [JSON datetime formatting](http://stackoverflow.com/a/15952652), [src/time/format.go](http://golang.org/src/time/format.go)
 * [How to pass a parameter to a Http handler function](https://groups.google.com/forum/#!topic/golang-nuts/SGn1gd290zI)
+* [Structuring applications in Go](https://medium.com/@benbjohnson/structuring-applications-in-go-3b04be4ff091)
+* [HTTP Closures gist](https://gist.github.com/tsenart/5fc18c659814c078378d)
+* [Introducing Function Literals and Closures](https://golang.org/doc/articles/wiki/)

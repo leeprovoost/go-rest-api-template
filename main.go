@@ -1,4 +1,3 @@
-// Example REST API for managing passports
 package main
 
 import (
@@ -6,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
@@ -16,9 +14,8 @@ import (
 
 type Env struct {
 	Metrics *stats.Stats
+	Render  *render.Render
 }
-
-var Render *render.Render
 
 func init() {
 	// read JSON fixtures file
@@ -41,28 +38,25 @@ func init() {
 func main() {
 	env := Env{
 		Metrics: stats.New(),
+		Render:  render.New(),
 	}
-
-	Render = render.New()
 	router := mux.NewRouter()
 
-	router.HandleFunc("/", HomeHandler)
-	router.HandleFunc("/healthcheck", HealthcheckHandler).Methods("GET")
-	router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		MetricsHandler(w, r, env)
-	}).Methods("GET")
+	router.HandleFunc("/", makeHandler(env, HomeHandler))
+	router.HandleFunc("/healthcheck", makeHandler(env, HealthcheckHandler)).Methods("GET")
+	router.HandleFunc("/metrics", makeHandler(env, MetricsHandler)).Methods("GET")
 
-	router.HandleFunc("/users", ListUsersHandler).Methods("GET")
-	router.HandleFunc("/users/{uid:[0-9]+}", GetUserHandler).Methods("GET")
-	router.HandleFunc("/users", CreateUserHandler).Methods("POST")
-	router.HandleFunc("/users/{uid:[0-9]+}", UpdateUserHandler).Methods("PUT")
-	router.HandleFunc("/users/{uid:[0-9]+}", DeleteUserHandler).Methods("DELETE")
+	router.HandleFunc("/users", makeHandler(env, ListUsersHandler)).Methods("GET")
+	router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, GetUserHandler)).Methods("GET")
+	router.HandleFunc("/users", makeHandler(env, CreateUserHandler)).Methods("POST")
+	router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, UpdateUserHandler)).Methods("PUT")
+	router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, DeleteUserHandler)).Methods("DELETE")
 
-	router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("GET")
-	router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("GET")
-	router.HandleFunc("/users/{uid}/passports", PassportsHandler).Methods("POST")
-	router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("PUT")
-	router.HandleFunc("/passports/{pid:[0-9]+}", PassportsHandler).Methods("DELETE")
+	router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("GET")
+	router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("GET")
+	router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("POST")
+	router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("PUT")
+	router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("DELETE")
 
 	n := negroni.Classic()
 	n.Use(env.Metrics)
