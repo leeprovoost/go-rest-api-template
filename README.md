@@ -57,8 +57,6 @@ TO DO
 go build && ./go-rest-api-template
 ```
 
-## Code deep dive
-
 ### Code Structure
 
 Main server file (bootstrapping of http server and router):
@@ -104,6 +102,8 @@ TO DO talk about the layers of the applications
 ### main.go
 
 TO DO
+
+## Data
 
 ### Data model
 
@@ -186,6 +186,8 @@ We will now create a global database variable so that it's accessible across our
 var db *Database
 ```
 
+### Fixtures
+
 In order to make it a bit more useful, we will initialise it with some user objects. Luckily, we can make use of the `init` function that gets automatically called when you start the application. This init() function will be in our `main.go` file when you start up the server:
 
 ```
@@ -264,7 +266,9 @@ We now need to implement the various methods from our DataStore interface.
 
 TO DO document implemented methods
 
-### API routes and route handlers
+## Defining the API
+
+### API Routes
 
 Now that we have defined the data access layer, we need to translate that to a REST interface:
 
@@ -295,6 +299,8 @@ router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler))
 ```
 
 In order to make our code more robust, I've added pattern matching in the routes.  This `[0-9]+` pattern says that we only accept digits from 0 to 9 and we can have one or more digits. Everything else will most likely trigger an HTTP 404 Not Found status code being returned to the client.
+
+### API Handlers
 
 Most Go code that show HandleFunc examples, will show something slightly different, something more like this:
 
@@ -361,6 +367,8 @@ func makeHandler(env Env, fn func(http.ResponseWriter, *http.Request, Env)) http
 }
 ```
 
+### Special Routes
+
 When you look at the overview of the handlers in `main.go`, you will notice a couple of special routes:
 
 ```
@@ -382,6 +390,8 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request, env Env) {
 This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
 
 We will skip the `/metrics` route for a second and keep that for the end of the article.
+
+### Returning Data
 
 Let's have a look at interacting with our data. Returning a list of users is quite easy, it's just showing the UserList:
 
@@ -497,7 +507,9 @@ Example:
 
 We add the attributes of the user object to the root of the JSON response, rather than wrapping it up in an explicit JSON object. I can quite easily add extra data to the response, without breaking the existing data.
 
-### Testing your routes with curl commands
+## Testing
+
+### Manually testing your API routes with curl commands
 
 Let's start with some simple curl tests. Open your terminal and try the following curl commands.
 
@@ -580,7 +592,11 @@ Updating an existing user:
 TO DO
 ```
 
-### Testing
+### Automating the API tests
+
+TO DO
+
+### Testing the Database
 
 There are lots of opinions on testing, how much you should be testing, which layers of your applications, etc. When I'm working with micro services, I tend to focus on two types of tests to start with: testing the data access layer and testing the actual HTTP service.
 
@@ -697,13 +713,11 @@ coverage: 34.9% of statements
 ok    github.com/leeprovoost/go-rest-api-template 0.009s
 ```
 
-TO DO Testing the HTTP service
-
-### Environment Variables
+## Environment Variables
 
 TO DO
 
-### Metrics
+## Metrics
 
 Something that is often overlooked is ensuring that you have a deep insight in your application metrics. I admit that in the past I was mainly looking at server metrics like memory consumption, CPU usage, swap, etc. Once I started building micro-services using Coda Hale's excelent Java [Dropwizard framework](http://www.dropwizard.io/), I got to know his [metrics](https://dropwizard.github.io/metrics/3.1.0/) library that gave me insight in the application and JVM metrics as an engineer.
 
@@ -761,6 +775,10 @@ func MetricsHandler(w http.ResponseWriter, req *http.Request, env Env) {
     "uptime_sec": 233.321206056
 }
 ```
+
+## Deploying your Application
+
+TO DO
 
 ## Useful references
 
