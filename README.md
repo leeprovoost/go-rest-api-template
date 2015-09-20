@@ -725,7 +725,7 @@ As a start, you could look into two metrics: average response times for either y
 
 I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) package but admit that I haven't used it in anger in a production enviornment.
 
-TODO add code snippet and potentially update the routing code
+We will first add the stats as a variable, named Metrics, to our environment struct:
 
 ```
 type Env struct {
@@ -733,6 +733,8 @@ type Env struct {
   Render  *render.Render
 }
 ```
+
+Then initialise the variable in our main function (in `main.go`):
 
 ```
 func main() {
@@ -745,12 +747,22 @@ func main() {
 }
 ```
 
+The actual handler is pretty simple. In `handlers.go`, we add a handler called `MetricsHandler` and that just gets the data from our environment, renders it into a JSON format and returns an HTTP 200 OK status:
+
 ```
 func MetricsHandler(w http.ResponseWriter, req *http.Request, env Env) {
   stats := env.Metrics.Data()
   env.Render.JSON(w, http.StatusOK, stats)
 }
 ```
+
+If you curl the Metrics endpoint:
+
+```
+curl -X GET http://localhost:3009/metrics | python -mjson.tool
+```
+
+Then you should receive the following response:
 
 ```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
@@ -774,6 +786,15 @@ func MetricsHandler(w http.ResponseWriter, req *http.Request, env Env) {
     "uptime": "3m53.321206056s",
     "uptime_sec": 233.321206056
 }
+```
+
+You can start monitoring the response codes for instance. Let's say you get all of a sudden a spike in HTTP 404 messages, that might point to a failed deployment or a failing back-end service:
+
+```
+"total_status_code_count": {
+    "200": 14,
+    "404": 1
+},
 ```
 
 ## Deploying your Application
