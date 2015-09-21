@@ -91,12 +91,6 @@ database_test.go
 fixtures.json
 ```
 
-Third-party packages:
-
-```
-/Godeps
-```
-
 TO DO talk about the layers of the applications
 
 ### main.go
@@ -798,6 +792,10 @@ You can start monitoring the response codes for instance. Let's say you get all 
 ```
 
 ## Deploying your Application
+
+TO DO
+
+## How to use this for your own project?
 
 TO DO
 
