@@ -3,9 +3,9 @@ package main
 import "errors"
 
 type DataStore interface {
-	List() map[string]User
+	List() (map[string]User, error)
 	Get(i int) (User, error)
-	Add(u User) User
+	Add(u User) (User, error)
 	Update(u User) (User, error)
 	Delete(i int) (bool, error)
 }
@@ -18,14 +18,14 @@ type Database struct {
 var db *Database
 
 // List returns a list of JSON documents
-func (db *Database) List() map[string][]User {
+func (db *Database) List() (map[string][]User, error) {
 	var list []User = make([]User, 0)
 	for _, v := range db.UserList {
 		list = append(list, v)
 	}
 	responseObject := make(map[string][]User)
 	responseObject["users"] = list
-	return responseObject
+	return responseObject, nil
 }
 
 // Retrieve a single JSON document
@@ -39,7 +39,7 @@ func (db *Database) Get(i int) (User, error) {
 }
 
 // Add a User JSON document, returns the JSON document with the generated id
-func (db *Database) Add(u User) User {
+func (db *Database) Add(u User) (User, error) {
 	db.MaxUserId = db.MaxUserId + 1
 	newUser := User{
 		Id:              db.MaxUserId,
@@ -49,7 +49,7 @@ func (db *Database) Add(u User) User {
 		LocationOfBirth: u.LocationOfBirth,
 	}
 	db.UserList[db.MaxUserId] = newUser
-	return newUser
+	return newUser, nil
 }
 
 // Update an existing user

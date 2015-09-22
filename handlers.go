@@ -36,7 +36,8 @@ func MetricsHandler(w http.ResponseWriter, req *http.Request, env Env) {
 }
 
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, env Env) {
-	env.Render.JSON(w, http.StatusOK, db.List())
+	list, _ := db.List()
+	env.Render.JSON(w, http.StatusOK, list)
 }
 
 func GetUserHandler(w http.ResponseWriter, req *http.Request, env Env) {
@@ -58,7 +59,7 @@ func CreateUserHandler(w http.ResponseWriter, req *http.Request, env Env) {
 		env.Render.JSON(w, http.StatusBadRequest, err)
 	} else {
 		user := User{-1, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
-		user = db.Add(user)
+		user, _ = db.Add(user)
 		env.Render.JSON(w, http.StatusCreated, user)
 	}
 }

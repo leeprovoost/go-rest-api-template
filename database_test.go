@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestList(t *testing.T) {
-	list := db.List()
+	list, _ := db.List()
 	count := len(list["users"])
 	assert.Equal(t, 2, count, "There should be 2 items in the list.")
 }
@@ -50,11 +50,11 @@ func TestAdd(t *testing.T) {
 		DateOfBirth:     dt,
 		LocationOfBirth: "Cambridge",
 	}
-	u = db.Add(u)
+	u, _ = db.Add(u)
 	// we should now have a user object with a database Id
 	assert.Equal(t, 2, u.Id, "Expected database Id should be 2.")
 	// we should now have 3 items in the list
-	list := db.List()
+	list, _ := db.List()
 	count := len(list["users"])
 	assert.Equal(t, 3, count, "There should be 3 items in the list.")
 }
