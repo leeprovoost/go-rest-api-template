@@ -193,6 +193,7 @@ func init() {
     MaxUserId: 1,
   }
 }
+```
 
 This creates a map of User objects with an integer key, creates two items and then creates the Database object with the list and sets the new user ID to 1.
 
