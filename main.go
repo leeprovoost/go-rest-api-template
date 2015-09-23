@@ -32,7 +32,10 @@ func init() {
 	list := make(map[int]User)
 	list[0] = jsonObject["users"][0]
 	list[1] = jsonObject["users"][1]
-	db = &Database{list, 1}
+	db = &Database{
+		UserList:  list,
+		MaxUserId: 1,
+	}
 }
 
 func main() {
