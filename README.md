@@ -368,7 +368,7 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request, env Env) {
 }
 ```
 
-The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, Env` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our environment struct and our handlers with the special type signature and converts it to unc(w http.ResponseWriter, r *http.Request):
+The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, Env` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our environment struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
 
 ```
 func makeHandler(env Env, fn func(http.ResponseWriter, *http.Request, Env)) http.HandlerFunc {
@@ -832,3 +832,4 @@ TO DO
 * [Structuring applications in Go](https://medium.com/@benbjohnson/structuring-applications-in-go-3b04be4ff091)
 * [HTTP Closures gist](https://gist.github.com/tsenart/5fc18c659814c078378d)
 * [Introducing Function Literals and Closures](https://golang.org/doc/articles/wiki/)
+* [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)

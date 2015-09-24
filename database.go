@@ -12,7 +12,7 @@ type DataStore interface {
 
 type Database struct {
 	UserList  map[int]User
-	MaxUserId int
+	MaxUserID int
 }
 
 var db *Database
@@ -28,27 +28,26 @@ func (db *Database) List() (map[string][]User, error) {
 	return responseObject, nil
 }
 
-// Retrieve a single JSON document
+// Get a single JSON document
 func (db *Database) Get(i int) (User, error) {
 	user, ok := db.UserList[i]
-	if ok {
-		return user, nil
-	} else {
-		return user, errors.New("User does not exist")
+	if !ok {
+		return user, errors.New("user does not exist")
 	}
+	return user, nil
 }
 
 // Add a User JSON document, returns the JSON document with the generated id
 func (db *Database) Add(u User) (User, error) {
-	db.MaxUserId = db.MaxUserId + 1
+	db.MaxUserID = db.MaxUserID + 1
 	newUser := User{
-		Id:              db.MaxUserId,
+		Id:              db.MaxUserID,
 		FirstName:       u.FirstName,
 		LastName:        u.LastName,
 		DateOfBirth:     u.DateOfBirth,
 		LocationOfBirth: u.LocationOfBirth,
 	}
-	db.UserList[db.MaxUserId] = newUser
+	db.UserList[db.MaxUserID] = newUser
 	return newUser, nil
 }
 
@@ -56,21 +55,19 @@ func (db *Database) Add(u User) (User, error) {
 func (db *Database) Update(u User) (User, error) {
 	id := u.Id
 	_, ok := db.UserList[id]
-	if ok {
-		db.UserList[id] = u
-		return db.UserList[id], nil
-	} else {
-		return u, errors.New("User does not exist")
+	if !ok {
+		return u, errors.New("user does not exist")
 	}
+	db.UserList[id] = u
+	return db.UserList[id], nil
 }
 
 // Delete a user
 func (db *Database) Delete(i int) (bool, error) {
 	_, ok := db.UserList[i]
-	if ok {
-		delete(db.UserList, i)
-		return true, nil
-	} else {
-		return false, errors.New("Could not delete this user")
+	if !ok {
+		return false, errors.New("could not delete this user")
 	}
+	delete(db.UserList, i)
+	return true, nil
 }

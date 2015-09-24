@@ -34,7 +34,7 @@ func init() {
 	list[1] = jsonObject["users"][1]
 	db = &Database{
 		UserList:  list,
-		MaxUserId: 1,
+		MaxUserID: 1,
 	}
 }
 
