@@ -9,12 +9,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// This allows us to pass an environment struct to our handlers, without resorting to global
+// makeHandler allows us to pass an environment struct to our handlers, without resorting to global
 // variables. It accepts an environment (Env) struct and our own handler function. It returns
 // a function of the type http.HandlerFunc so can be passed on to the HandlerFunc in main.go.
-// Check:
-// * Introducting Functiona Literals and Closures: https://golang.org/doc/articles/wiki/
-// * HTTP Closures gist: https://gist.github.com/tsenart/5fc18c659814c078378d
 func makeHandler(env Env, fn func(http.ResponseWriter, *http.Request, Env)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fn(w, r, env)
