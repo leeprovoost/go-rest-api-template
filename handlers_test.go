@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/thoas/stats"
 	"github.com/unrolled/render"
 )
@@ -27,11 +29,12 @@ func TestListUsersHandler(t *testing.T) {
 	req, _ := http.NewRequest("GET", "", nil)
 	w := httptest.NewRecorder()
 	makeHandler(env, ListUsersHandler).ServeHTTP(w, req)
-	fmt.Println(w)
-	if w.Code != http.StatusOK {
-		t.Errorf("Home page didn't return %v", http.StatusOK)
-	}
-	fmt.Println(w.Code)
-	fmt.Println(w.HeaderMap)
-	fmt.Println(w.Body)
+	assert.Equal(t, http.StatusOK, w.Code, "they should be equal")
+	assert.Equal(t, "application/json; charset=UTF-8", w.HeaderMap["Content-Type"][0], "they should be equal")
+	// parse json body
+	var f interface{}
+	json.Unmarshal(w.Body.Bytes(), &f)
+	m := f.(map[string]interface{})
+	//fmt.Println(m)
+	fmt.Println(m["users"])
 }
