@@ -818,18 +818,30 @@ TO DO
 
 ## Useful references
 
-* [Structs and JSON formatting](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character)
-* [Undertanding method receivers and pointers](http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/)
-* [Read JSON POST body](http://stackoverflow.com/questions/15672556/handling-json-post-request-in-go)
+### General
+
+* [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+* [Structuring applications in Go](https://medium.com/@benbjohnson/structuring-applications-in-go-3b04be4ff091)
 * [Writing modular GO REST APIs](http://thenewstack.io/make-a-restful-json-api-go/)
+
+### HTTP, REST and JSON
+
+* [Structs and JSON formatting](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character)
+* [JSON and Go](http://blog.golang.org/json-and-go)
+* [Design beautiful REST + JSON APIs](http://www.slideshare.net/stormpath/rest-jsonapis)
 * [Use render for generating JSON](https://github.com/unrolled/render/issues/7) for use of global variable
+* [Read JSON POST body](http://stackoverflow.com/questions/15672556/handling-json-post-request-in-go)
+* [How to pass a parameter to a Http handler function](https://groups.google.com/forum/#!topic/golang-nuts/SGn1gd290zI)
+* Go and datetime parsing/formatting: [ISO 8601, the International Standard for the representation of dates and times](http://www.w3.org/TR/NOTE-datetime), [Go by Example: Time Formatting / Parsing](https://gobyexample.com/time-formatting-parsing), [JSON datetime formatting](http://stackoverflow.com/a/15952652), [src/time/format.go](http://golang.org/src/time/format.go)
+
+### Testing
+
 * [Testing techniques](https://talks.golang.org/2014/testing.slide#1)
 * [Testing Go HTTP API](http://dennissuratna.com/testing-in-go/)
 * [Great overview of HTTP response codes](http://stackoverflow.com/a/2342631)
-* [Design beautiful REST + JSON APIs](http://www.slideshare.net/stormpath/rest-jsonapis)
-* Go and datetime parsing/formatting: [ISO 8601, the International Standard for the representation of dates and times](http://www.w3.org/TR/NOTE-datetime), [Go by Example: Time Formatting / Parsing](https://gobyexample.com/time-formatting-parsing), [JSON datetime formatting](http://stackoverflow.com/a/15952652), [src/time/format.go](http://golang.org/src/time/format.go)
-* [How to pass a parameter to a Http handler function](https://groups.google.com/forum/#!topic/golang-nuts/SGn1gd290zI)
-* [Structuring applications in Go](https://medium.com/@benbjohnson/structuring-applications-in-go-3b04be4ff091)
+
+### Go core language concepts
+
+* [Undertanding method receivers and pointers](http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/)
 * [HTTP Closures gist](https://gist.github.com/tsenart/5fc18c659814c078378d)
 * [Introducing Function Literals and Closures](https://golang.org/doc/articles/wiki/)
-* [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
