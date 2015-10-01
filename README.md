@@ -35,15 +35,16 @@ You can work your way through those in two to three days. I wouldn't advise buyi
 
 ### Development tools
 
-I've tried many different IDEs and it seems like it's a common Go newbie [frustration](https://groups.google.com/forum/#!topic/golang-nuts/6ZgrZsPzHr0). Coming from Java, I've tried "proper" IDEs like [LiteIDE](https://github.com/visualfc/liteide) and IntelliJ with the [golang plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin) but never really fell in love with those.
+I've tried many different editors and it seems like it's a common Go newbie [frustration](https://groups.google.com/forum/#!topic/golang-nuts/6ZgrZsPzHr0). Coming from Java, I've tried "proper" IDEs like [LiteIDE](https://github.com/visualfc/liteide) and IntelliJ with the [golang plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin) but never really fell in love with those.
 
-I am a big fan of SublimeText that I've been using extensively for Node.js development so I set up my environment with:
+I've used Sublime Text with the [GoSublime](https://github.com/DisposaBoy/GoSublime) plugin for a long time, but have now settled on Atom with the [go-plus](https://github.com/joefitzgerald/go-plus) plugin and that is working very well. It provides the "lightness" of an editor but with some of the power you'd expect from an IDE. It has code completion, linting, formatting and even shows you what parts of the code are covered by tests.
 
-* [Sublime Text 3](http://www.sublimetext.com/3) editor
-* [GoSublime](https://github.com/DisposaBoy/GoSublime) plugin
-* [GitGutter](https://github.com/jisaacks/GitGutter) to see git diffs in gutter
+The choice of an editor is a personal one, so the only advice I can give you is to try different ones. It looks like currently the following seem to be the most mature:
 
-I have tried Atom with the [go-plus](https://github.com/joefitzgerald/go-plus) in the past, but was never good enough to push Sublime Text aside for me. I have to admit that I haven't tried it in a while and Atom is maturing rapidly so please feel free to give it a go.
+* Sublime Text 3 with [GoSublime](https://github.com/DisposaBoy/GoSublime)
+* Atom with [go-plus](https://github.com/joefitzgerald/go-plus). There is a good article describing a full Go setup [here](http://marcio.io/2015/07/supercharging-atom-editor-for-go-development/).
+* vim with [vim-go](https://github.com/fatih/vim-go)
+* [LiteIDE](https://github.com/visualfc/liteide)
 
 ### Live Code Reloading
 
