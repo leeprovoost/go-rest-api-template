@@ -41,7 +41,7 @@ I've used Sublime Text with the [GoSublime](https://github.com/DisposaBoy/GoSubl
 
 The choice of an editor is a personal one, so the only advice I can give you is to try different ones. It looks like currently the following seem to be the most mature:
 
-* Sublime Text 3 with [GoSublime](https://github.com/DisposaBoy/GoSublime)
+* Sublime Text 3 with [GoSublime](https://github.com/DisposaBoy/GoSublime). I've been made aware that there is a more recent Go plugin for Sublime Text called [GoTools](https://packagecontrol.io/packages/GoTools)
 * Atom with [go-plus](https://github.com/joefitzgerald/go-plus). There is a good article describing a full Go setup [here](http://marcio.io/2015/07/supercharging-atom-editor-for-go-development/).
 * vim with [vim-go](https://github.com/fatih/vim-go)
 * [LiteIDE](https://github.com/visualfc/liteide)
