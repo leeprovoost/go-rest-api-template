@@ -130,10 +130,10 @@ Note the use of `time.Time` for the dates instead of using a standard `string` t
 
 ### Operations on our (mock) database
 
-I wanted to create a template REST API that didn't depend on a database, so started with a simple in-memory database that we can work with. The good thing is that this will be the start of a so-called data access layer that abstracts away the underlying data store. We can achieve that by starting with creating an interface (which is a good practice in Go anyway):
+I wanted to create a template REST API that didn't depend on a database, so started with a simple in-memory database that we can work with. The good thing is that this will be the start of a so-called data access layer that abstracts away the underlying data store. We can achieve that by starting with creating an interface (which is a good practice in Go anyway). Note the use of the -er at the end of the interface name, as per Go convention.
 
 ```
-type DataStore interface {
+type DataStorer interface {
   List() (map[string]User, error)
   Get(i int) (User, error)
   Add(u User) (User, error)
