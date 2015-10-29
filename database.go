@@ -2,7 +2,7 @@ package main
 
 import "errors"
 
-type DataStore interface {
+type DataStorer interface {
 	List() (map[string]User, error)
 	Get(i int) (User, error)
 	Add(u User) (User, error)
