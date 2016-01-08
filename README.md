@@ -4,7 +4,6 @@
 
 Reusable template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.5.
 
-
 ## Introduction
 
 ### Why?
