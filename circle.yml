@@ -1,9 +1,7 @@
 deployment:
   dev:
     branch: develop
-    commands:
-      # -
-  production:
-    branch: master
-    commands:
-      # - 
+    codedeploy:
+      go-rest-api-template:
+        deployment_group: cdpg_web.dev
+        region: eu-west-1
