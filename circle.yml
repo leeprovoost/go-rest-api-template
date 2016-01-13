@@ -2,6 +2,6 @@ deployment:
   dev:
     branch: develop
     codedeploy:
-      go-rest-api-template:
+      cdp_web:
         deployment_group: cdpg_web.dev
         region: eu-west-1
