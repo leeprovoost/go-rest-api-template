@@ -64,6 +64,6 @@ func main() {
 	n := negroni.Classic()
 	n.Use(env.Metrics)
 	n.UseHandler(router)
-	fmt.Println("Starting server on :3009")
-	n.Run(":3009")
+	fmt.Println("Starting server on :80")
+	n.Run(":80")
 }
