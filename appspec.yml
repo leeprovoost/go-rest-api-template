@@ -1,7 +1,7 @@
 version: 0.0
 os: linux
 files:
-  - source: scripts/upstart/go-rest-api-template.conf
+  - source: /upstart/go-rest-api-template.conf
     destination: /etc/init/
   - source: /
     destination: /home/ec2-user/go/src/github.com/leeprovoost/go-rest-api-template
