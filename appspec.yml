@@ -1,7 +1,7 @@
 version: 0.0
 os: linux
 files:
-  - source: /upstart/go-rest-api-template.conf
+  - source: /codedeploy-scripts/upstart/go-rest-api-template.conf
     destination: /etc/init/
   - source: /
     destination: /home/ec2-user/go/src/github.com/leeprovoost/go-rest-api-template
