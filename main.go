@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
@@ -18,9 +19,13 @@ type Env struct {
 }
 
 func init() {
-	// read JSON fixtures file
+	// read JSON fixtures file, try first from environment variable
 	var jsonObject map[string][]User
-	file, err := ioutil.ReadFile("./fixtures.json")
+	fixturesLocation := "./fixtures.json"
+	if os.Getenv("VAR_FIXTURES") != "" {
+		fixturesLocation = os.Getenv("VAR_FIXTURES")
+	}
+	file, err := ioutil.ReadFile(fixturesLocation)
 	if err != nil {
 		log.Fatalf("File error: %v\n", err)
 	}
@@ -64,6 +69,10 @@ func main() {
 	n := negroni.Classic()
 	n.Use(env.Metrics)
 	n.UseHandler(router)
-	fmt.Println("Starting server on :80")
-	n.Run(":80")
+	port := "3009"
+	if os.Getenv("VAR_PORT") != "" {
+		port = os.Getenv("VAR_PORT")
+	}
+	fmt.Println("Starting server on :" + port)
+	n.Run(":" + port)
 }
