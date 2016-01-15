@@ -18,4 +18,4 @@ go get -t -v ./...
 go install
 
 # copy fixtures,json file
-p /home/ec2-user/go/src/github.com/leeprovoost/go-rest-api-template/fixtures.json /home/ec2-user/go/bin
+cp /home/ec2-user/go/src/github.com/leeprovoost/go-rest-api-template/fixtures.json /home/ec2-user/go/bin

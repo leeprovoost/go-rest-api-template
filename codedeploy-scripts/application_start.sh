@@ -1,3 +1,3 @@
 #!/bin/bash
 
-service go-rest-api-template start
+sudo service go-rest-api-template start
