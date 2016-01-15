@@ -22,6 +22,7 @@ func init() {
 	// read JSON fixtures file, try first from environment variable
 	var jsonObject map[string][]User
 	fixturesLocation := "./fixtures.json"
+	fmt.Println("VAR_FIXTURES: " + os.Getenv("VAR_FIXTURES"))
 	if os.Getenv("VAR_FIXTURES") != "" {
 		fixturesLocation = os.Getenv("VAR_FIXTURES")
 	}
