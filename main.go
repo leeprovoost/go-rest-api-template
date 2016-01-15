@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
@@ -21,12 +21,9 @@ type Env struct {
 func init() {
 	// read JSON fixtures file, try first from environment variable
 	var jsonObject map[string][]User
-	fixturesLocation := "./fixtures.json"
-	fmt.Println("VAR_FIXTURES: " + os.Getenv("VAR_FIXTURES"))
-	if os.Getenv("VAR_FIXTURES") != "" {
-		fixturesLocation = os.Getenv("VAR_FIXTURES")
-	}
-	file, err := ioutil.ReadFile(fixturesLocation)
+	fixturesLocation := flag.String("fixtures", "./fixtures.json", "location of fixtures.json file")
+	fmt.Println("Location of fixtures.json file: " + *fixturesLocation)
+	file, err := ioutil.ReadFile(*fixturesLocation)
 	if err != nil {
 		log.Fatalf("File error: %v\n", err)
 	}
@@ -70,10 +67,7 @@ func main() {
 	n := negroni.Classic()
 	n.Use(env.Metrics)
 	n.UseHandler(router)
-	port := "3009"
-	if os.Getenv("VAR_PORT") != "" {
-		port = os.Getenv("VAR_PORT")
-	}
-	fmt.Println("Starting server on :" + port)
-	n.Run(":" + port)
+	port := flag.String("port", "3009", "location of fixtures.json file")
+	fmt.Println("Starting server on port: " + *port)
+	n.Run(":" + *port)
 }

@@ -5,10 +5,6 @@ cd $HOME
 echo "export GOPATH=$HOME/go" >> $HOME/.bashrc
 echo "export PATH=$PATH:$GOPATH/bin" >> $HOME/.bashrc
 
-# environment variables
-echo "export VAR_PORT=80" >> $HOME/.bashrc
-echo "export VAR_FIXTURES=/home/ec2-user/go/bin/fixtures.json" >> $HOME/.bashrc
-
 # activate changes
 source $HOME/.bashrc
 
