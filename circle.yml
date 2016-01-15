@@ -1,7 +1,0 @@
-deployment:
-  dev:
-    branch: develop
-    codedeploy:
-      cdp_web.dev:
-        deployment_group: cdpg_web.dev
-        region: eu-west-1
