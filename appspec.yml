@@ -12,10 +12,6 @@ hooks:
   ApplicationStop:
     - location: codedeploy-scripts/application_stop.sh
       timeout: 300
-  BeforeInstall:
-    - location: codedeploy-scripts/before_install.sh
-      timeout: 600
-      runas: ec2-user
   AfterInstall:
     - location: codedeploy-scripts/after_install.sh
       timeout: 300
