@@ -18,7 +18,7 @@
 #go install
 
 # copy application binary
-cp $GOPATH/src/github.com/leeprovoost/go-rest-api-template/go-rest-api-template /usr/bin
+cp $HOME/go/src/github.com/leeprovoost/go-rest-api-template/go-rest-api-template /usr/bin
 
 # copy fixtures,json file
-cp $HOME/src/github.com/leeprovoost/go-rest-api-template/fixtures.json $HOME
+cp $HOME/go/src/github.com/leeprovoost/go-rest-api-template/fixtures.json $HOME
