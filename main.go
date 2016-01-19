@@ -13,7 +13,7 @@ import (
 	"github.com/unrolled/render"
 )
 
-type Env struct {
+type env struct {
 	Metrics *stats.Stats
 	Render  *render.Render
 }
@@ -48,7 +48,7 @@ func init() {
 }
 
 func main() {
-	env := Env{
+	env := env{
 		Metrics: stats.New(),
 		Render:  render.New(),
 	}
