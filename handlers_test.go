@@ -12,8 +12,8 @@ import (
 	"github.com/unrolled/render"
 )
 
-func HandlersTestSetup() Env {
-	env := Env{
+func HandlersTestSetup() env {
+	env := env{
 		Metrics: stats.New(),
 		Render:  render.New(),
 	}
