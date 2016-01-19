@@ -4,7 +4,6 @@
 
 Reusable template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.5.
 
-
 ## Introduction
 
 ### Why?
@@ -344,7 +343,7 @@ Perfect. Or, is it? What if we want to pass more variables to the handler functi
 In our `main.go` we'd add:
 
 ```
-type Env struct {
+type env struct {
   Metrics *stats.Stats
   Render  *render.Render
 }
@@ -354,7 +353,7 @@ And in our `func main()` function we initialise that struct:
 
 ```
 func main() {
-  env := Env{
+  env := env{
     Metrics: stats.New(),
     Render:  render.New(),
   }
@@ -365,15 +364,15 @@ func main() {
 Our handler looks now like this:
 
 ```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, env Env) {
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, env env) {
   env.Render.JSON(w, http.StatusOK, db.List())
 }
 ```
 
-The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, Env` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our environment struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
+The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, env` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our environment struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
 
 ```
-func makeHandler(env Env, fn func(http.ResponseWriter, *http.Request, Env)) http.HandlerFunc {
+func makeHandler(env env, fn func(http.ResponseWriter, *http.Request, env)) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
     fn(w, r, env)
   }
@@ -395,7 +394,7 @@ When someone hits our API, without a specified route, then we can handle that wi
 We also want to set up a health check that monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 204 OK when the serivce is up and running, including some extra stats. A 204 means "Hey, I got your request, all is fine and I have nothing else to say". It essentially tells your client that there is no body content.
 
 ```
-func HealthcheckHandler(w http.ResponseWriter, req *http.Request, env Env) {
+func HealthcheckHandler(w http.ResponseWriter, req *http.Request, env env) {
   env.Render.Text(w, http.StatusNoContent, "")
 }
 ```
@@ -409,7 +408,7 @@ We will skip the `/metrics` route for a second and keep that for the end of the 
 Let's have a look at interacting with our data. Returning a list of users is quite easy, it's just showing the UserList:
 
 ```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, env Env) {
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, env env) {
   env.Render.JSON(w, http.StatusOK, db.List())
 }
 ```
@@ -492,7 +491,7 @@ Example:
 Another example is the retrieval of a specific object:
 
 ```
-func GetUserHandler(w http.ResponseWriter, req *http.Request, env Env) {
+func GetUserHandler(w http.ResponseWriter, req *http.Request, env env) {
   vars := mux.Vars(req)
   uid, _ := strconv.Atoi(vars["uid"])
   user, err := db.Get(uid)
@@ -741,7 +740,7 @@ I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) pa
 We will first add the stats as a variable, named Metrics, to our environment struct:
 
 ```
-type Env struct {
+type env struct {
   Metrics *stats.Stats
   Render  *render.Render
 }
@@ -751,7 +750,7 @@ Then initialise the variable in our main function (in `main.go`):
 
 ```
 func main() {
-  env := Env{
+  env := env{
     Metrics: stats.New(),
     Render:  render.New(),
   }
@@ -763,7 +762,7 @@ func main() {
 The actual handler is pretty simple. In `handlers.go`, we add a handler called `MetricsHandler` and that just gets the data from our environment, renders it into a JSON format and returns an HTTP 200 OK status:
 
 ```
-func MetricsHandler(w http.ResponseWriter, req *http.Request, env Env) {
+func MetricsHandler(w http.ResponseWriter, req *http.Request, env env) {
   stats := env.Metrics.Data()
   env.Render.JSON(w, http.StatusOK, stats)
 }
