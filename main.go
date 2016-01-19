@@ -23,7 +23,7 @@ var port *string
 func init() {
 	// parse command line flags
 	fixturesLocation := flag.String("fixtures", "./fixtures.json", "location of fixtures.json file")
-	port = flag.String("port", "3009", "location of fixtures.json file")
+	port = flag.String("port", "3009", "serve traffic on this port")
 	flag.Parse()
 
 	// read JSON fixtures file
