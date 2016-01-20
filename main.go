@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,15 +13,23 @@ import (
 	"github.com/unrolled/render"
 )
 
-type Env struct {
+type env struct {
 	Metrics *stats.Stats
 	Render  *render.Render
 }
 
+var port *string
+
 func init() {
+	// parse command line flags
+	fixturesLocation := flag.String("fixtures", "./fixtures.json", "location of fixtures.json file")
+	port = flag.String("port", "3009", "serve traffic on this port")
+	flag.Parse()
+
 	// read JSON fixtures file
 	var jsonObject map[string][]User
-	file, err := ioutil.ReadFile("./fixtures.json")
+	fmt.Println("Location of fixtures.json file: " + *fixturesLocation)
+	file, err := ioutil.ReadFile(*fixturesLocation)
 	if err != nil {
 		log.Fatalf("File error: %v\n", err)
 	}
@@ -39,7 +48,7 @@ func init() {
 }
 
 func main() {
-	env := Env{
+	env := env{
 		Metrics: stats.New(),
 		Render:  render.New(),
 	}
@@ -64,6 +73,6 @@ func main() {
 	n := negroni.Classic()
 	n.Use(env.Metrics)
 	n.UseHandler(router)
-	fmt.Println("Starting server on :3009")
-	n.Run(":3009")
+	fmt.Println("Starting server on port: " + *port)
+	n.Run(":" + *port)
 }

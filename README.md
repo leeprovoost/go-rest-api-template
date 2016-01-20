@@ -2,7 +2,7 @@
 
 *WORK IN PROGRESS*
 
-Reusable template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.5.
+Reusable template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.4 and 1.5.
 
 ## Introduction
 
@@ -46,16 +46,82 @@ The choice of an editor is a personal one, so the only advice I can give you is 
 * vim with [vim-go](https://github.com/fatih/vim-go)
 * [LiteIDE](https://github.com/visualfc/liteide)
 
-### Live Code Reloading
-
-TO DO
-
 ### How to run
 
 `go run main.go` works fine if you have a single file you're working on, but once you have multiple files you'll have to start using the proper go build tool and run the compiled executable.
 
 ```
 go build && ./go-rest-api-template
+```
+
+The app will bind itself by default to port 3009. If you want to change it (e.g. bind it to the default http port 80), then use a command line flag. Same for the location of the fixtures.json model.
+
+```
+go build && ./go-rest-api-template -port=80 -fixtures=/tmp/fixtures.json
+```
+
+### Live Code Reloading
+
+Manually stopping and restarting your server can get quite annoying after a while, so let's set up a task runner that automatically restarts the server when it detects changes (similar to Grunt for the JavaScript / Node developers).
+
+Install [fresh](https://github.com/pilu/fresh):
+
+```
+go get github.com/pilu/fresh
+```
+
+And during development, you can now just type in the following command in your project root directory:
+
+```
+fresh
+```
+
+You should see following output if all goes well:
+
+```
+Loading settings from ./runner.conf
+8:41:18 runner      | InitFolders
+8:41:18 runner      | mkdir ./tmp
+8:41:18 watcher     | Watching .
+8:41:18 watcher     | Watching codedeploy-scripts
+8:41:18 main        | Waiting (loop 1)...
+8:41:18 main        | receiving first event /
+8:41:18 main        | sleeping for 600 milliseconds
+8:41:19 main        | flushing events
+8:41:19 main        | Started! (12 Goroutines)
+8:41:19 main        | remove tmp/go-rest-api-template.log: no such file or directory
+8:41:19 build       | Building...
+8:41:20 runner      | Running...
+8:41:20 main        | --------------------
+8:41:20 main        | Waiting (loop 2)...
+8:41:20 app         | Location of fixtures.json file: ./fixtures.json
+8:41:20 app         | Starting server on port: 3009
+8:41:20 app         | [negroni] listening on :3009
+```
+
+Fresh should work without any configuration, but to make it more explicit you can add a `runner.conf` file in your project root:
+
+```
+root:              .
+tmp_path:          ./tmp
+build_name:        go-rest-api-template
+build_log:         go-rest-api-template.log
+valid_ext:         .go, .tpl, .tmpl, .html
+build_delay:       600
+colors:            1
+log_color_main:    cyan
+log_color_build:   yellow
+log_color_runner:  green
+log_color_watcher: magenta
+log_color_app:
+```
+
+As you can see, it creates a `tmp` directory in your project root and a log file. You can tell `.gitignore` to stop checking it into your git repository by adding the following lines in your `.gitignore` file:
+
+```
+# fresh
+tmp
+go-rest-api-template.log
 ```
 
 ### Code Structure
@@ -90,6 +156,12 @@ Tests and test data:
 ```
 database_test.go
 fixtures.json
+```
+
+Configuration file for [fresh](go get github.com/pilu/fresh):
+
+```
+runner.conf
 ```
 
 TO DO talk about the layers of the applications
@@ -343,7 +415,7 @@ Perfect. Or, is it? What if we want to pass more variables to the handler functi
 In our `main.go` we'd add:
 
 ```
-type Env struct {
+type env struct {
   Metrics *stats.Stats
   Render  *render.Render
 }
@@ -353,7 +425,7 @@ And in our `func main()` function we initialise that struct:
 
 ```
 func main() {
-  env := Env{
+  env := env{
     Metrics: stats.New(),
     Render:  render.New(),
   }
@@ -364,15 +436,15 @@ func main() {
 Our handler looks now like this:
 
 ```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, env Env) {
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, env env) {
   env.Render.JSON(w, http.StatusOK, db.List())
 }
 ```
 
-The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, Env` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our environment struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
+The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, env` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our environment struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
 
 ```
-func makeHandler(env Env, fn func(http.ResponseWriter, *http.Request, Env)) http.HandlerFunc {
+func makeHandler(env env, fn func(http.ResponseWriter, *http.Request, env)) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
     fn(w, r, env)
   }
@@ -394,7 +466,7 @@ When someone hits our API, without a specified route, then we can handle that wi
 We also want to set up a health check that monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 204 OK when the serivce is up and running, including some extra stats. A 204 means "Hey, I got your request, all is fine and I have nothing else to say". It essentially tells your client that there is no body content.
 
 ```
-func HealthcheckHandler(w http.ResponseWriter, req *http.Request, env Env) {
+func HealthcheckHandler(w http.ResponseWriter, req *http.Request, env env) {
   env.Render.Text(w, http.StatusNoContent, "")
 }
 ```
@@ -408,7 +480,7 @@ We will skip the `/metrics` route for a second and keep that for the end of the 
 Let's have a look at interacting with our data. Returning a list of users is quite easy, it's just showing the UserList:
 
 ```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, env Env) {
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, env env) {
   env.Render.JSON(w, http.StatusOK, db.List())
 }
 ```
@@ -491,7 +563,7 @@ Example:
 Another example is the retrieval of a specific object:
 
 ```
-func GetUserHandler(w http.ResponseWriter, req *http.Request, env Env) {
+func GetUserHandler(w http.ResponseWriter, req *http.Request, env env) {
   vars := mux.Vars(req)
   uid, _ := strconv.Atoi(vars["uid"])
   user, err := db.Get(uid)
@@ -725,9 +797,25 @@ coverage: 34.9% of statements
 ok    github.com/leeprovoost/go-rest-api-template 0.009s
 ```
 
-## Environment Variables
+## Command-line flags
 
-TO DO
+The app binds itself by default to port 3009 and assumes that the fixtures.json file is in the project root directory. If that is not the case and you want to change that, then you can use some command line flags (or just change the code obviously).
+
+This is how you would start the app with command line flags:
+
+```
+./go-rest-api-template -port=80 -fixtures=/tmp/fixtures.json
+```
+
+We achieve that by adding a flag parsers in the `main.go` init section:
+
+```
+fixturesLocation := flag.String("fixtures", "./fixtures.json", "location of fixtures.json file")
+port = flag.String("port", "3009", "serve traffic on this port")
+flag.Parse()
+```
+
+The `flag.String` function takes three arguments: the command-flag name, the default value and a description. Don't forget to add the `flag.Parse()` call after you've defined all the flags. Otherwise your system won't read the flag values.
 
 ## Metrics
 
@@ -740,7 +828,7 @@ I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) pa
 We will first add the stats as a variable, named Metrics, to our environment struct:
 
 ```
-type Env struct {
+type env struct {
   Metrics *stats.Stats
   Render  *render.Render
 }
@@ -750,7 +838,7 @@ Then initialise the variable in our main function (in `main.go`):
 
 ```
 func main() {
-  env := Env{
+  env := env{
     Metrics: stats.New(),
     Render:  render.New(),
   }
@@ -762,7 +850,7 @@ func main() {
 The actual handler is pretty simple. In `handlers.go`, we add a handler called `MetricsHandler` and that just gets the data from our environment, renders it into a JSON format and returns an HTTP 200 OK status:
 
 ```
-func MetricsHandler(w http.ResponseWriter, req *http.Request, env Env) {
+func MetricsHandler(w http.ResponseWriter, req *http.Request, env env) {
   stats := env.Metrics.Data()
   env.Render.JSON(w, http.StatusOK, stats)
 }
@@ -809,13 +897,48 @@ You can start monitoring the response codes for instance. Let's say you get all 
 },
 ```
 
-## Deploying your Application
+## Starting the app on a production server
 
-TO DO
+This is how you could run your app on a server:
 
-## How to use this for your own project?
+First, you copy the binary into the `/opt/go-rest-api-template` directory:
 
-TO DO
+```
+#!/bin/bash
+# create app directory
+sudo mkdir /opt/go-rest-api-template
+# copy application binary
+sudo cp $HOME/go/src/github.com/leeprovoost/go-rest-api-template/go-rest-api-template /opt/go-rest-api-template
+# copy fixtures,json file
+sudo cp $HOME/go/src/github.com/leeprovoost/go-rest-api-template/fixtures.json /opt/go-rest-api-template
+```
+
+Then start the app as a service. Store the app's PID in a text file so we can kill it later.
+
+```
+#!/bin/bash
+sudo nohup /opt/go-rest-api-template/go-rest-api-template -fixtures=/opt/go-rest-api-template/fixtures.json -port=80 > /var/log/go-rest-api-template.log 2>&1&
+echo $! > /var/log/go-rest-api-template-pid.txt
+```
+
+When you want to kill your app later and clean up after yourself, you could use the following:
+
+```
+#!/bin/bash
+if [ -d $HOME/go/src/github.com/leeprovoost/go-rest-api-template]; then
+  rm -rf $HOME/go/src/github.com/leeprovoost/go-rest-api-template
+fi
+if [ -f /var/log/go-rest-api-template-pid.txt ]; then
+  kill -9 `cat /var/log/go-rest-api-template-pid.txt`
+  rm -f /var/log/go-rest-api-template-pid.txt
+fi
+if [ -f /var/log/go-rest-api-template.log ]; then
+  rm -f /var/log/go-rest-api-template.log
+fi
+if [ -d /opt/go-rest-api-template ]; then
+  rm -rf /opt/go-rest-api-template
+fi
+```
 
 ## Useful references
 
