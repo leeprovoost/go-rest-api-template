@@ -54,6 +54,12 @@ The choice of an editor is a personal one, so the only advice I can give you is 
 go build && ./go-rest-api-template
 ```
 
+The app will bind itself by default to port 3009. If you want to change it (e.g. bind it to the default http port 80), then use a command line flag. Same for the location of the fixtures.json model.
+
+```
+go build && ./go-rest-api-template -port=80 -fixtures=/tmp/fixtures.json
+```
+
 ### Live Code Reloading
 
 Manually stopping and restarting your server can get quite annoying after a while, so let's set up a task runner that automatically restarts the server when it detects changes (similar to Grunt for the JavaScript / Node developers).
@@ -791,9 +797,25 @@ coverage: 34.9% of statements
 ok    github.com/leeprovoost/go-rest-api-template 0.009s
 ```
 
-## Environment Variables
+## Command-line flags
 
-TO DO
+The app binds itself by default to port 3009 and assumes that the fixtures.json file is in the project root directory. If that is not the case and you want to change that, then you can use some command line flags (or just change the code obviously).
+
+This is how you would start the app with command line flags:
+
+```
+./go-rest-api-template -port=80 -fixtures=/tmp/fixtures.json
+```
+
+We achieve that by adding a flag parsers in the `main.go` init section:
+
+```
+fixturesLocation := flag.String("fixtures", "./fixtures.json", "location of fixtures.json file")
+port = flag.String("port", "3009", "serve traffic on this port")
+flag.Parse()
+```
+
+The `flag.String` function takes three arguments: the command-flag name, the default value and a description. Don't forget to add the `flag.Parse()` call after you've defined all the flags. Otherwise your system won't read the flag values.
 
 ## Metrics
 
@@ -873,6 +895,49 @@ You can start monitoring the response codes for instance. Let's say you get all 
     "200": 14,
     "404": 1
 },
+```
+
+## Starting the app on a production server
+
+This is how you could run your app on a server:
+
+First, you copy the binary into the `/opt/go-rest-api-template` directory:
+
+```
+#!/bin/bash
+# create app directory
+sudo mkdir /opt/go-rest-api-template
+# copy application binary
+sudo cp $HOME/go/src/github.com/leeprovoost/go-rest-api-template/go-rest-api-template /opt/go-rest-api-template
+# copy fixtures,json file
+sudo cp $HOME/go/src/github.com/leeprovoost/go-rest-api-template/fixtures.json /opt/go-rest-api-template
+```
+
+Then start the app as a service. Store the app's PID in a text file so we can kill it later.
+
+```
+#!/bin/bash
+sudo nohup /opt/go-rest-api-template/go-rest-api-template -fixtures=/opt/go-rest-api-template/fixtures.json -port=80 > /var/log/go-rest-api-template.log 2>&1&
+echo $! > /var/log/go-rest-api-template-pid.txt
+```
+
+When you want to kill your app later and clean up after yourself, you could use the following:
+
+```
+#!/bin/bash
+if [ -d $HOME/go/src/github.com/leeprovoost/go-rest-api-template]; then
+  rm -rf $HOME/go/src/github.com/leeprovoost/go-rest-api-template
+fi
+if [ -f /var/log/go-rest-api-template-pid.txt ]; then
+  kill -9 `cat /var/log/go-rest-api-template-pid.txt`
+  rm -f /var/log/go-rest-api-template-pid.txt
+fi
+if [ -f /var/log/go-rest-api-template.log ]; then
+  rm -f /var/log/go-rest-api-template.log
+fi
+if [ -d /opt/go-rest-api-template ]; then
+  rm -rf /opt/go-rest-api-template
+fi
 ```
 
 ## Useful references
