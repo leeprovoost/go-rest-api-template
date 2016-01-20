@@ -98,8 +98,8 @@ Fresh should work without any configuration, but to make it more explicit you ca
 ```
 root:              .
 tmp_path:          ./tmp
-build_name:        patient-frontend-web
-build_log:         patient-frontend-web.log
+build_name:        go-rest-api-template
+build_log:         go-rest-api-template.log
 valid_ext:         .go, .tpl, .tmpl, .html
 build_delay:       600
 colors:            1
@@ -115,7 +115,7 @@ As you can see, it creates a `tmp` directory in your project root and a log file
 ```
 # fresh
 tmp
-patient-frontend-web.log
+go-rest-api-template.log
 ```
 
 ### Code Structure
