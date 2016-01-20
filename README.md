@@ -46,16 +46,76 @@ The choice of an editor is a personal one, so the only advice I can give you is 
 * vim with [vim-go](https://github.com/fatih/vim-go)
 * [LiteIDE](https://github.com/visualfc/liteide)
 
-### Live Code Reloading
-
-TO DO
-
 ### How to run
 
 `go run main.go` works fine if you have a single file you're working on, but once you have multiple files you'll have to start using the proper go build tool and run the compiled executable.
 
 ```
 go build && ./go-rest-api-template
+```
+
+### Live Code Reloading
+
+Manually stopping and restarting your server can get quite annoying after a while, so let's set up a task runner that automatically restarts the server when it detects changes (similar to Grunt for the JavaScript / Node developers).
+
+Install [fresh](https://github.com/pilu/fresh):
+
+```
+go get github.com/pilu/fresh
+```
+
+And during development, you can now just type in the following command in your project root directory:
+
+```
+fresh
+```
+
+You should see following output if all goes well:
+
+```
+Loading settings from ./runner.conf
+8:41:18 runner      | InitFolders
+8:41:18 runner      | mkdir ./tmp
+8:41:18 watcher     | Watching .
+8:41:18 watcher     | Watching codedeploy-scripts
+8:41:18 main        | Waiting (loop 1)...
+8:41:18 main        | receiving first event /
+8:41:18 main        | sleeping for 600 milliseconds
+8:41:19 main        | flushing events
+8:41:19 main        | Started! (12 Goroutines)
+8:41:19 main        | remove tmp/go-rest-api-template.log: no such file or directory
+8:41:19 build       | Building...
+8:41:20 runner      | Running...
+8:41:20 main        | --------------------
+8:41:20 main        | Waiting (loop 2)...
+8:41:20 app         | Location of fixtures.json file: ./fixtures.json
+8:41:20 app         | Starting server on port: 3009
+8:41:20 app         | [negroni] listening on :3009
+```
+
+Fresh should work without any configuration, but to make it more explicit you can add a `runner.conf` file in your project root:
+
+```
+root:              .
+tmp_path:          ./tmp
+build_name:        patient-frontend-web
+build_log:         patient-frontend-web.log
+valid_ext:         .go, .tpl, .tmpl, .html
+build_delay:       600
+colors:            1
+log_color_main:    cyan
+log_color_build:   yellow
+log_color_runner:  green
+log_color_watcher: magenta
+log_color_app:
+```
+
+As you can see, it creates a `tmp` directory in your project root and a log file. You can tell `.gitignore` to stop checking it into your git repository by adding the following lines in your `.gitignore` file:
+
+```
+# fresh
+tmp
+patient-frontend-web.log
 ```
 
 ### Code Structure
@@ -90,6 +150,12 @@ Tests and test data:
 ```
 database_test.go
 fixtures.json
+```
+
+Configuration file for [fresh](go get github.com/pilu/fresh):
+
+```
+runner.conf
 ```
 
 TO DO talk about the layers of the applications
