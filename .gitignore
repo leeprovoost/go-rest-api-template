@@ -4,6 +4,7 @@
 *.so
 gin-bin
 go-rest-template-bluemix
+go-rest-api-template
 
 # Folders
 _obj
@@ -24,3 +25,7 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+# fresh
+tmp
+go-rest-api-template.log
