@@ -1,4 +1,4 @@
-# go-rest-api-template [ ![Codeship Status for AndiamoHQ/patient-frontend-web](https://codeship.com/projects/992b5320-a100-0133-c7e9-3a78b7c88df8/status?branch=master)](https://codeship.com/projects/128355)
+# go-rest-api-template [ ![Codeship Status for leeprovoost/go-rest-api-template](https://codeship.com/projects/89ed2300-9d8f-0133-5815-1a74f7994c2d/status?branch=master)](https://codeship.com/projects/127524)
 
 *WORK IN PROGRESS*
 
