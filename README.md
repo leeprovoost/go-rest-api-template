@@ -901,42 +901,23 @@ You can start monitoring the response codes for instance. Let's say you get all 
 
 This is how you could run your app on a server:
 
-First, you copy the binary into the `/opt/go-rest-api-template` directory:
-
-```
-#!/bin/bash
-# create app directory
-sudo mkdir /opt/go-rest-api-template
-# copy application binary
-sudo cp $HOME/go/src/github.com/leeprovoost/go-rest-api-template/go-rest-api-template /opt/go-rest-api-template
-# copy fixtures,json file
-sudo cp $HOME/go/src/github.com/leeprovoost/go-rest-api-template/fixtures.json /opt/go-rest-api-template
-```
+First, you copy the binary and the `fixtures.json` files into a directory, e.g. `/opt/go-rest-api-template`.
 
 Then start the app as a service. Store the app's PID in a text file so we can kill it later.
 
 ```
 #!/bin/bash
-sudo nohup /opt/go-rest-api-template/go-rest-api-template -fixtures=/opt/go-rest-api-template/fixtures.json -port=80 > /var/log/go-rest-api-template.log 2>&1&
+sudo nohup /opt/go-rest-api-template/go-rest-api-template -fixtures=/opt/go-rest-api-template/fixtures.json -port=80 >> /var/log/go-rest-api-template.log 2>&1&
 echo $! > /var/log/go-rest-api-template-pid.txt
 ```
 
-When you want to kill your app later and clean up after yourself, you could use the following:
+When you want to kill your app later during a redeployment or a server shutdown, then you can kill the app bu looking up the previously stored PID:
 
 ```
 #!/bin/bash
-if [ -d $HOME/go/src/github.com/leeprovoost/go-rest-api-template]; then
-  rm -rf $HOME/go/src/github.com/leeprovoost/go-rest-api-template
-fi
 if [ -f /var/log/go-rest-api-template-pid.txt ]; then
   kill -9 `cat /var/log/go-rest-api-template-pid.txt`
   rm -f /var/log/go-rest-api-template-pid.txt
-fi
-if [ -f /var/log/go-rest-api-template.log ]; then
-  rm -f /var/log/go-rest-api-template.log
-fi
-if [ -d /opt/go-rest-api-template ]; then
-  rm -rf /opt/go-rest-api-template
 fi
 ```
 
@@ -969,3 +950,4 @@ fi
 * [Undertanding method receivers and pointers](http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/)
 * [HTTP Closures gist](https://gist.github.com/tsenart/5fc18c659814c078378d)
 * [Introducing Function Literals and Closures](https://golang.org/doc/articles/wiki/)
+* [Custom Handlers and Avoiding Globals in Go Web Applications](https://elithrar.github.io/article/custom-handlers-avoiding-globals/)
