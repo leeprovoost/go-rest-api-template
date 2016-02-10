@@ -18,18 +18,19 @@ type env struct {
 	Render  *render.Render
 }
 
-var port *string
+var fPort string
+var fFixtures string
 
 func init() {
 	// parse command line flags
-	fixturesLocation := flag.String("fixtures", "./fixtures.json", "location of fixtures.json file")
-	port = flag.String("port", "3009", "serve traffic on this port")
+	flag.StringVar(&fFixtures, "fixtures", "./fixtures.json", "location of fixtures.json file")
+	flag.StringVar(&fPort, "port", "3009", "serve traffic on this port")
 	flag.Parse()
 
 	// read JSON fixtures file
 	var jsonObject map[string][]User
-	fmt.Println("Location of fixtures.json file: " + *fixturesLocation)
-	file, err := ioutil.ReadFile(*fixturesLocation)
+	fmt.Println("Location of fixtures.json file: " + fFixtures)
+	file, err := ioutil.ReadFile(fFixtures)
 	if err != nil {
 		log.Fatalf("File error: %v\n", err)
 	}
@@ -73,6 +74,6 @@ func main() {
 	n := negroni.Classic()
 	n.Use(env.Metrics)
 	n.UseHandler(router)
-	fmt.Println("Starting server on port: " + *port)
-	n.Run(":" + *port)
+	fmt.Println("Starting server on port: " + fPort)
+	n.Run(":" + fPort)
 }

@@ -2,6 +2,7 @@ package main
 
 import "errors"
 
+// DataStorer defines all the database operations
 type DataStorer interface {
 	List() (map[string]User, error)
 	Get(i int) (User, error)
@@ -10,6 +11,7 @@ type DataStorer interface {
 	Delete(i int) (bool, error)
 }
 
+// Database will hold the connection and key db info
 type Database struct {
 	UserList  map[int]User
 	MaxUserID int
