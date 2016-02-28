@@ -1,13 +1,11 @@
 package main
 
-import "net/http"
-
 //Route is the model for the router setup
 type Route struct {
-	Name    string
-	Method  string
-	Pattern string
-	Handler func(http.ResponseWriter, *http.Request, env)
+	Name        string
+	Method      string
+	Pattern     string
+	HandlerFunc HandlerFunc
 }
 
 //Routes are the main setup for our Router
@@ -17,6 +15,7 @@ var routes = Routes{
 	Route{"Home", "GET", "/", HomeHandler},
 	Route{"Healthcheck", "GET", "/healthcheck", HealthcheckHandler},
 	Route{"Metrics", "GET", "/metrics", MetricsHandler},
+
 	//=== USERS ==
 	Route{"ListUsers", "GET", "/users", ListUsersHandler},
 	Route{"GetUser", "GET", "/users/{uid:[0-9]+}", GetUserHandler},

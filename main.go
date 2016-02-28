@@ -6,10 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 
-	"github.com/codegangsta/negroni"
-	"github.com/gorilla/mux"
 	"github.com/thoas/stats"
 	"github.com/unrolled/render"
 )
@@ -54,22 +51,7 @@ func main() {
 		Metrics: stats.New(),
 		Render:  render.New(),
 	}
-	router := mux.NewRouter().StrictSlash(true)
-	for _, route := range routes {
 
-		var handler http.Handler
-
-		handler = makeHandler(env, route.Handler)
-		router.
-			Methods(route.Method).
-			Path(route.Pattern).
-			Name(route.Name).
-			Handler(handler)
-	}
-
-	n := negroni.Classic()
-	n.Use(env.Metrics)
-	n.UseHandler(router)
 	fmt.Println("===> 🌍 Starting server on port: " + fPort)
-	n.Run(":" + fPort)
+	StartServer(env, fPort)
 }
