@@ -34,7 +34,7 @@ func MetricsHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 
 // ListUsersHandler returns a list of users
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
-	list, _ := db.List()
+	list, _ := ctx.db.ListUsers()
 	ctx.render.JSON(w, http.StatusOK, list)
 }
 
@@ -42,7 +42,7 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx appContext) 
 func GetUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	vars := mux.Vars(req)
 	uid, _ := strconv.Atoi(vars["uid"])
-	user, err := db.Get(uid)
+	user, err := ctx.db.GetUser(uid)
 	if err == nil {
 		ctx.render.JSON(w, http.StatusOK, user)
 	} else {
@@ -59,7 +59,7 @@ func CreateUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext)
 		ctx.render.JSON(w, http.StatusBadRequest, err)
 	} else {
 		user := User{-1, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
-		user, _ = db.Add(user)
+		user, _ = ctx.db.AddUser(user)
 		ctx.render.JSON(w, http.StatusCreated, user)
 	}
 }
@@ -73,7 +73,7 @@ func UpdateUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext)
 		ctx.render.JSON(w, http.StatusBadRequest, err)
 	} else {
 		user := User{u.ID, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
-		user, err = db.Update(user)
+		user, err = ctx.db.UpdateUser(user)
 		if err != nil {
 			ctx.render.JSON(w, http.StatusOK, user)
 		} else {
@@ -86,7 +86,7 @@ func UpdateUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext)
 func DeleteUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	vars := mux.Vars(req)
 	uid, _ := strconv.Atoi(vars["uid"])
-	ok, err := db.Delete(uid)
+	ok, err := ctx.db.DeleteUser(uid)
 	if ok {
 		// TO DO return empty body?
 		ctx.render.Text(w, http.StatusNoContent, "")

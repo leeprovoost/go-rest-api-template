@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,14 +12,14 @@ import (
 
 func TestListUsersHandler(t *testing.T) {
 	ctx := createContextForTestSetup()
-	req, _ := http.NewRequest("GET", "", nil)
+	req, _ := http.NewRequest("GET", "/users", nil)
 	w := httptest.NewRecorder()
 	makeHandler(ctx, ListUsersHandler).ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code, "they should be equal")
 	assert.Equal(t, "application/json; charset=UTF-8", w.HeaderMap["Content-Type"][0], "they should be equal")
-	// parse json body
+	//parse json body
 	var f interface{}
 	json.Unmarshal(w.Body.Bytes(), &f)
 	m := f.(map[string]interface{})
-	fmt.Println(m["users"])
+	log.Println(m["users"])
 }

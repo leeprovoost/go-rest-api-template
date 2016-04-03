@@ -1,33 +1,23 @@
 package main
 
 import (
-	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMain(m *testing.M) {
-	list := make(map[int]User)
-	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
-	list[0] = User{0, "John", "Doe", dt, "London"}
-	dt, _ = time.Parse(time.RFC3339, "1992-01-01T00:00:00Z")
-	list[1] = User{1, "Jane", "Doe", dt, "Milton Keynes"}
-	db = &Database{list, 1}
-	retCode := m.Run()
-	os.Exit(retCode)
-}
-
 func TestList(t *testing.T) {
-	list, _ := db.List()
+	ctx := createContextForTestSetup()
+	list, _ := ctx.db.ListUsers()
 	count := len(list["users"])
 	assert.Equal(t, 2, count, "There should be 2 items in the list.")
 }
 
 func TestGetSuccess(t *testing.T) {
+	ctx := createContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
-	u, err := db.Get(0)
+	u, err := ctx.db.GetUser(0)
 	if assert.Nil(t, err) {
 		assert.Equal(t, 0, u.ID, "they should be equal")
 		assert.Equal(t, "John", u.FirstName, "they should be equal")
@@ -38,11 +28,13 @@ func TestGetSuccess(t *testing.T) {
 }
 
 func TestGetFail(t *testing.T) {
-	_, err := db.Get(10)
+	ctx := createContextForTestSetup()
+	_, err := ctx.db.GetUser(10)
 	assert.NotNil(t, err)
 }
 
 func TestAdd(t *testing.T) {
+	ctx := createContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1972-03-07T00:00:00Z")
 	u := User{
 		FirstName:       "Apple",
@@ -50,16 +42,17 @@ func TestAdd(t *testing.T) {
 		DateOfBirth:     dt,
 		LocationOfBirth: "Cambridge",
 	}
-	u, _ = db.Add(u)
+	u, _ = ctx.db.AddUser(u)
 	// we should now have a user object with a database Id
 	assert.Equal(t, 2, u.ID, "Expected database Id should be 2.")
 	// we should now have 3 items in the list
-	list, _ := db.List()
+	list, _ := ctx.db.ListUsers()
 	count := len(list["users"])
 	assert.Equal(t, 3, count, "There should be 3 items in the list.")
 }
 
 func TestUpdateSuccess(t *testing.T) {
+	ctx := createContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u := User{
 		ID:              0,
@@ -69,7 +62,7 @@ func TestUpdateSuccess(t *testing.T) {
 		LocationOfBirth: "Southend",
 	}
 	// check if there are no errors
-	u2, err := db.Update(u)
+	u2, err := ctx.db.UpdateUser(u)
 	assert.Nil(t, err)
 	// check returned user
 	assert.Equal(t, 0, u2.ID, "they should be equal")
@@ -80,6 +73,7 @@ func TestUpdateSuccess(t *testing.T) {
 }
 
 func TestUpdateFail(t *testing.T) {
+	ctx := createContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u := User{
 		ID:              20,
@@ -88,18 +82,20 @@ func TestUpdateFail(t *testing.T) {
 		DateOfBirth:     dt,
 		LocationOfBirth: "Southend",
 	}
-	_, err := db.Update(u)
+	_, err := ctx.db.UpdateUser(u)
 	assert.NotNil(t, err)
 }
 
 func TestDeleteSuccess(t *testing.T) {
-	ok, err := db.Delete(1)
+	ctx := createContextForTestSetup()
+	ok, err := ctx.db.DeleteUser(1)
 	assert.Equal(t, true, ok, "they should be equal")
 	assert.Nil(t, err)
 }
 
 func TestDeleteFail(t *testing.T) {
-	ok, err := db.Delete(10)
+	ctx := createContextForTestSetup()
+	ok, err := ctx.db.DeleteUser(10)
 	assert.Equal(t, false, ok, "they should be equal")
 	assert.NotNil(t, err)
 }

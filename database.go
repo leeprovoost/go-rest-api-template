@@ -4,23 +4,21 @@ import "errors"
 
 // DataStorer defines all the database operations
 type DataStorer interface {
-	List() (map[string]User, error)
-	Get(i int) (User, error)
-	Add(u User) (User, error)
-	Update(u User) (User, error)
-	Delete(i int) (bool, error)
+	ListUsers() (map[string][]User, error)
+	GetUser(i int) (User, error)
+	AddUser(u User) (User, error)
+	UpdateUser(u User) (User, error)
+	DeleteUser(i int) (bool, error)
 }
 
-// Database will hold the connection and key db info
-type Database struct {
+// MockDB will hold the connection and key db info
+type MockDB struct {
 	UserList  map[int]User
 	MaxUserID int
 }
 
-var db *Database
-
-// List returns a list of JSON documents
-func (db *Database) List() (map[string][]User, error) {
+// ListUsers returns a list of JSON documents
+func (db *MockDB) ListUsers() (map[string][]User, error) {
 	var list []User
 	for _, v := range db.UserList {
 		list = append(list, v)
@@ -30,8 +28,8 @@ func (db *Database) List() (map[string][]User, error) {
 	return responseObject, nil
 }
 
-// Get a single JSON document
-func (db *Database) Get(i int) (User, error) {
+// GetUser returns a single JSON document
+func (db *MockDB) GetUser(i int) (User, error) {
 	user, ok := db.UserList[i]
 	if !ok {
 		return user, errors.New("user does not exist")
@@ -39,8 +37,8 @@ func (db *Database) Get(i int) (User, error) {
 	return user, nil
 }
 
-// Add a User JSON document, returns the JSON document with the generated id
-func (db *Database) Add(u User) (User, error) {
+// AddUser adds a User JSON document, returns the JSON document with the generated id
+func (db *MockDB) AddUser(u User) (User, error) {
 	db.MaxUserID = db.MaxUserID + 1
 	newUser := User{
 		ID:              db.MaxUserID,
@@ -53,8 +51,8 @@ func (db *Database) Add(u User) (User, error) {
 	return newUser, nil
 }
 
-// Update an existing user
-func (db *Database) Update(u User) (User, error) {
+// UpdateUser updates an existing user
+func (db *MockDB) UpdateUser(u User) (User, error) {
 	id := u.ID
 	_, ok := db.UserList[id]
 	if !ok {
@@ -64,8 +62,8 @@ func (db *Database) Update(u User) (User, error) {
 	return db.UserList[id], nil
 }
 
-// Delete a user
-func (db *Database) Delete(i int) (bool, error) {
+// DeleteUser deletes a user
+func (db *MockDB) DeleteUser(i int) (bool, error) {
 	_, ok := db.UserList[i]
 	if !ok {
 		return false, errors.New("could not delete this user")

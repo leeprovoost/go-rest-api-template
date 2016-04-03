@@ -19,6 +19,7 @@ type appContext struct {
 	version string
 	env     string
 	port    string
+	db      DataStorer
 }
 
 func main() {
@@ -59,7 +60,7 @@ func main() {
 	list := make(map[int]User)
 	list[0] = jsonObject["users"][0]
 	list[1] = jsonObject["users"][1]
-	db = &Database{
+	db := &MockDB{
 		UserList:  list,
 		MaxUserID: 1,
 	}
@@ -71,6 +72,7 @@ func main() {
 		version: version,
 		env:     env,
 		port:    port,
+		db:      db,
 	}
 
 	// start application
