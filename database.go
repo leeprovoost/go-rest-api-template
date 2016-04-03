@@ -1,6 +1,10 @@
 package main
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/palantir/stacktrace"
+)
 
 // DataStorer defines all the database operations
 type DataStorer interface {
@@ -8,7 +12,7 @@ type DataStorer interface {
 	GetUser(i int) (User, error)
 	AddUser(u User) (User, error)
 	UpdateUser(u User) (User, error)
-	DeleteUser(i int) (bool, error)
+	DeleteUser(i int) error
 }
 
 // MockDB will hold the connection and key db info
@@ -30,7 +34,8 @@ func (db *MockDB) ListUsers() ([]User, error) {
 func (db *MockDB) GetUser(i int) (User, error) {
 	user, ok := db.UserList[i]
 	if !ok {
-		return user, errors.New("user does not exist")
+		err := errors.New("user does not exist")
+		return user, stacktrace.Propagate(err, "Failure trying to retrieve user")
 	}
 	return user, nil
 }
@@ -54,18 +59,20 @@ func (db *MockDB) UpdateUser(u User) (User, error) {
 	id := u.ID
 	_, ok := db.UserList[id]
 	if !ok {
-		return u, errors.New("user does not exist")
+		err := errors.New("user does not exist")
+		return u, stacktrace.Propagate(err, "Failure trying to update user")
 	}
 	db.UserList[id] = u
 	return db.UserList[id], nil
 }
 
 // DeleteUser deletes a user
-func (db *MockDB) DeleteUser(i int) (bool, error) {
+func (db *MockDB) DeleteUser(i int) error {
 	_, ok := db.UserList[i]
 	if !ok {
-		return false, errors.New("could not delete this user")
+		err := errors.New("user does not exist")
+		return stacktrace.Propagate(err, "Failure trying to delete user")
 	}
 	delete(db.UserList, i)
-	return true, nil
+	return nil
 }

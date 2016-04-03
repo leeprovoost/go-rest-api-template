@@ -54,11 +54,16 @@ func GetUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	vars := mux.Vars(req)
 	uid, _ := strconv.Atoi(vars["uid"])
 	user, err := ctx.db.GetUser(uid)
-	if err == nil {
-		ctx.render.JSON(w, http.StatusOK, user)
-	} else {
-		ctx.render.JSON(w, http.StatusNotFound, err)
+	if err != nil {
+		response := Status{
+			Status:  "404",
+			Message: "can't find user",
+		}
+		log.Println(err)
+		ctx.render.JSON(w, http.StatusNotFound, response)
+		return
 	}
+	ctx.render.JSON(w, http.StatusOK, user)
 }
 
 // CreateUserHandler adds a new user
@@ -67,12 +72,17 @@ func CreateUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext)
 	var u User
 	err := decoder.Decode(&u)
 	if err != nil {
-		ctx.render.JSON(w, http.StatusBadRequest, err)
-	} else {
-		user := User{-1, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
-		user, _ = ctx.db.AddUser(user)
-		ctx.render.JSON(w, http.StatusCreated, user)
+		response := Status{
+			Status:  "400",
+			Message: "malformed user object",
+		}
+		log.Println(err)
+		ctx.render.JSON(w, http.StatusBadRequest, response)
+		return
 	}
+	user := User{-1, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
+	user, _ = ctx.db.AddUser(user)
+	ctx.render.JSON(w, http.StatusCreated, user)
 }
 
 // UpdateUserHandler updates a user object
@@ -81,29 +91,49 @@ func UpdateUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext)
 	var u User
 	err := decoder.Decode(&u)
 	if err != nil {
-		ctx.render.JSON(w, http.StatusBadRequest, err)
-	} else {
-		user := User{u.ID, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
-		user, err = ctx.db.UpdateUser(user)
-		if err != nil {
-			ctx.render.JSON(w, http.StatusOK, user)
-		} else {
-			ctx.render.JSON(w, http.StatusNotFound, err)
+		response := Status{
+			Status:  "400",
+			Message: "malformed user object",
 		}
+		log.Println(err)
+		ctx.render.JSON(w, http.StatusBadRequest, response)
+		return
 	}
+	user := User{
+		ID:              u.ID,
+		FirstName:       u.FirstName,
+		LastName:        u.LastName,
+		DateOfBirth:     u.DateOfBirth,
+		LocationOfBirth: u.LocationOfBirth,
+	}
+	user, err = ctx.db.UpdateUser(user)
+	if err != nil {
+		response := Status{
+			Status:  "500",
+			Message: "something went wrong",
+		}
+		log.Println(err)
+		ctx.render.JSON(w, http.StatusInternalServerError, response)
+		return
+	}
+	ctx.render.JSON(w, http.StatusOK, user)
 }
 
 // DeleteUserHandler deletes a user
 func DeleteUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	vars := mux.Vars(req)
 	uid, _ := strconv.Atoi(vars["uid"])
-	ok, err := ctx.db.DeleteUser(uid)
-	if ok {
-		// TO DO return empty body?
-		ctx.render.Text(w, http.StatusNoContent, "")
-	} else {
-		ctx.render.JSON(w, http.StatusNotFound, err)
+	err := ctx.db.DeleteUser(uid)
+	if err != nil {
+		response := Status{
+			Status:  "500",
+			Message: "something went wrong",
+		}
+		log.Println(err)
+		ctx.render.JSON(w, http.StatusInternalServerError, response)
+		return
 	}
+	ctx.render.Text(w, http.StatusNoContent, "")
 }
 
 // PassportsHandler not implemented yet

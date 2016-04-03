@@ -88,14 +88,12 @@ func TestUpdateFail(t *testing.T) {
 
 func TestDeleteSuccess(t *testing.T) {
 	ctx := createContextForTestSetup()
-	ok, err := ctx.db.DeleteUser(1)
-	assert.Equal(t, true, ok, "they should be equal")
+	err := ctx.db.DeleteUser(1)
 	assert.Nil(t, err)
 }
 
 func TestDeleteFail(t *testing.T) {
 	ctx := createContextForTestSetup()
-	ok, err := ctx.db.DeleteUser(10)
-	assert.Equal(t, false, ok, "they should be equal")
+	err := ctx.db.DeleteUser(10)
 	assert.NotNil(t, err)
 }
