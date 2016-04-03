@@ -23,7 +23,11 @@ func makeHandler(ctx appContext, fn func(http.ResponseWriter, *http.Request, app
 
 // HealthcheckHandler returns useful info about the app
 func HealthcheckHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
-	ctx.render.Text(w, http.StatusNoContent, "")
+	check := Healthcheck{
+		AppName: "go-rest-api-template",
+		Version: ctx.version,
+	}
+	ctx.render.JSON(w, http.StatusOK, check)
 }
 
 // MetricsHandler returns application metrics
