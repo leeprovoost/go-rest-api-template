@@ -11,7 +11,7 @@ import (
 	"github.com/unrolled/render"
 )
 
-type env struct {
+type appContext struct {
 	Metrics *stats.Stats
 	Render  *render.Render
 }
@@ -22,7 +22,7 @@ var fFixtures string
 func init() {
 	// parse command line flags
 	flag.StringVar(&fFixtures, "fixtures", "./fixtures.json", "location of fixtures.json file")
-	flag.StringVar(&fPort, "port", "3009", "serve traffic on this port")
+	flag.StringVar(&fPort, "port", "3001", "serve traffic on this port")
 	flag.Parse()
 
 	// read JSON fixtures file
@@ -47,11 +47,11 @@ func init() {
 }
 
 func main() {
-	env := env{
+	ctx := appContext{
 		Metrics: stats.New(),
 		Render:  render.New(),
 	}
 
 	fmt.Println("===> 🌍 Starting server on port: " + fPort)
-	StartServer(env, fPort)
+	StartServer(ctx, fPort)
 }

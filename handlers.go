@@ -10,91 +10,93 @@ import (
 )
 
 // HandlerFunc is a custom implementation of the http.HandlerFunc
-type HandlerFunc func(http.ResponseWriter, *http.Request, env)
+type HandlerFunc func(http.ResponseWriter, *http.Request, appContext)
 
 // makeHandler allows us to pass an environment struct to our handlers, without resorting to global
 // variables. It accepts an environment (Env) struct and our own handler function. It returns
 // a function of the type http.HandlerFunc so can be passed on to the HandlerFunc in main.go.
-func makeHandler(env env, fn func(http.ResponseWriter, *http.Request, env)) http.HandlerFunc {
+func makeHandler(ctx appContext, fn func(http.ResponseWriter, *http.Request, appContext)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fn(w, r, env)
+		fn(w, r, ctx)
 	}
 }
 
-func HomeHandler(w http.ResponseWriter, req *http.Request, env env) {
-	log.Println("Home - Not implemented yet")
-	env.Render.Text(w, http.StatusNotImplemented, "")
+// HealthcheckHandler returns useful info about the app
+func HealthcheckHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
+	ctx.Render.Text(w, http.StatusNoContent, "")
 }
 
-func HealthcheckHandler(w http.ResponseWriter, req *http.Request, env env) {
-	env.Render.Text(w, http.StatusNoContent, "")
+// MetricsHandler returns application metrics
+func MetricsHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
+	stats := ctx.Metrics.Data()
+	ctx.Render.JSON(w, http.StatusOK, stats)
 }
 
-func MetricsHandler(w http.ResponseWriter, req *http.Request, env env) {
-	stats := env.Metrics.Data()
-	env.Render.JSON(w, http.StatusOK, stats)
-}
-
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, env env) {
+// ListUsersHandler returns a list of users
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	list, _ := db.List()
-	env.Render.JSON(w, http.StatusOK, list)
+	ctx.Render.JSON(w, http.StatusOK, list)
 }
 
-func GetUserHandler(w http.ResponseWriter, req *http.Request, env env) {
+// GetUserHandler returns a user object
+func GetUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	vars := mux.Vars(req)
 	uid, _ := strconv.Atoi(vars["uid"])
 	user, err := db.Get(uid)
 	if err == nil {
-		env.Render.JSON(w, http.StatusOK, user)
+		ctx.Render.JSON(w, http.StatusOK, user)
 	} else {
-		env.Render.JSON(w, http.StatusNotFound, err)
+		ctx.Render.JSON(w, http.StatusNotFound, err)
 	}
 }
 
-func CreateUserHandler(w http.ResponseWriter, req *http.Request, env env) {
+// CreateUserHandler adds a new user
+func CreateUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	decoder := json.NewDecoder(req.Body)
 	var u User
 	err := decoder.Decode(&u)
 	if err != nil {
-		env.Render.JSON(w, http.StatusBadRequest, err)
+		ctx.Render.JSON(w, http.StatusBadRequest, err)
 	} else {
 		user := User{-1, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
 		user, _ = db.Add(user)
-		env.Render.JSON(w, http.StatusCreated, user)
+		ctx.Render.JSON(w, http.StatusCreated, user)
 	}
 }
 
-func UpdateUserHandler(w http.ResponseWriter, req *http.Request, env env) {
+// UpdateUserHandler updates a user object
+func UpdateUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	decoder := json.NewDecoder(req.Body)
 	var u User
 	err := decoder.Decode(&u)
 	if err != nil {
-
-		env.Render.JSON(w, http.StatusBadRequest, err)
+		ctx.Render.JSON(w, http.StatusBadRequest, err)
 	} else {
 		user := User{u.ID, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
 		user, err = db.Update(user)
 		if err != nil {
-			env.Render.JSON(w, http.StatusOK, user)
+			ctx.Render.JSON(w, http.StatusOK, user)
 		} else {
-			env.Render.JSON(w, http.StatusNotFound, err)
+			ctx.Render.JSON(w, http.StatusNotFound, err)
 		}
 	}
 }
 
-func DeleteUserHandler(w http.ResponseWriter, req *http.Request, env env) {
+// DeleteUserHandler deletes a user
+func DeleteUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	vars := mux.Vars(req)
 	uid, _ := strconv.Atoi(vars["uid"])
 	ok, err := db.Delete(uid)
 	if ok {
 		// TO DO return empty body?
-		env.Render.Text(w, http.StatusNoContent, "")
+		ctx.Render.Text(w, http.StatusNoContent, "")
 	} else {
-		env.Render.JSON(w, http.StatusNotFound, err)
+		ctx.Render.JSON(w, http.StatusNotFound, err)
 	}
 }
 
-func PassportsHandler(w http.ResponseWriter, req *http.Request, env env) {
+// PassportsHandler not implemented yet
+func PassportsHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	log.Println("Handling Passports - Not implemented yet")
-	env.Render.Text(w, http.StatusNotImplemented, "")
+	ctx.Render.Text(w, http.StatusNotImplemented, "")
 }

@@ -12,7 +12,6 @@ type Route struct {
 type Routes []Route
 
 var routes = Routes{
-	Route{"Home", "GET", "/", HomeHandler},
 	Route{"Healthcheck", "GET", "/healthcheck", HealthcheckHandler},
 	Route{"Metrics", "GET", "/metrics", MetricsHandler},
 
