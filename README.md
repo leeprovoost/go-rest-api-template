@@ -8,7 +8,7 @@ Reusable template for building REST Web Services in Golang. Uses gorilla/mux as 
 
 ### Why?
 
-After writing many REST APIs with Java Dropwizard, Node.js/Express and Go, I wanted to distill my lessons learned into a reusable template for writing REST APIs, in the Go language (my favourite).
+After writing many REST APIs with Java Dropwizard, Node.js/Express and Go, I wanted to distill my lessons learned into a reusable template for writing REST APIs, in the Go language.
 
 It's mainly for myself. I don't want to keep reinventing the wheel and just want to get the foundation of my REST API 'ready to go' so I can focus on the business logic and integration with other systems and data stores.
 
@@ -22,11 +22,13 @@ The main ones are:
 * [render](https://github.com/unrolled/render) for HTTP response rendering
 * [stacktrace](https://github.com/palantir/stacktrace) to provide more context to error messages
 
-Whilst working on this I've tried to write up as much as my thought process as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR, raise an issue or contact me on twitter [@leeprovoost](https://twitter.com/leeprovoost).
+Whilst working on this I've tried to write up my thought process as much as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR, raise an issue or contact me on twitter [@leeprovoost](https://twitter.com/leeprovoost).
+
+Another shameless plug: I'm occasionally writing about my lessons learned developing AWS platforms and Go applications on [Medium](https://medium.com/@leeprovoost).
 
 ### Knowledge of Go
 
-If you're new to programming in Go, I would highly recommend you to read the following two resources:
+If you're new to programming in Go, I would highly recommend you to read the following three resources:
 
 * [A Tour of Go](https://tour.golang.org/welcome/1)
 * [Effective Go](https://golang.org/doc/effective_go.html)
@@ -38,7 +40,7 @@ A good project to keep on eye on to discover new Go packages and software is [aw
 
 ### Development tools
 
-I've tried many different editors and it seems like it's a common Go newbie [frustration](https://groups.google.com/forum/#!topic/golang-nuts/6ZgrZsPzHr0). Coming from Java, I've tried "proper" IDEs like [LiteIDE](https://github.com/visualfc/liteide) and IntelliJ with the [golang plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin) but never really fell in love with those.
+I've tried many different editors and it seems like it's a common Go newbie [frustration](https://groups.google.com/forum/#!topic/golang-nuts/6ZgrZsPzHr0). Coming from Java, I've tried "proper" IDEs like [LiteIDE](https://github.com/visualfc/liteide) and IntelliJ with the [golang plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin) but never really fell in love with them.
 
 I've used Sublime Text with the [GoSublime](https://github.com/DisposaBoy/GoSublime) plugin for a long time, but have now settled on Atom with the [go-plus](https://github.com/joefitzgerald/go-plus) plugin and that is working very well. It provides the "lightness" of an editor but with some of the power you'd expect from an IDE. It has code completion, linting, formatting and even shows you what parts of the code are covered by tests.
 
@@ -48,6 +50,9 @@ The choice of an editor is a personal one, so the only advice I can give you is 
 * Atom with [go-plus](https://github.com/joefitzgerald/go-plus). There is a good article describing a full Go setup [here](http://marcio.io/2015/07/supercharging-atom-editor-for-go-development/).
 * vim with [vim-go](https://github.com/fatih/vim-go)
 * [LiteIDE](https://github.com/visualfc/liteide)
+* Microsoft did a pretty good job with their [Visual Studio Code](https://code.visualstudio.com/) and Luke Hoban created a brilliant Go binding for it: [vscode-go](https://github.com/Microsoft/vscode-go)
+
+Last but not least, I can highly recommend trying out [GitKraken](https://www.gitkraken.com/). I've never been a huge fan of desktop UI clients for git, but this one sets a new bar. Slick UI and very useful information about your local and remote branches and code history.
 
 ### How to run
 
@@ -57,10 +62,12 @@ The choice of an editor is a personal one, so the only advice I can give you is 
 go build && ./go-rest-api-template
 ```
 
-The app will bind itself by default to port 3009. If you want to change it (e.g. bind it to the default http port 80), then use a command line flag. Same for the location of the fixtures.json model.
+The app will bind itself by default to port 3001 (defined in `main.go`). If you want to change it (e.g. bind it to the default http port 80), then use an environment variable. Same for the location of the fixtures.json model.
 
 ```
-go build && ./go-rest-api-template -port=80 -fixtures=/tmp/fixtures.json
+export PORT=80
+export FIXTURES=/tmp/fixtures.json
+go build && ./go-rest-api-template
 ```
 
 ### Live Code Reloading
@@ -129,35 +136,38 @@ go-rest-api-template.log
 
 ### Code Structure
 
-Main server file (bootstrapping of http server and router):
+Main server files (bootstrapping of http server and router):
 
 ```
 main.go
+server.go
+router.go
 ```
 
 Route handlers:
 
 ```
 handlers.go
+handlers_test.go
 ```
 
-Data model descriptions:
+Data model descriptions and operations on the data:
 
 ```
 passport.go
 user.go
+user_test.go
 ```
 
-Mock database with operations:
+Definition of database interface and implementation definition:
 
 ```
 database.go
 ```
 
-Tests and test data:
+Test data:
 
 ```
-database_test.go
 fixtures.json
 ```
 
@@ -166,6 +176,20 @@ Configuration file for [fresh](go get github.com/pilu/fresh):
 ```
 runner.conf
 ```
+
+Test that checks whether structs comply with the DataStorer interface:
+
+```
+interface_test.go
+```
+
+Helper functions for our tests:
+
+```
+tester.go
+```
+
+### Application architecture
 
 TO DO talk about the layers of the applications
 
@@ -757,7 +781,7 @@ Updating an existing user:
 TO DO
 ```
 
-### Automating the API tests
+### Testing the Handlers
 
 TO DO
 
@@ -948,7 +972,7 @@ fi
 
 ### Go core language concepts
 
-* [Undertanding method receivers and pointers](http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/)
+* [Understanding method receivers and pointers](http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/)
 * [HTTP Closures gist](https://gist.github.com/tsenart/5fc18c659814c078378d)
 * [Introducing Function Literals and Closures](https://golang.org/doc/articles/wiki/)
 * [Custom Handlers and Avoiding Globals in Go Web Applications](https://elithrar.github.io/article/custom-handlers-avoiding-globals/)
