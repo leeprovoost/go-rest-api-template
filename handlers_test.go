@@ -12,12 +12,13 @@ import (
 	"github.com/unrolled/render"
 )
 
-func HandlersTestSetup() env {
-	env := env{
+// HandlersTestSetup returns mock app context
+func HandlersTestSetup() appContext {
+	ctx := appContext{
 		Metrics: stats.New(),
 		Render:  render.New(),
 	}
-	return env
+	return ctx
 }
 
 func teardown() {

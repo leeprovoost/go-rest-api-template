@@ -8,13 +8,13 @@ import (
 )
 
 // StartServer Wraps the mux Router and uses the Negroni Middleware
-func StartServer(env env, port string) {
+func StartServer(ctx appContext, port string) {
 
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range routes {
 		var handler http.Handler
 
-		handler = makeHandler(env, route.HandlerFunc)
+		handler = makeHandler(ctx, route.HandlerFunc)
 
 		router.
 			Methods(route.Method).
@@ -25,7 +25,7 @@ func StartServer(env env, port string) {
 	}
 
 	n := negroni.Classic()
-	n.Use(env.Metrics)
+	n.Use(ctx.Metrics)
 	n.UseHandler(router)
 
 	n.Run(":" + port)

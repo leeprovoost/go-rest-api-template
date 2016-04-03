@@ -29,7 +29,7 @@ func TestGetSuccess(t *testing.T) {
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u, err := db.Get(0)
 	if assert.Nil(t, err) {
-		assert.Equal(t, 0, u.Id, "they should be equal")
+		assert.Equal(t, 0, u.ID, "they should be equal")
 		assert.Equal(t, "John", u.FirstName, "they should be equal")
 		assert.Equal(t, "Doe", u.LastName, "they should be equal")
 		assert.Equal(t, dt, u.DateOfBirth, "they should be equal")
@@ -52,7 +52,7 @@ func TestAdd(t *testing.T) {
 	}
 	u, _ = db.Add(u)
 	// we should now have a user object with a database Id
-	assert.Equal(t, 2, u.Id, "Expected database Id should be 2.")
+	assert.Equal(t, 2, u.ID, "Expected database Id should be 2.")
 	// we should now have 3 items in the list
 	list, _ := db.List()
 	count := len(list["users"])
@@ -62,7 +62,7 @@ func TestAdd(t *testing.T) {
 func TestUpdateSuccess(t *testing.T) {
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u := User{
-		Id:              0,
+		ID:              0,
 		FirstName:       "John",
 		LastName:        "2 Doe",
 		DateOfBirth:     dt,
@@ -72,7 +72,7 @@ func TestUpdateSuccess(t *testing.T) {
 	u2, err := db.Update(u)
 	assert.Nil(t, err)
 	// check returned user
-	assert.Equal(t, 0, u2.Id, "they should be equal")
+	assert.Equal(t, 0, u2.ID, "they should be equal")
 	assert.Equal(t, "John", u2.FirstName, "they should be equal")
 	assert.Equal(t, "2 Doe", u2.LastName, "they should be equal")
 	assert.Equal(t, dt, u2.DateOfBirth, "they should be equal")
@@ -82,7 +82,7 @@ func TestUpdateSuccess(t *testing.T) {
 func TestUpdateFail(t *testing.T) {
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u := User{
-		Id:              20,
+		ID:              20,
 		FirstName:       "John",
 		LastName:        "2 Doe",
 		DateOfBirth:     dt,

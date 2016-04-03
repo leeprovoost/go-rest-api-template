@@ -2,10 +2,11 @@ package main
 
 import "time"
 
+// Passport holds passport data
 type Passport struct {
-	Id           string    `json:"id"`
+	ID           string    `json:"id"`
 	DateOfIssue  time.Time `json:"dateOfIssue"`
 	DateOfExpiry time.Time `json:"dateOfExpiry"`
 	Authority    string    `json:"authority"`
-	UserId       int       `json:"userId"`
+	UserID       int       `json:"userId"`
 }
