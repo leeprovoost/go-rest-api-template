@@ -189,11 +189,7 @@ Helper functions for our tests:
 tester.go
 ```
 
-### Application architecture
-
-TO DO talk about the layers of the applications
-
-### main.go
+### Starting the application: main.go, server.go and router.go
 
 TO DO
 
@@ -509,7 +505,7 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request, ctx appContext
 
 This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
 
-## Special Route: Metrics
+### Special Route: Metrics
 
 Something that is often overlooked is ensuring that you have a deep insight in your application metrics. I admit that in the past I was mainly looking at server metrics like memory consumption, CPU usage, swap, etc. Once I started building micro-services using Coda Hale's excellent Java [Dropwizard framework](http://www.dropwizard.io/), I got to know his [metrics](https://dropwizard.github.io/metrics/3.1.0/) library that gave me insight in the application and JVM metrics as an engineer.
 
