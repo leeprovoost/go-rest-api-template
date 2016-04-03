@@ -439,12 +439,16 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request, render Render) {
 
 Perfect. Or, is it? What if we want to pass more variables to the handler function? Like Metrics? Or some environment variables? We'd continuously have to change ALL our handlers and the type signature will become quite long and hard to maintain. An alternative is to create a server or an environment struct and use that as a container for our variables we want to pass around the system.
 
-In our `main.go` we'd add:
+In our `main.go` we'll add:
 
 ```
-type env struct {
+type appContext struct {
   metrics *stats.Stats
   render  *render.Render
+  version string
+	env     string
+	port    string
+	db      DataStorer
 }
 ```
 
@@ -452,9 +456,13 @@ And in our `func main()` function we initialise that struct:
 
 ```
 func main() {
-  env := env{
+  ctx := appContext{
     metrics: stats.New(),
     render:  render.New(),
+    version: version,
+		env:     env,
+		port:    port,
+		db:      db,
   }
   // ...
 }
@@ -463,17 +471,18 @@ func main() {
 Our handler looks now like this:
 
 ```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, env env) {
-  env.Render.JSON(w, http.StatusOK, db.List())
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
+  // code that retrieves users from database
+  ctx.render.JSON(w, http.StatusOK, responseObject
 }
 ```
 
-The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, env` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our environment struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
+The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, appContext` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our appContext struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
 
 ```
-func makeHandler(env env, fn func(http.ResponseWriter, *http.Request, env)) http.HandlerFunc {
+func makeHandler(ctx appContext, fn func(http.ResponseWriter, *http.Request, appContext)) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
-    fn(w, r, env)
+    fn(w, r, ctx)
   }
 }
 ```
