@@ -1,6 +1,6 @@
 # go-rest-api-template [ ![Codeship Status for leeprovoost/go-rest-api-template](https://codeship.com/projects/89ed2300-9d8f-0133-5815-1a74f7994c2d/status?branch=master)](https://codeship.com/projects/127524)
 
-*WORK IN PROGRESS*
+*WORK IN PROGRESS: documentation is not on par yet with a recent major refactoring exercise (3 April 2016)*
 
 Reusable template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.5.
 
@@ -19,7 +19,6 @@ The main ones are:
 * [gorilla/mux](http://www.gorillatoolkit.org/pkg/mux) for routing
 * [negroni](https://github.com/codegangsta/negroni) as a middleware handler
 * [testify](https://github.com/stretchr/testify) for writing easier test assertions
-* [godep](https://github.com/tools/godep) for dependency management
 * [render](https://github.com/unrolled/render) for HTTP response rendering
 
 Whilst working on this I've tried to write up as much as my thought process as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR, raise an issue or contact me on twitter [@leeprovoost](https://twitter.com/leeprovoost).
@@ -452,29 +451,107 @@ func makeHandler(env env, fn func(http.ResponseWriter, *http.Request, env)) http
 }
 ```
 
-### Special Routes
+### Special Route: Health check
 
-When you look at the overview of the handlers in `main.go`, you will notice a couple of special routes:
-
-```
-router.HandleFunc("/", makeHandler(env, HomeHandler))
-router.HandleFunc("/healthcheck", makeHandler(env, HealthcheckHandler)).Methods("GET")
-router.HandleFunc("/metrics", makeHandler(env, MetricsHandler)).Methods("GET")
-```
-
-When someone hits our API, without a specified route, then we can handle that with either a standard 404 (not found), or any other type of feedback.
-
-We also want to set up a health check that monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 204 OK when the serivce is up and running, including some extra stats. A 204 means "Hey, I got your request, all is fine and I have nothing else to say". It essentially tells your client that there is no body content.
+When you look at the overview of the handlers in `routes.go`, you will notice a special route:
 
 ```
-func HealthcheckHandler(w http.ResponseWriter, req *http.Request, env env) {
-  env.Render.Text(w, http.StatusNoContent, "")
+Route{"Healthcheck", "GET", "/healthcheck", HealthcheckHandler},
+```
+
+Monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 200 OK when the service is up and running and will also say what the application name is and the version number.
+
+```
+func HealthcheckHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
+	check := Healthcheck{
+		AppName: "go-rest-api-template",
+		Version: ctx.version,
+	}
+	ctx.render.JSON(w, http.StatusOK, check)
 }
 ```
 
 This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
 
-We will skip the `/metrics` route for a second and keep that for the end of the article.
+## Special Route: Metrics
+
+Something that is often overlooked is ensuring that you have a deep insight in your application metrics. I admit that in the past I was mainly looking at server metrics like memory consumption, CPU usage, swap, etc. Once I started building micro-services using Coda Hale's excelent Java [Dropwizard framework](http://www.dropwizard.io/), I got to know his [metrics](https://dropwizard.github.io/metrics/3.1.0/) library that gave me insight in the application and JVM metrics as an engineer.
+
+As a start, you could look into two metrics: average response times for either your whole APU (or for a specific route) and the various HTTP status codes being returned. The important thing here is that you hook this up with a monitoring tool (e.g. Sensu) so that the tool periodically pings your metrics endpoint (in this example: http://localhost:3009/metrics) and look at trends. We're less interested in an individual snapshot. We will always have the occasional HTTP 404 being returend. However, if after a deployment you start seeing a spike in HTTP 404 codes being returned, then that should give you an indication that something might be wrong.
+
+I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) package but admit that I haven't used it in anger in a production enviornment.
+
+We will first add the stats as a variable, named Metrics, to our environment struct:
+
+```
+type env struct {
+  Metrics *stats.Stats
+  Render  *render.Render
+}
+```
+
+Then initialise the variable in our main function (in `main.go`):
+
+```
+func main() {
+  env := env{
+    Metrics: stats.New(),
+    Render:  render.New(),
+  }
+  router := mux.NewRouter()
+  // ...
+}
+```
+
+The actual handler is pretty simple. In `handlers.go`, we add a handler called `MetricsHandler` and that just gets the data from our environment, renders it into a JSON format and returns an HTTP 200 OK status:
+
+```
+func MetricsHandler(w http.ResponseWriter, req *http.Request, env env) {
+  stats := env.Metrics.Data()
+  env.Render.JSON(w, http.StatusOK, stats)
+}
+```
+
+If you curl the Metrics endpoint:
+
+```
+curl -X GET http://localhost:3009/metrics | python -mjson.tool
+```
+
+Then you should receive the following response:
+
+```
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   392  100   392    0     0  27724      0 --:--:-- --:--:-- --:--:-- 28000
+{
+    "average_response_time": "93.247\u00b5s",
+    "average_response_time_sec": 9.324700000000001e-05,
+    "count": 0,
+    "pid": 71093,
+    "status_code_count": {},
+    "time": "2015-09-16 08:27:26.958487627 +0100 BST",
+    "total_count": 15,
+    "total_response_time": "1.398705ms",
+    "total_response_time_sec": 0.001398705,
+    "total_status_code_count": {
+        "200": 14,
+        "404": 1
+    },
+    "unixtime": 1442388446,
+    "uptime": "3m53.321206056s",
+    "uptime_sec": 233.321206056
+}
+```
+
+You can start monitoring the response codes for instance. Let's say you get all of a sudden a spike in HTTP 404 messages, that might point to a failed deployment or a failing back-end service:
+
+```
+"total_status_code_count": {
+    "200": 14,
+    "404": 1
+},
+```
 
 ### Returning Data
 
@@ -817,86 +894,6 @@ flag.Parse()
 ```
 
 The `flag.String` function takes three arguments: the command-flag name, the default value and a description. Don't forget to add the `flag.Parse()` call after you've defined all the flags. Otherwise your system won't read the flag values.
-
-## Metrics
-
-Something that is often overlooked is ensuring that you have a deep insight in your application metrics. I admit that in the past I was mainly looking at server metrics like memory consumption, CPU usage, swap, etc. Once I started building micro-services using Coda Hale's excelent Java [Dropwizard framework](http://www.dropwizard.io/), I got to know his [metrics](https://dropwizard.github.io/metrics/3.1.0/) library that gave me insight in the application and JVM metrics as an engineer.
-
-As a start, you could look into two metrics: average response times for either your whole APU (or for a specific route) and the various HTTP status codes being returned. The important thing here is that you hook this up with a monitoring tool (e.g. Sensu) so that the tool periodically pings your metrics endpoint (in this example: http://localhost:3009/metrics) and look at trends. We're less interested in an individual snapshot. We will always have the occasional HTTP 404 being returend. However, if after a deployment you start seeing a spike in HTTP 404 codes being returned, then that should give you an indication that something might be wrong.
-
-I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) package but admit that I haven't used it in anger in a production enviornment.
-
-We will first add the stats as a variable, named Metrics, to our environment struct:
-
-```
-type env struct {
-  Metrics *stats.Stats
-  Render  *render.Render
-}
-```
-
-Then initialise the variable in our main function (in `main.go`):
-
-```
-func main() {
-  env := env{
-    Metrics: stats.New(),
-    Render:  render.New(),
-  }
-  router := mux.NewRouter()
-  // ...
-}
-```
-
-The actual handler is pretty simple. In `handlers.go`, we add a handler called `MetricsHandler` and that just gets the data from our environment, renders it into a JSON format and returns an HTTP 200 OK status:
-
-```
-func MetricsHandler(w http.ResponseWriter, req *http.Request, env env) {
-  stats := env.Metrics.Data()
-  env.Render.JSON(w, http.StatusOK, stats)
-}
-```
-
-If you curl the Metrics endpoint:
-
-```
-curl -X GET http://localhost:3009/metrics | python -mjson.tool
-```
-
-Then you should receive the following response:
-
-```
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   392  100   392    0     0  27724      0 --:--:-- --:--:-- --:--:-- 28000
-{
-    "average_response_time": "93.247\u00b5s",
-    "average_response_time_sec": 9.324700000000001e-05,
-    "count": 0,
-    "pid": 71093,
-    "status_code_count": {},
-    "time": "2015-09-16 08:27:26.958487627 +0100 BST",
-    "total_count": 15,
-    "total_response_time": "1.398705ms",
-    "total_response_time_sec": 0.001398705,
-    "total_status_code_count": {
-        "200": 14,
-        "404": 1
-    },
-    "unixtime": 1442388446,
-    "uptime": "3m53.321206056s",
-    "uptime_sec": 233.321206056
-}
-```
-
-You can start monitoring the response codes for instance. Let's say you get all of a sudden a spike in HTTP 404 messages, that might point to a failed deployment or a failing back-end service:
-
-```
-"total_status_code_count": {
-    "200": 14,
-    "404": 1
-},
-```
 
 ## Starting the app on a production server
 
