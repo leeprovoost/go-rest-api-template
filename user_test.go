@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestList(t *testing.T) {
+func TestListUsers(t *testing.T) {
 	ctx := createContextForTestSetup()
 	list, _ := ctx.db.ListUsers()
 	count := len(list)
 	assert.Equal(t, 2, count, "There should be 2 items in the list.")
 }
 
-func TestGetSuccess(t *testing.T) {
+func TestGetUserSuccess(t *testing.T) {
 	ctx := createContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u, err := ctx.db.GetUser(0)
@@ -27,13 +27,13 @@ func TestGetSuccess(t *testing.T) {
 	}
 }
 
-func TestGetFail(t *testing.T) {
+func TestGetUserFail(t *testing.T) {
 	ctx := createContextForTestSetup()
 	_, err := ctx.db.GetUser(10)
 	assert.NotNil(t, err)
 }
 
-func TestAdd(t *testing.T) {
+func TestAddUser(t *testing.T) {
 	ctx := createContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1972-03-07T00:00:00Z")
 	u := User{
@@ -51,7 +51,7 @@ func TestAdd(t *testing.T) {
 	assert.Equal(t, 3, count, "There should be 3 items in the list.")
 }
 
-func TestUpdateSuccess(t *testing.T) {
+func TestUpdateUserSuccess(t *testing.T) {
 	ctx := createContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u := User{
@@ -72,7 +72,7 @@ func TestUpdateSuccess(t *testing.T) {
 	assert.Equal(t, "Southend", u2.LocationOfBirth, "they should be equal")
 }
 
-func TestUpdateFail(t *testing.T) {
+func TestUpdateUserFail(t *testing.T) {
 	ctx := createContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u := User{
@@ -86,13 +86,13 @@ func TestUpdateFail(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestDeleteSuccess(t *testing.T) {
+func TestDeleteUserSuccess(t *testing.T) {
 	ctx := createContextForTestSetup()
 	err := ctx.db.DeleteUser(1)
 	assert.Nil(t, err)
 }
 
-func TestDeleteFail(t *testing.T) {
+func TestDeleteUserFail(t *testing.T) {
 	ctx := createContextForTestSetup()
 	err := ctx.db.DeleteUser(10)
 	assert.NotNil(t, err)
