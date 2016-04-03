@@ -233,11 +233,11 @@ I wanted to create a template REST API that didn't depend on a database, so star
 
 ```
 type DataStorer interface {
-  List() ([]User, error)
-  Get(i int) (User, error)
-  Add(u User) (User, error)
-  Update(u User) (User, error)
-  Delete(i int) error
+	ListUsers() ([]User, error)
+	GetUser(i int) (User, error)
+	AddUser(u User) (User, error)
+	UpdateUser(u User) (User, error)
+	DeleteUser(i int) error
 }
 ```
 
@@ -246,7 +246,7 @@ This allows us to define a set of operations on the data as a contract, without 
 Let's have a look at the type signature of the `Get` operation:
 
 ```
-Get(i int) (User, error)
+GetUser(i int) (User, error)
 ```
 
 What this tells us is that it is expecting an integer as an argument (which will be the User id in our case), and returns a pair of values: a user object and an error object. Returning pairs of values is a nice Go feature and is often used to return information about errors.
@@ -254,11 +254,11 @@ What this tells us is that it is expecting an integer as an argument (which will
 An example of how this could be used is the following:
 
 ```
-user, err := db.Get(uid)
+user, err := ctx.db.GetUser(uid)
 if err == nil {
-  Render.JSON(w, http.StatusOK, user)
+  ctx.render.JSON(w, http.StatusOK, user)
 } else {
-  Render.JSON(w, http.StatusNotFound, err)
+  ctx.render.JSON(w, http.StatusNotFound, err)
 }
 ```
 
@@ -267,9 +267,9 @@ We check whether the error object is nil. If it is, then we return a HTTP 200 OK
 Let's have a look at the actual mock in-memory database. We need to create a Database struct that will hold the data:
 
 ```
-type Database struct {
-  UserList  map[int]User
-  MaxUserID int
+type MockDB struct {
+	UserList  map[int]User
+	MaxUserID int
 }
 ```
 The UserList will hold a list of User structs and the MaxUserID holds the latest used integer. MaxUserID mimics the behaviour of an auto-generated ID in conventional databases. In this case MaxUserID represents the highest used database ID.
@@ -520,7 +520,7 @@ I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) pa
 We will first add the stats as a variable, named Metrics, to our environment struct:
 
 ```
-type env struct {
+type appContext struct {
   metrics *stats.Stats
   render  *render.Render
 }
@@ -530,7 +530,7 @@ Then initialise the variable in our main function (in `main.go`):
 
 ```
 func main() {
-  env := env{
+  ctx := appContext{
     metrics: stats.New(),
     render:  render.New(),
   }
@@ -542,9 +542,9 @@ func main() {
 The actual handler is pretty simple. In `handlers.go`, we add a handler called `MetricsHandler` and that just gets the data from our environment, renders it into a JSON format and returns an HTTP 200 OK status:
 
 ```
-func MetricsHandler(w http.ResponseWriter, req *http.Request, env env) {
-  stats := env.Metrics.Data()
-  env.Render.JSON(w, http.StatusOK, stats)
+func MetricsHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
+  stats := ctx.Metrics.Data()
+  ctx.render.JSON(w, http.StatusOK, stats)
 }
 ```
 
@@ -594,12 +594,12 @@ You can start monitoring the response codes for instance. Let's say you get all 
 Let's have a look at interacting with our data. Returning a list of users is quite easy, it's just showing the UserList:
 
 ```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, env env) {
-  env.Render.JSON(w, http.StatusOK, db.List())
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
+  ctx.render.JSON(w, http.StatusOK, db.List())
 }
 ```
 
-BTW, notice the `Render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
+BTW, notice the `ctx.render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
 
 So, this will return the following to the client:
 
@@ -677,14 +677,14 @@ Example:
 Another example is the retrieval of a specific object:
 
 ```
-func GetUserHandler(w http.ResponseWriter, req *http.Request, env env) {
+func GetUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
   vars := mux.Vars(req)
   uid, _ := strconv.Atoi(vars["uid"])
-  user, err := db.Get(uid)
+  user, err := ctx.db.Get(uid)
   if err == nil {
-    env.Render.JSON(w, http.StatusOK, user)
+    ctx.render.JSON(w, http.StatusOK, user)
   } else {
-    env.Render.JSON(w, http.StatusNotFound, err)
+    ctx.render.JSON(w, http.StatusNotFound, err)
   }
 }
 ```
@@ -913,7 +913,7 @@ ok    github.com/leeprovoost/go-rest-api-template 0.009s
 
 ## Command-line flags
 
-The app binds itself by default to port 3009 and assumes that the fixtures.json file is in the project root directory. If that is not the case and you want to change that, then you can use some command line flags (or just change the code obviously).
+The app binds itself by default to port 3001 and assumes that the fixtures.json file is in the project root directory. If that is not the case and you want to change that, then you can use some command line flags (or just change the code obviously).
 
 This is how you would start the app with command line flags:
 
