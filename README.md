@@ -1,6 +1,6 @@
 # go-rest-api-template [ ![Codeship Status for leeprovoost/go-rest-api-template](https://codeship.com/projects/89ed2300-9d8f-0133-5815-1a74f7994c2d/status?branch=master)](https://codeship.com/projects/127524)
 
-*WORK IN PROGRESS: documentation is not on par yet with a recent major refactoring exercise (3 April 2016)*
+*WORK IN PROGRESS: documentation is not yet on par with a recent major refactoring exercise (3 April 2016)*
 
 Reusable template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.5.
 
@@ -8,7 +8,7 @@ Reusable template for building REST Web Services in Golang. Uses gorilla/mux as 
 
 ### Why?
 
-After writing many REST APIs with Java Dropwizard, Node.js/Express and Go, I wanted to distil my lessons learned into a reusable template for writing REST APIs, in the Go language (my favourite).
+After writing many REST APIs with Java Dropwizard, Node.js/Express and Go, I wanted to distill my lessons learned into a reusable template for writing REST APIs, in the Go language (my favourite).
 
 It's mainly for myself. I don't want to keep reinventing the wheel and just want to get the foundation of my REST API 'ready to go' so I can focus on the business logic and integration with other systems and data stores.
 
@@ -20,6 +20,7 @@ The main ones are:
 * [negroni](https://github.com/codegangsta/negroni) as a middleware handler
 * [testify](https://github.com/stretchr/testify) for writing easier test assertions
 * [render](https://github.com/unrolled/render) for HTTP response rendering
+* [stacktrace](https://github.com/palantir/stacktrace) to provide more context to error messages
 
 Whilst working on this I've tried to write up as much as my thought process as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR, raise an issue or contact me on twitter [@leeprovoost](https://twitter.com/leeprovoost).
 
@@ -32,6 +33,8 @@ If you're new to programming in Go, I would highly recommend you to read the fol
 * [50 Shades of Go: Traps, Gotchas, and Common Mistakes for New Golang Devs](http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/)
 
 You can work your way through those in two to three days. I wouldn't advise buying any books right now. I unfortunately did and I have yet to open them. If you really want to get some books, there is a [github](https://github.com/dariubs/GoBooks) repo that tries to list the main ones.
+
+A good project to keep on eye on to discover new Go packages and software is [awesome-go](https://github.com/avelino/awesome-go). The maintainers enforce strict standards around documentation, tests, structure, etc. so they are doing a brilliant job improving the overall quality of code in the Go community.
 
 ### Development tools
 
@@ -178,7 +181,7 @@ We are going to use a travel Passport for our example. I've chosen Id as the uni
 
 ```
 type User struct {
-  Id              int       `json:"id"`
+  ID              int       `json:"id"`
   FirstName       string    `json:"firstName"`
   LastName        string    `json:"lastName"`
   DateOfBirth     time.Time `json:"dateOfBirth"`
@@ -186,17 +189,17 @@ type User struct {
 }
 
 type Passport struct {
-  Id           string    `json:"id"`
+  ID           string    `json:"id"`
   DateOfIssue  time.Time `json:"dateOfIssue"`
   DateOfExpiry time.Time `json:"dateOfExpiry"`
   Authority    string    `json:"authority"`
-  UserId       int       `json:"userId"`
+  UserID       int       `json:"userId"`
 }
 ```
 
 The first time you create a struct, you may not be aware that uppercasing and lowercasing your field names have a meaning in Go. It's similar to public and private members in Java. Uppercase = public, lowercase = private. There are some good discussions on Stackoverflow about [this](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character). The gist is that field names that start with a lowercase letter will not be visible to json.Marshal.
 
-You may not want to expose your data to the consumer of your web service in this format, so you can override the way your fields are marshalled by adding ``json:"firstName"`` to each field with the desired name. I admit that in the past I had the habit of using underscores for my json field names, e.g. `first_name`. However after reading [this](http://www.slideshare.net/stormpath/rest-jsonapis) excellent presentation on API design, I got reminded that the JS in JSON stands for JavaScript and in the JavaScript world, it's common to use camelCasing so the preffered way of writing the same fieldname would be: `firstName`.
+You may not want to expose your data to the consumer of your web service in this format, so you can override the way your fields are marshalled by adding ``json:"firstName"`` to each field with the desired name. I admit that in the past I had the habit of using underscores for my json field names, e.g. `first_name`. However after reading [this](http://www.slideshare.net/stormpath/rest-jsonapis) excellent presentation on API design, I got reminded that the JS in JSON stands for JavaScript and in the JavaScript world, it's common to use camelCasing so the preferred way of writing the same field name would be: `firstName`.
 
 Note the use of `time.Time` for the dates instead of using a standard `string` type. We'll discuss the pain of marshalling and unmarshalling of JSON dates a bit later.
 
@@ -206,11 +209,11 @@ I wanted to create a template REST API that didn't depend on a database, so star
 
 ```
 type DataStorer interface {
-  List() (map[string]User, error)
+  List() ([]User, error)
   Get(i int) (User, error)
   Add(u User) (User, error)
   Update(u User) (User, error)
-  Delete(i int) (bool, error)
+  Delete(i int) error
 }
 ```
 
@@ -245,7 +248,7 @@ type Database struct {
   MaxUserID int
 }
 ```
-The UserList will hold a list of User structs and the MaxUserID holds the latest used integer. MaxUserID mimicks the behaviour of an autogenerated ID in conventional databases. In this case MaxUserID represents the highest used database ID.
+The UserList will hold a list of User structs and the MaxUserID holds the latest used integer. MaxUserID mimics the behaviour of an auto-generated ID in conventional databases. In this case MaxUserID represents the highest used database ID.
 
 We will now create a global database variable so that it's accessible across our whole API:
 
@@ -326,7 +329,7 @@ if err != nil {
 }
 ```
 
-The `fixtures.json` file contains a JSON representation of a Go map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be respresented as: `map[string][]User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
+The `fixtures.json` file contains a JSON representation of a Go map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be represented as: `map[string][]User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
 
 The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`? The first is discouraged altogether because that's an European way of writing dates and will cause confusion around the world. Not this particular example, but imagine you have 3-4-2015. Is it third of April or fourth of March? Unfortunately there isn't an "enforced standard" for dates in JSON, so I've tried to use one that is commonly used and also understood by Go's `json.Marshaler` and `json.Unmarshaler` to avoid that we have to write our own custom marshaler/unarshaler.
 
@@ -398,11 +401,11 @@ So our initial handler function for returning a list of users was:
 
 ```
 func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
-  Render.JSON(w, http.StatusOK, db.List())
+  render.JSON(w, http.StatusOK, db.List())
 }
 ```
 
-Where the `Render` variable is a global variable. We'd prefer to pass the Render variable to that function so will rewrite it to:
+Where the `render` variable is a global variable. We'd prefer to pass the Render variable to that function so will rewrite it to:
 
 ```
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, render Render) {
@@ -416,8 +419,8 @@ In our `main.go` we'd add:
 
 ```
 type env struct {
-  Metrics *stats.Stats
-  Render  *render.Render
+  metrics *stats.Stats
+  render  *render.Render
 }
 ```
 
@@ -426,8 +429,8 @@ And in our `func main()` function we initialise that struct:
 ```
 func main() {
   env := env{
-    Metrics: stats.New(),
-    Render:  render.New(),
+    metrics: stats.New(),
+    render:  render.New(),
   }
   // ...
 }
@@ -475,18 +478,18 @@ This health check is very simple. It just checks whether the service is up and r
 
 ## Special Route: Metrics
 
-Something that is often overlooked is ensuring that you have a deep insight in your application metrics. I admit that in the past I was mainly looking at server metrics like memory consumption, CPU usage, swap, etc. Once I started building micro-services using Coda Hale's excelent Java [Dropwizard framework](http://www.dropwizard.io/), I got to know his [metrics](https://dropwizard.github.io/metrics/3.1.0/) library that gave me insight in the application and JVM metrics as an engineer.
+Something that is often overlooked is ensuring that you have a deep insight in your application metrics. I admit that in the past I was mainly looking at server metrics like memory consumption, CPU usage, swap, etc. Once I started building micro-services using Coda Hale's excellent Java [Dropwizard framework](http://www.dropwizard.io/), I got to know his [metrics](https://dropwizard.github.io/metrics/3.1.0/) library that gave me insight in the application and JVM metrics as an engineer.
 
-As a start, you could look into two metrics: average response times for either your whole APU (or for a specific route) and the various HTTP status codes being returned. The important thing here is that you hook this up with a monitoring tool (e.g. Sensu) so that the tool periodically pings your metrics endpoint (in this example: http://localhost:3009/metrics) and look at trends. We're less interested in an individual snapshot. We will always have the occasional HTTP 404 being returend. However, if after a deployment you start seeing a spike in HTTP 404 codes being returned, then that should give you an indication that something might be wrong.
+As a start, you could look into two metrics: average response times for either your whole APU (or for a specific route) and the various HTTP status codes being returned. The important thing here is that you hook this up with a monitoring tool (e.g. Sensu) so that the tool periodically pings your metrics endpoint (in this example: http://localhost:3009/metrics) and look at trends. We're less interested in an individual snapshot. We will always have the occasional HTTP 404 being returned. However, if after a deployment you start seeing a spike in HTTP 404 codes being returned, then that should give you an indication that something might be wrong.
 
-I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) package but admit that I haven't used it in anger in a production enviornment.
+I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) package but admit that I haven't used it in anger in a production environment.
 
 We will first add the stats as a variable, named Metrics, to our environment struct:
 
 ```
 type env struct {
-  Metrics *stats.Stats
-  Render  *render.Render
+  metrics *stats.Stats
+  render  *render.Render
 }
 ```
 
@@ -495,8 +498,8 @@ Then initialise the variable in our main function (in `main.go`):
 ```
 func main() {
   env := env{
-    Metrics: stats.New(),
-    Render:  render.New(),
+    metrics: stats.New(),
+    render:  render.New(),
   }
   router := mux.NewRouter()
   // ...
