@@ -34,8 +34,19 @@ func MetricsHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 
 // ListUsersHandler returns a list of users
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
-	list, _ := ctx.db.ListUsers()
-	ctx.render.JSON(w, http.StatusOK, list)
+	list, err := ctx.db.ListUsers()
+	if err != nil {
+		response := Status{
+			Status:  "404",
+			Message: "can't find any users",
+		}
+		log.Println(err)
+		ctx.render.JSON(w, http.StatusNotFound, response)
+		return
+	}
+	responseObject := make(map[string][]User)
+	responseObject["users"] = list
+	ctx.render.JSON(w, http.StatusOK, responseObject)
 }
 
 // GetUserHandler returns a user object

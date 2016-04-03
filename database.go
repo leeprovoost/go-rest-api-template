@@ -4,7 +4,7 @@ import "errors"
 
 // DataStorer defines all the database operations
 type DataStorer interface {
-	ListUsers() (map[string][]User, error)
+	ListUsers() ([]User, error)
 	GetUser(i int) (User, error)
 	AddUser(u User) (User, error)
 	UpdateUser(u User) (User, error)
@@ -18,14 +18,12 @@ type MockDB struct {
 }
 
 // ListUsers returns a list of JSON documents
-func (db *MockDB) ListUsers() (map[string][]User, error) {
+func (db *MockDB) ListUsers() ([]User, error) {
 	var list []User
 	for _, v := range db.UserList {
 		list = append(list, v)
 	}
-	responseObject := make(map[string][]User)
-	responseObject["users"] = list
-	return responseObject, nil
+	return list, nil
 }
 
 // GetUser returns a single JSON document

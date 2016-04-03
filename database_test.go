@@ -10,7 +10,7 @@ import (
 func TestList(t *testing.T) {
 	ctx := createContextForTestSetup()
 	list, _ := ctx.db.ListUsers()
-	count := len(list["users"])
+	count := len(list)
 	assert.Equal(t, 2, count, "There should be 2 items in the list.")
 }
 
@@ -47,7 +47,7 @@ func TestAdd(t *testing.T) {
 	assert.Equal(t, 2, u.ID, "Expected database Id should be 2.")
 	// we should now have 3 items in the list
 	list, _ := ctx.db.ListUsers()
-	count := len(list["users"])
+	count := len(list)
 	assert.Equal(t, 3, count, "There should be 3 items in the list.")
 }
 
