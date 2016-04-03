@@ -29,8 +29,3 @@ func createMockDatabase() *MockDB {
 	list[1] = User{1, "Jane", "Doe", dt, "Milton Keynes"}
 	return &MockDB{list, 1}
 }
-
-func createTimestampForTest() time.Time {
-	timestamp, _ := time.Parse(time.RFC3339, "2016-03-15T14:44:27Z")
-	return timestamp
-}
