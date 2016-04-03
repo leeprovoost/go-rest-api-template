@@ -23,19 +23,19 @@ func makeHandler(ctx appContext, fn func(http.ResponseWriter, *http.Request, app
 
 // HealthcheckHandler returns useful info about the app
 func HealthcheckHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
-	ctx.Render.Text(w, http.StatusNoContent, "")
+	ctx.render.Text(w, http.StatusNoContent, "")
 }
 
 // MetricsHandler returns application metrics
 func MetricsHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
-	stats := ctx.Metrics.Data()
-	ctx.Render.JSON(w, http.StatusOK, stats)
+	stats := ctx.metrics.Data()
+	ctx.render.JSON(w, http.StatusOK, stats)
 }
 
 // ListUsersHandler returns a list of users
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	list, _ := db.List()
-	ctx.Render.JSON(w, http.StatusOK, list)
+	ctx.render.JSON(w, http.StatusOK, list)
 }
 
 // GetUserHandler returns a user object
@@ -44,9 +44,9 @@ func GetUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	uid, _ := strconv.Atoi(vars["uid"])
 	user, err := db.Get(uid)
 	if err == nil {
-		ctx.Render.JSON(w, http.StatusOK, user)
+		ctx.render.JSON(w, http.StatusOK, user)
 	} else {
-		ctx.Render.JSON(w, http.StatusNotFound, err)
+		ctx.render.JSON(w, http.StatusNotFound, err)
 	}
 }
 
@@ -56,11 +56,11 @@ func CreateUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext)
 	var u User
 	err := decoder.Decode(&u)
 	if err != nil {
-		ctx.Render.JSON(w, http.StatusBadRequest, err)
+		ctx.render.JSON(w, http.StatusBadRequest, err)
 	} else {
 		user := User{-1, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
 		user, _ = db.Add(user)
-		ctx.Render.JSON(w, http.StatusCreated, user)
+		ctx.render.JSON(w, http.StatusCreated, user)
 	}
 }
 
@@ -70,14 +70,14 @@ func UpdateUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext)
 	var u User
 	err := decoder.Decode(&u)
 	if err != nil {
-		ctx.Render.JSON(w, http.StatusBadRequest, err)
+		ctx.render.JSON(w, http.StatusBadRequest, err)
 	} else {
 		user := User{u.ID, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
 		user, err = db.Update(user)
 		if err != nil {
-			ctx.Render.JSON(w, http.StatusOK, user)
+			ctx.render.JSON(w, http.StatusOK, user)
 		} else {
-			ctx.Render.JSON(w, http.StatusNotFound, err)
+			ctx.render.JSON(w, http.StatusNotFound, err)
 		}
 	}
 }
@@ -89,14 +89,14 @@ func DeleteUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext)
 	ok, err := db.Delete(uid)
 	if ok {
 		// TO DO return empty body?
-		ctx.Render.Text(w, http.StatusNoContent, "")
+		ctx.render.Text(w, http.StatusNoContent, "")
 	} else {
-		ctx.Render.JSON(w, http.StatusNotFound, err)
+		ctx.render.JSON(w, http.StatusNotFound, err)
 	}
 }
 
 // PassportsHandler not implemented yet
 func PassportsHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 	log.Println("Handling Passports - Not implemented yet")
-	ctx.Render.Text(w, http.StatusNotImplemented, "")
+	ctx.render.Text(w, http.StatusNotImplemented, "")
 }

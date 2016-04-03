@@ -14,8 +14,8 @@ import (
 const local string = "LOCAL"
 
 type appContext struct {
-	Metrics *stats.Stats
-	Render  *render.Render
+	metrics *stats.Stats
+	render  *render.Render
 	version string
 	env     string
 	port    string
@@ -66,8 +66,8 @@ func main() {
 
 	// initialse application context
 	ctx := appContext{
-		Metrics: stats.New(),
-		Render:  render.New(),
+		metrics: stats.New(),
+		render:  render.New(),
 		version: version,
 		env:     env,
 		port:    port,

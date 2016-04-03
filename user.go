@@ -2,7 +2,7 @@ package main
 
 import "time"
 
-//User to document
+// User holds personal user information
 type User struct {
 	ID              int       `json:"id"`
 	FirstName       string    `json:"firstName"`
@@ -10,5 +10,3 @@ type User struct {
 	DateOfBirth     time.Time `json:"dateOfBirth"`
 	LocationOfBirth string    `json:"locationOfBirth"`
 }
-
-// Database implementations here?

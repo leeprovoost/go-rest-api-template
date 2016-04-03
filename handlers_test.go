@@ -8,34 +8,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/thoas/stats"
-	"github.com/unrolled/render"
 )
 
-// HandlersTestSetup returns mock app context
-func HandlersTestSetup() appContext {
-	ctx := appContext{
-		Metrics: stats.New(),
-		Render:  render.New(),
-	}
-	return ctx
-}
-
-func teardown() {
-
-}
-
 func TestListUsersHandler(t *testing.T) {
-	env := HandlersTestSetup()
+	ctx := createContextForTestSetup()
 	req, _ := http.NewRequest("GET", "", nil)
 	w := httptest.NewRecorder()
-	makeHandler(env, ListUsersHandler).ServeHTTP(w, req)
+	makeHandler(ctx, ListUsersHandler).ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code, "they should be equal")
 	assert.Equal(t, "application/json; charset=UTF-8", w.HeaderMap["Content-Type"][0], "they should be equal")
 	// parse json body
 	var f interface{}
 	json.Unmarshal(w.Body.Bytes(), &f)
 	m := f.(map[string]interface{})
-	//fmt.Println(m)
 	fmt.Println(m["users"])
 }
