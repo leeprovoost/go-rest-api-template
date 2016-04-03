@@ -7,8 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 
-	"github.com/codegangsta/negroni"
-	"github.com/gorilla/mux"
 	"github.com/thoas/stats"
 	"github.com/unrolled/render"
 )
@@ -53,27 +51,7 @@ func main() {
 		Metrics: stats.New(),
 		Render:  render.New(),
 	}
-	router := mux.NewRouter()
 
-	router.HandleFunc("/", makeHandler(env, HomeHandler))
-	router.HandleFunc("/healthcheck", makeHandler(env, HealthcheckHandler)).Methods("GET")
-	router.HandleFunc("/metrics", makeHandler(env, MetricsHandler)).Methods("GET")
-
-	router.HandleFunc("/users", makeHandler(env, ListUsersHandler)).Methods("GET")
-	router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, GetUserHandler)).Methods("GET")
-	router.HandleFunc("/users", makeHandler(env, CreateUserHandler)).Methods("POST")
-	router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, UpdateUserHandler)).Methods("PUT")
-	router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, DeleteUserHandler)).Methods("DELETE")
-
-	router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("GET")
-	router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("GET")
-	router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("POST")
-	router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("PUT")
-	router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("DELETE")
-
-	n := negroni.Classic()
-	n.Use(env.Metrics)
-	n.UseHandler(router)
-	fmt.Println("Starting server on port: " + fPort)
-	n.Run(":" + fPort)
+	fmt.Println("===> 🌍 Starting server on port: " + fPort)
+	StartServer(env, fPort)
 }

@@ -21,7 +21,7 @@ var db *Database
 
 // List returns a list of JSON documents
 func (db *Database) List() (map[string][]User, error) {
-	var list []User = make([]User, 0)
+	var list []User
 	for _, v := range db.UserList {
 		list = append(list, v)
 	}
@@ -43,7 +43,7 @@ func (db *Database) Get(i int) (User, error) {
 func (db *Database) Add(u User) (User, error) {
 	db.MaxUserID = db.MaxUserID + 1
 	newUser := User{
-		Id:              db.MaxUserID,
+		ID:              db.MaxUserID,
 		FirstName:       u.FirstName,
 		LastName:        u.LastName,
 		DateOfBirth:     u.DateOfBirth,
@@ -55,7 +55,7 @@ func (db *Database) Add(u User) (User, error) {
 
 // Update an existing user
 func (db *Database) Update(u User) (User, error) {
-	id := u.Id
+	id := u.ID
 	_, ok := db.UserList[id]
 	if !ok {
 		return u, errors.New("user does not exist")

@@ -9,6 +9,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// HandlerFunc is a custom implementation of the http.HandlerFunc
+type HandlerFunc func(http.ResponseWriter, *http.Request, env)
+
 // makeHandler allows us to pass an environment struct to our handlers, without resorting to global
 // variables. It accepts an environment (Env) struct and our own handler function. It returns
 // a function of the type http.HandlerFunc so can be passed on to the HandlerFunc in main.go.
@@ -66,9 +69,10 @@ func UpdateUserHandler(w http.ResponseWriter, req *http.Request, env env) {
 	var u User
 	err := decoder.Decode(&u)
 	if err != nil {
+
 		env.Render.JSON(w, http.StatusBadRequest, err)
 	} else {
-		user := User{u.Id, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
+		user := User{u.ID, u.FirstName, u.LastName, u.DateOfBirth, u.LocationOfBirth}
 		user, err = db.Update(user)
 		if err != nil {
 			env.Render.JSON(w, http.StatusOK, user)
