@@ -6,6 +6,7 @@ import (
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
+	"github.com/unrolled/secure"
 )
 
 // StartServer Wraps the mux Router and uses the Negroni Middleware
@@ -20,8 +21,15 @@ func StartServer(ctx appContext) {
 			Name(route.Name).
 			Handler(handler)
 	}
-	n := negroni.Classic()
+	// security
+	secureMiddleware := secure.New(secure.Options{
+		AllowedHosts: []string{}, // AllowedHosts is a list of fully qualified domain names that are allowed (CORS)
+	})
+	// start now
+	n := negroni.New()
+	n.Use(negroni.NewLogger())
 	n.Use(ctx.Metrics)
+	n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
 	n.UseHandler(router)
 	log.Println("===> 🌍 Starting app (v" + ctx.version + ") on port " + ctx.port + " in " + ctx.env + " mode.")
 	if ctx.env == local {
