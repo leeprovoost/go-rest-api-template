@@ -10,7 +10,7 @@ import (
 )
 
 // StartServer Wraps the mux Router and uses the Negroni Middleware
-func StartServer(ctx appContext) {
+func StartServer(ctx AppContext) {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range routes {
 		var handler http.Handler
@@ -28,13 +28,13 @@ func StartServer(ctx appContext) {
 	// start now
 	n := negroni.New()
 	n.Use(negroni.NewLogger())
-	n.Use(ctx.metrics)
+	n.Use(ctx.Metrics)
 	n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
 	n.UseHandler(router)
-	log.Println("===> 🌍 Starting app (v" + ctx.version + ") on port " + ctx.port + " in " + ctx.env + " mode.")
-	if ctx.env == local {
-		n.Run("localhost:" + ctx.port)
+	log.Println("===> Starting app (v" + ctx.Version + ") on port " + ctx.Port + " in " + ctx.Env + " mode.")
+	if ctx.Env == local {
+		n.Run("localhost:" + ctx.Port)
 	} else {
-		n.Run(":" + ctx.port)
+		n.Run(":" + ctx.Port)
 	}
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func TestHealthcheckHandler(t *testing.T) {
-	ctx := createContextForTestSetup()
+	ctx := CreateContextForTestSetup()
 	r, _ := http.NewRequest("GET", "/healthcheck", nil)
 	w := httptest.NewRecorder()
 	makeHandler(ctx, HealthcheckHandler).ServeHTTP(w, r)
@@ -22,11 +22,11 @@ func TestHealthcheckHandler(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &f)
 	obj := f.(map[string]interface{})
 	assert.Equal(t, "go-rest-api-template", obj["appName"], "they should be equal")
-	assert.Equal(t, ctx.version, obj["version"], "they should be equal")
+	assert.Equal(t, ctx.Version, obj["version"], "they should be equal")
 }
 
 func TestListUsersHandler(t *testing.T) {
-	ctx := createContextForTestSetup()
+	ctx := CreateContextForTestSetup()
 	req, _ := http.NewRequest("GET", "/users", nil)
 	w := httptest.NewRecorder()
 	makeHandler(ctx, ListUsersHandler).ServeHTTP(w, req)
