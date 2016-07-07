@@ -1,0 +1,69 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "dnj6px0tS6k2tKIqK4wCW+4bXjk=",
+			"path": "github.com/codegangsta/negroni",
+			"revision": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b",
+			"revisionTime": "2015-03-19T17:13:04Z"
+		},
+		{
+			"checksumSHA1": "5rPfda8jFccr3A6heL+JAmi9K9g=",
+			"origin": "github.com/stretchr/testify/vendor/github.com/davecgh/go-spew/spew",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "c5d7a69bf8a2c9c374798160849c071093e41dd1",
+			"revisionTime": "2016-04-18T22:58:27Z"
+		},
+		{
+			"checksumSHA1": "iIUYZyoanCQQTUaWsu8b+iOSPt4=",
+			"path": "github.com/gorilla/context",
+			"revision": "1ea25387ff6f684839d82767c1733ff4d4d15d0a",
+			"revisionTime": "2016-02-26T21:46:23Z"
+		},
+		{
+			"checksumSHA1": "xF+WqeL9eAlbUkiO2bLghMQzO4k=",
+			"path": "github.com/gorilla/mux",
+			"revision": "0eeaf8392f5b04950925b8a69fe70f110fa7cbfc",
+			"revisionTime": "2016-03-17T21:34:30Z"
+		},
+		{
+			"checksumSHA1": "6r2EbOhCRemi6LohEQPS2HGK7ao=",
+			"path": "github.com/palantir/stacktrace",
+			"revision": "5a74c62b11cfd8b2cb9374c785dd965d9a2b4e53",
+			"revisionTime": "2016-04-10T20:59:47Z"
+		},
+		{
+			"checksumSHA1": "YMAHXE8lCDGzmdCDaf/kL3lDD6E=",
+			"path": "github.com/palantir/stacktrace/cleanpath",
+			"revision": "5a74c62b11cfd8b2cb9374c785dd965d9a2b4e53",
+			"revisionTime": "2016-04-10T20:59:47Z"
+		},
+		{
+			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",
+			"origin": "github.com/stretchr/testify/vendor/github.com/pmezard/go-difflib/difflib",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "c5d7a69bf8a2c9c374798160849c071093e41dd1",
+			"revisionTime": "2016-04-18T22:58:27Z"
+		},
+		{
+			"checksumSHA1": "Bn333k9lTndxU3D6n/G5c+GMcYY=",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "c5d7a69bf8a2c9c374798160849c071093e41dd1",
+			"revisionTime": "2016-04-18T22:58:27Z"
+		},
+		{
+			"checksumSHA1": "CzcsA3k48nSAuoOkDO9PU/sp/no=",
+			"path": "github.com/unrolled/render",
+			"revision": "198ad4d8b8a4612176b804ca10555b222a086b40",
+			"revisionTime": "2016-02-18T13:01:17Z"
+		},
+		{
+			"checksumSHA1": "SCg+jT1UtvZ6+R16a/aksHqR0r4=",
+			"path": "github.com/unrolled/secure",
+			"revision": "4b41e52ab568cbfd31eda3612d98192da1575c77",
+			"revisionTime": "2016-03-19T03:15:19Z"
+		}
+	],
+	"rootPath": "github.com/leeprovoost/go-rest-api-template"
+}
