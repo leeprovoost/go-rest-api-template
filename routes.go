@@ -13,14 +13,13 @@ type Routes []Route
 
 var routes = Routes{
 	Route{"Healthcheck", "GET", "/healthcheck", HealthcheckHandler},
-	Route{"Metrics", "GET", "/metrics", MetricsHandler},
 	//=== USERS ==
 	Route{"ListUsers", "GET", "/users", ListUsersHandler},
 	Route{"GetUser", "GET", "/users/{uid:[0-9]+}", GetUserHandler},
 	Route{"CreateUser", "POST", "/users", CreateUserHandler},
 	Route{"UpdateUser", "PUT", "/users/{uid:[0-9]+}", UpdateUserHandler},
 	Route{"DeleteUser", "DELETE", "/users/{uid:[0-9]+}", DeleteUserHandler},
-	//=== PASSPORTS
+	//=== PASSPORTS ==
 	Route{"GetUserPassport", "GET", "/users/{uid}/passports", PassportsHandler},
 	Route{"GetPassport", "GET", "/passports/{pid:[0-9]+}", PassportsHandler},
 	Route{"CreateUserPassport", "POST", "/users/{uid}/passports", PassportsHandler},

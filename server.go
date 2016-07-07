@@ -28,7 +28,6 @@ func StartServer(ctx AppContext) {
 	// start now
 	n := negroni.New()
 	n.Use(negroni.NewLogger())
-	n.Use(ctx.Metrics)
 	n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
 	n.UseHandler(router)
 	log.Println("===> Starting app (v" + ctx.Version + ") on port " + ctx.Port + " in " + ctx.Env + " mode.")

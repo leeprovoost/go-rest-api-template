@@ -30,12 +30,6 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request, ctx AppContext
 	ctx.Render.JSON(w, http.StatusOK, check)
 }
 
-// MetricsHandler returns application metrics
-func MetricsHandler(w http.ResponseWriter, req *http.Request, ctx AppContext) {
-	stats := ctx.Metrics.Data()
-	ctx.Render.JSON(w, http.StatusOK, stats)
-}
-
 // ListUsersHandler returns a list of users
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx AppContext) {
 	list, err := ctx.DB.ListUsers()

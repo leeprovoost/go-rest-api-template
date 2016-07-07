@@ -10,3 +10,12 @@ type Passport struct {
 	Authority    string    `json:"authority"`
 	UserID       int       `json:"userId"`
 }
+
+// User holds personal user information
+type User struct {
+	ID              int       `json:"id"`
+	FirstName       string    `json:"firstName"`
+	LastName        string    `json:"lastName"`
+	DateOfBirth     time.Time `json:"dateOfBirth"`
+	LocationOfBirth string    `json:"locationOfBirth"`
+}

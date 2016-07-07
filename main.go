@@ -1,12 +1,9 @@
 package main
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 
-	"github.com/thoas/stats"
 	"github.com/unrolled/render"
 )
 
@@ -32,28 +29,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// read JSON fixtures file
-	var jsonObject map[string][]User
-	log.Println("Location of fixtures.json file: " + fixtures)
-	file, err := ioutil.ReadFile(fixtures)
-	if err != nil {
-		log.Fatalf("File error: %v\n", err)
-	}
-	err = json.Unmarshal(file, &jsonObject)
+	// load fixtures data into mock database
+	db, err := LoadFixturesIntoMockDatabase(fixtures)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// load data in database
-	list := make(map[int]User)
-	list[0] = jsonObject["users"][0]
-	list[1] = jsonObject["users"][1]
-	db := &MockDB{
-		UserList:  list,
-		MaxUserID: 1,
-	}
 	// initialse application context
 	ctx := AppContext{
-		Metrics: stats.New(),
 		Render:  render.New(),
 		Version: version,
 		Env:     env,

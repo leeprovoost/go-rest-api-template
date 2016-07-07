@@ -1,19 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/palantir/stacktrace"
-	"github.com/thoas/stats"
 	"github.com/unrolled/render"
 )
 
 // AppContext holds application configuration data
 type AppContext struct {
-	Metrics *stats.Stats
 	Render  *render.Render
 	Version string
 	Env     string
@@ -41,7 +40,6 @@ func CreateContextForTestSetup() AppContext {
 	testVersion := "0.0.0"
 	db := CreateMockDatabase()
 	ctx := AppContext{
-		Metrics: stats.New(),
 		Render:  render.New(),
 		Version: testVersion,
 		Env:     local,
@@ -59,6 +57,26 @@ func CreateMockDatabase() *MockDB {
 	dt, _ = time.Parse(time.RFC3339, "1992-01-01T00:00:00Z")
 	list[1] = User{1, "Jane", "Doe", dt, "Milton Keynes"}
 	return &MockDB{list, 1}
+}
+
+// LoadFixturesIntoMockDatabase loads data from fixtures file into MockDB
+func LoadFixturesIntoMockDatabase(fixturesFile string) (*MockDB, error) {
+	var jsonObject map[string][]User
+	file, err := ioutil.ReadFile(fixturesFile)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "error reading fixtures file")
+	}
+	err = json.Unmarshal(file, &jsonObject)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "error parsing fixtures file")
+	}
+	list := make(map[int]User)
+	list[0] = jsonObject["users"][0]
+	list[1] = jsonObject["users"][1]
+	return &MockDB{
+		UserList:  list,
+		MaxUserID: 1,
+	}, nil
 }
 
 // ParseVersionFile returns the version as a string, parsing and validating a file given the path
