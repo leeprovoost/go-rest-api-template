@@ -1,8 +1,8 @@
 # go-rest-api-template [ ![Codeship Status for leeprovoost/go-rest-api-template](https://codeship.com/projects/89ed2300-9d8f-0133-5815-1a74f7994c2d/status?branch=master)](https://codeship.com/projects/127524)
 
-*WORK IN PROGRESS: documentation is not yet on par with a recent major refactoring exercise (3 April 2016)*
+*WORK IN PROGRESS: documentation is not yet on par with a recent major refactoring exercise (6 July 2016)*
 
-Reusable template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.5.
+Template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.6.
 
 ## Introduction
 
@@ -17,12 +17,13 @@ Just to be clear: this is not a framework, library, package or anything like tha
 The main ones are:
 
 * [gorilla/mux](http://www.gorillatoolkit.org/pkg/mux) for routing
-* [negroni](https://github.com/codegangsta/negroni) as a middleware handler
-* [testify](https://github.com/stretchr/testify) for writing easier test assertions
-* [render](https://github.com/unrolled/render) for HTTP response rendering
-* [stacktrace](https://github.com/palantir/stacktrace) to provide more context to error messages
+* [codegangsta/negroni](https://github.com/codegangsta/negroni) as a middleware handler
+* [strechr/testify](https://github.com/stretchr/testify) for writing easier test assertions
+* [unrolled/render](https://github.com/unrolled/render) for HTTP response rendering
+* [palantir/stacktrace](https://github.com/palantir/stacktrace) to provide more context to error messages
+* [unrolled/secure](https://github.com/unrolled/secure) to improve API security
 
-Whilst working on this I've tried to write up my thought process as much as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR, raise an issue or contact me on twitter [@leeprovoost](https://twitter.com/leeprovoost).
+Whilst working on this, I've tried to write up my thought process as much as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR or raise an issue.
 
 Another shameless plug: I'm occasionally writing about my lessons learned developing AWS platforms and Go applications on [Medium](https://medium.com/@leeprovoost).
 
@@ -34,7 +35,7 @@ If you're new to programming in Go, I would highly recommend you to read the fol
 * [Effective Go](https://golang.org/doc/effective_go.html)
 * [50 Shades of Go: Traps, Gotchas, and Common Mistakes for New Golang Devs](http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/)
 
-You can work your way through those in two to three days. I wouldn't advise buying any books right now. I unfortunately did and I have yet to open them. If you really want to get some books, there is a [github](https://github.com/dariubs/GoBooks) repo that tries to list the main ones.
+You can work your way through those in two to three days. I did try out a couple of books but didn't find them that useful. If you really want to get some books, there is a [github](https://github.com/dariubs/GoBooks) repo that tries to list the main ones.
 
 A good project to keep on eye on to discover new Go packages and software is [awesome-go](https://github.com/avelino/awesome-go). The maintainers enforce strict standards around documentation, tests, structure, etc. so they are doing a brilliant job improving the overall quality of code in the Go community.
 
@@ -56,13 +57,13 @@ Last but not least, I can highly recommend trying out [GitKraken](https://www.gi
 
 ### How to run
 
-`go run main.go` works fine if you have a single file you're working on, but once you have multiple files you'll have to start using the proper go build tool and run the compiled executable.
+`go run main.go` works fine if you have a single file or a script you're working on, but once you have a more complex project with lots of files then you'll have to start using the proper go build tool and run the compiled executable.
 
 ```
 go build && ./go-rest-api-template
 ```
 
-The app will bind itself by default to port 3001 (defined in `main.go`). If you want to change it (e.g. bind it to the default http port 80), then use an environment variable. Same for the location of the fixtures.json model.
+The app will bind itself to port 3001 (defined in `main.go`). If you want to change it (e.g. bind it to the default http port 80), then use the following environment variable `PORT` (see `main.go`). Same for the location of the fixtures.json model.
 
 ```
 export PORT=80
@@ -70,9 +71,11 @@ export FIXTURES=/tmp/fixtures.json
 go build && ./go-rest-api-template
 ```
 
+One comment from a security point of view: whilst 80 is the default port for HTTP (and 443 for HTTPS), it's usually not recommended to actually bind your application to that port when it runs on a server instance like AWS EC2. That's because ports below 1024 are privileged ports and require elevated privileges for the app to bind itself to such port. If someone compromises your app, it could potentially take advantage of the application user with the elevated privileges. Instead, run it on a higher port like 8001 and run it with a newly created restricted user (instead of using the root user).
+
 ### Live Code Reloading
 
-Manually stopping and restarting your server can get quite annoying after a while, so let's set up a task runner that automatically restarts the server when it detects changes (similar to Grunt for the JavaScript / Node developers).
+Manually stopping and restarting your server can get quite annoying after a while, so let's set up a task runner that automatically restarts the server when it detects changes (similar to Grunt/Gulp for the JavaScript / Node developers).
 
 Install [fresh](https://github.com/pilu/fresh):
 
@@ -93,7 +96,6 @@ Loading settings from ./runner.conf
 8:41:18 runner      | InitFolders
 8:41:18 runner      | mkdir ./tmp
 8:41:18 watcher     | Watching .
-8:41:18 watcher     | Watching codedeploy-scripts
 8:41:18 main        | Waiting (loop 1)...
 8:41:18 main        | receiving first event /
 8:41:18 main        | sleeping for 600 milliseconds
@@ -105,8 +107,8 @@ Loading settings from ./runner.conf
 8:41:20 main        | --------------------
 8:41:20 main        | Waiting (loop 2)...
 8:41:20 app         | Location of fixtures.json file: ./fixtures.json
-8:41:20 app         | Starting server on port: 3009
-8:41:20 app         | [negroni] listening on :3009
+8:41:20 app         | Starting server on port: 3001
+8:41:20 app         | [negroni] listening on :3001
 ```
 
 Fresh should work without any configuration, but to make it more explicit you can add a `runner.conf` file in your project root:
