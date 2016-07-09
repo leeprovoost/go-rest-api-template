@@ -269,7 +269,19 @@ type AppContext struct {
 
 Once all of that is set up properly, we can now start the server. The `StartServer` function takes our `AppContext` struct and initialises all our routes and starts our Negroni server. This is all defined in `server.go` and we'll discuss the details over the next few sections.
 
-A big thank you to [edoardo849](https://github.com/edoardo849) for providing some great feedback on structuring the API and reducing `main.go` complexity.
+One important thing worth mentioning is the way we run the application and bind the app to a given port. It's common to see Go apps being started as:
+
+```
+n.Run(":3001")
+```
+
+However, when you're running this on OSX, you will get constant warnings about accepting incoming connections. I've written a piece on [Medium](https://medium.com/@leeprovoost/suppressing-accept-incoming-network-connections-warnings-on-osx-7665b33927ca#.crake4bm9) about this but the tl;dr solution is to explicitly bind your application to `localhost`:
+
+```
+n.Run("localhost:3001")
+```
+
+Last but not least, a big thank you to [edoardo849](https://github.com/edoardo849) for providing some great feedback on structuring the API and reducing `main.go` complexity.
 
 ## Data
 
@@ -576,86 +588,6 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request, ctx appContext
 ```
 
 This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
-
-### Special Route: Metrics
-
-Something that is often overlooked is ensuring that you have a deep insight in your application metrics. I admit that in the past I was mainly looking at server metrics like memory consumption, CPU usage, swap, etc. Once I started building micro-services using Coda Hale's excellent Java [Dropwizard framework](http://www.dropwizard.io/), I got to know his [metrics](https://dropwizard.github.io/metrics/3.1.0/) library that gave me insight in the application and JVM metrics as an engineer.
-
-As a start, you could look into two metrics: average response times for either your whole APU (or for a specific route) and the various HTTP status codes being returned. The important thing here is that you hook this up with a monitoring tool (e.g. Sensu) so that the tool periodically pings your metrics endpoint (in this example: http://localhost:3009/metrics) and look at trends. We're less interested in an individual snapshot. We will always have the occasional HTTP 404 being returned. However, if after a deployment you start seeing a spike in HTTP 404 codes being returned, then that should give you an indication that something might be wrong.
-
-I experimented a bit with the [`thoas/stats`])https://github.com/thoas/stats) package but admit that I haven't used it in anger in a production environment.
-
-We will first add the stats as a variable, named Metrics, to our environment struct:
-
-```
-type appContext struct {
-  metrics *stats.Stats
-  render  *render.Render
-}
-```
-
-Then initialise the variable in our main function (in `main.go`):
-
-```
-func main() {
-  ctx := appContext{
-    metrics: stats.New(),
-    render:  render.New(),
-  }
-  router := mux.NewRouter()
-  // ...
-}
-```
-
-The actual handler is pretty simple. In `handlers.go`, we add a handler called `MetricsHandler` and that just gets the data from our environment, renders it into a JSON format and returns an HTTP 200 OK status:
-
-```
-func MetricsHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
-  stats := ctx.Metrics.Data()
-  ctx.render.JSON(w, http.StatusOK, stats)
-}
-```
-
-If you curl the Metrics endpoint:
-
-```
-curl -X GET http://localhost:3009/metrics | python -mjson.tool
-```
-
-Then you should receive the following response:
-
-```
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   392  100   392    0     0  27724      0 --:--:-- --:--:-- --:--:-- 28000
-{
-    "average_response_time": "93.247\u00b5s",
-    "average_response_time_sec": 9.324700000000001e-05,
-    "count": 0,
-    "pid": 71093,
-    "status_code_count": {},
-    "time": "2015-09-16 08:27:26.958487627 +0100 BST",
-    "total_count": 15,
-    "total_response_time": "1.398705ms",
-    "total_response_time_sec": 0.001398705,
-    "total_status_code_count": {
-        "200": 14,
-        "404": 1
-    },
-    "unixtime": 1442388446,
-    "uptime": "3m53.321206056s",
-    "uptime_sec": 233.321206056
-}
-```
-
-You can start monitoring the response codes for instance. Let's say you get all of a sudden a spike in HTTP 404 messages, that might point to a failed deployment or a failing back-end service:
-
-```
-"total_status_code_count": {
-    "200": 14,
-    "404": 1
-},
-```
 
 ### Returning Data
 
