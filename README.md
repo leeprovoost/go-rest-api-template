@@ -71,11 +71,11 @@ export FIXTURES=/tmp/fixtures.json
 go build && ./go-rest-api-template
 ```
 
-One comment from a security point of view: whilst 80 is the default port for HTTP (and 443 for HTTPS), it's usually not recommended to actually bind your application to that port when it runs on a server instance like AWS EC2. That's because ports below 1024 are privileged ports and require elevated privileges for the app to bind itself to such port. If someone compromises your app, it could potentially take advantage of the application user with the elevated privileges. Instead, run it on a higher port like 8001 and run it with a newly created restricted user (instead of using the root user).
+One comment from a security point of view: whilst 80 is the default port for HTTP (and 443 for HTTPS), it's usually not recommended to actually bind your application to that port when it runs on a server instance like AWS EC2. That's because ports below 1024 are privileged ports and require elevated privileges for the app to bind itself to such port. If someone compromises your app, it could potentially take advantage of the application user with the elevated privileges. Instead, run it on a higher port like 8001 and run it with a newly created restricted user (instead of using the root user). You can then use a load balancer or a proxy (e.g. AWS ELB, HAProxy, nginx) to accept your incoming request from the internet on port 80 or 443 and then forward that to your application port.
 
 ### Live Code Reloading
 
-Manually stopping and restarting your server can get quite annoying after a while, so let's set up a task runner that automatically restarts the server when it detects changes (similar to Grunt/Gulp for the JavaScript / Node developers).
+Manually stopping and restarting your server can get quite annoying after a while, so let's set up a task runner that automatically restarts the server when it detects changes.
 
 Install [fresh](https://github.com/pilu/fresh):
 
@@ -135,6 +135,8 @@ As you can see, it creates a `tmp` directory in your project root and a log file
 tmp
 go-rest-api-template.log
 ```
+
+Where I work, we've hit the limitations of fresh and have switched to Gulp as a task runner. Our Gulp setup takes care of running tests, using OSX notifications to warn you of build failures and provides an overview of your govendor package status. I'll open source our Gulp for Go configuration soon.
 
 ### Code Structure
 
