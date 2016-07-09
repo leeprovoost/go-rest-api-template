@@ -199,9 +199,77 @@ Vendored go packages using govendor:
 /vendor
 ```
 
-### Starting the application: main.go, server.go and router.go
+### Starting the application: main.go and server.go
 
-TO DO
+The main entry point to our app is `main.go` where we take care of the following:
+
+Loading our environment variables, but also provide some default values that are useful when you run it on your local development machine:
+
+```
+var (
+  // environment variables
+  env      = os.Getenv("ENV")      // LOCAL, DEV, STG, PRD
+  port     = os.Getenv("PORT")     // server traffic on this port
+  version  = os.Getenv("VERSION")  // path to VERSION file
+  fixtures = os.Getenv("FIXTURES") // path to fixtures file
+)
+if env == "" || env == local {
+  // running from localhost, so set some default values
+  env = local
+  port = "3001"
+  version = "VERSION"
+  fixtures = "fixtures.json"
+}
+```
+
+I'm using the environment variables technique to tell the app in what environment it lives:
+
+* `LOCAL`: local development machine
+* `DEV`: development or integration server
+* `STG`: staging servers
+* `PRD`: production servers
+
+When it can't detect an environment variable, it assumes that it's running on your local development workstation.
+
+We then load our version file. I have added a helper function in `helpers.go` that can parse a `VERSION` file using semantic versioning.
+
+```
+// reading version from file
+version, err := ParseVersionFile(version)
+if err != nil {
+  log.Fatal(err)
+}
+```
+
+The check for error (`if err != nil`) is a common Go way of handling return values that contain errors. the `main` function is one of the few places where I use log.Fatal in my application. `log.Fatal` logs your file to the console, but also exits your application. This is for me the correct behaviour here because without a correct `VERSION` file, the app shouldn't work. It's too risky that you may have deployed the incorrect application version.
+
+This API doesn't talk to a real database but to a very simple in-memory mock database. That's why I have a `fixtures.json` file with some data. I have added a helper function in `helpers.go` that can read and parse that file into our in-memory mock database. Have a look at the next Data section to find out more about the in-memory database. I may change this in the future into an integration with an actual database.
+
+```
+// load fixtures data into mock database
+db, err := LoadFixturesIntoMockDatabase(fixtures)
+```
+
+Once all the data is read from our environment variables and `fixtures.json` file, we can then initialise our application context. `AppContext` is a struct that holds some application info that we can pass around (e,g, provide to our handlers). It's a neat way to avoid using global variables and avoiding that you have application variables all over the place.
+
+I have defined the `AppContext` struct in `helpers.go`:
+
+```
+// AppContext holds application configuration data
+type AppContext struct {
+	Render  *render.Render
+	Version string
+	Env     string
+	Port    string
+	DB      DataStorer
+}
+```
+
+`Render` helps us with rendering the correct response to the client, e.g. JSON, XML, etc. Version holds the path to our `VERSION` file. `Env` holds information about our platform environment (e.g. STG, DEV). `Port` is the server port that our application binds to. `DB` is our database struct that provides a data abstraction layer.
+
+Once all of that is set up properly, we can now start the server. The `StartServer` function takes our `AppContext` struct and initialises all our routes and starts our Negroni server. This is all defined in `server.go` and we'll discuss the details over the next few sections.
+
+A big thank you to [https://github.com/edoardo849](edoardo849) for providing some great feedback on structuring the API and reducing `main.go` complexity.
 
 ## Data
 
