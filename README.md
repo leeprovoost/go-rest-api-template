@@ -269,7 +269,7 @@ type AppContext struct {
 
 Once all of that is set up properly, we can now start the server. The `StartServer` function takes our `AppContext` struct and initialises all our routes and starts our Negroni server. This is all defined in `server.go` and we'll discuss the details over the next few sections.
 
-A big thank you to [https://github.com/edoardo849](edoardo849) for providing some great feedback on structuring the API and reducing `main.go` complexity.
+A big thank you to [edoardo849](https://github.com/edoardo849) for providing some great feedback on structuring the API and reducing `main.go` complexity.
 
 ## Data
 
