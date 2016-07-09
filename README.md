@@ -140,17 +140,17 @@ Where I work, we've hit the limitations of fresh and have switched to Gulp as a 
 
 ### Code Structure
 
-Main server files (bootstrapping of http server and router):
+Main server files (bootstrapping of http server):
 
 ```
 main.go
 server.go
+```
+
+Route definitions and handlers:
+
+```
 router.go
-```
-
-Route handlers:
-
-```
 handlers.go
 handlers_test.go
 ```
@@ -158,15 +158,9 @@ handlers_test.go
 Data model descriptions and operations on the data:
 
 ```
-passport.go
-user.go
-user_test.go
-```
-
-Definition of database interface and implementation definition:
-
-```
+models.go
 database.go
+database_test.go
 ```
 
 Test data:
@@ -187,10 +181,22 @@ Test that checks whether structs comply with the DataStorer interface:
 interface_test.go
 ```
 
-Helper functions for our tests:
+Helper structs and functions:
 
 ```
-tester.go
+helpers.go
+```
+
+Defines application version using semantic versioning:
+
+```
+VERSION
+```
+
+Vendored go packages using govendor:
+
+```
+/vendor
 ```
 
 ### Starting the application: main.go, server.go and router.go
