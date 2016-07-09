@@ -275,7 +275,7 @@ A big thank you to [edoardo849](https://github.com/edoardo849) for providing som
 
 ### Data model
 
-We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports.
+We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports. We'll define this in `models.go`.
 
 ```
 type User struct {
@@ -301,9 +301,13 @@ You may not want to expose your data to the consumer of your web service in this
 
 Note the use of `time.Time` for the dates instead of using a standard `string` type. We'll discuss the pain of marshalling and unmarshalling of JSON dates a bit later.
 
+If you want to prevent a certain struct field to be marshalled/unmarshalled then add `json:"-"`.
+
 ### Operations on our (mock) database
 
 I wanted to create a template REST API that didn't depend on a database, so started with a simple in-memory database that we can work with. The good thing is that this will be the start of a so-called data access layer that abstracts away the underlying data store. We can achieve that by starting with creating an interface (which is a good practice in Go anyway). Note the use of the -er at the end of the interface name, as per Go convention.
+
+Open the `database.go` file and you will see:
 
 ```
 type DataStorer interface {
@@ -329,6 +333,19 @@ An example of how this could be used is the following:
 
 ```
 user, err := ctx.db.GetUser(uid)
+if err != nil {
+  ctx.render.JSON(w, http.StatusNotFound, err)
+  return
+}
+ctx.render.JSON(w, http.StatusOK, user)
+```
+
+We check whether the error object is nil. If it is, then we return a HTTP 200 OK, if not then we return HTTP 404 NOT FOUND. Let's go into more detail when we talk about our API handlers.
+
+BTW in other languages you might be used to write the above as:
+
+```
+user, err := ctx.db.GetUser(uid)
 if err == nil {
   ctx.render.JSON(w, http.StatusOK, user)
 } else {
@@ -336,7 +353,7 @@ if err == nil {
 }
 ```
 
-We check whether the error object is nil. If it is, then we return a HTTP 200 OK, if not then we return HTTP 404 NOT FOUND. Let's go into more detail when we talk about our API handlers.
+But the Go way is to check if an error exists and handle that immediately. If there is no error, just continue with the normal application flow.
 
 Let's have a look at the actual mock in-memory database. We need to create a Database struct that will hold the data:
 
@@ -347,29 +364,6 @@ type MockDB struct {
 }
 ```
 The UserList will hold a list of User structs and the MaxUserID holds the latest used integer. MaxUserID mimics the behaviour of an auto-generated ID in conventional databases. In this case MaxUserID represents the highest used database ID.
-
-We will now create a global database variable so that it's accessible across our whole API:
-
-```
-var db *Database
-```
-
-Which gets initalised in our `main.go` init function:
-
-```
-func init() {
-  // ...
-  list := make(map[int]User)
-  list[0] = jsonObject["users"][0]
-  list[1] = jsonObject["users"][1]
-  db = &Database{
-    UserList:  list,
-    MaxUserID: 1,
-  }
-}
-```
-
-This creates a map of User objects with an integer key, creates two items and then creates the Database object with the list and sets the new user ID to 1.
 
 ### Fixtures
 
