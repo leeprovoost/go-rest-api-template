@@ -377,6 +377,19 @@ type MockDB struct {
 ```
 The UserList will hold a list of User structs and the MaxUserID holds the latest used integer. MaxUserID mimics the behaviour of an auto-generated ID in conventional databases. In this case MaxUserID represents the highest used database ID.
 
+TODO: document GetUser code
+
+```
+// GetUser returns a single JSON document
+func (db *MockDB) GetUser(i int) (User, error) {
+	user, ok := db.UserList[i]
+	if !ok {
+		return User{}, stacktrace.NewError("Failure trying to retrieve user")
+	}
+	return user, nil
+}
+```
+
 ### Fixtures
 
 In order to make it a bit more useful, we will initialise it with some user objects. Luckily, we can make use of the `init` function that gets automatically called when you start the application. This init() function will be in our `main.go` file when you start up the server:
@@ -454,8 +467,6 @@ offset from UTC
 ```
 
 We now need to implement the various methods from our DataStore interface.
-
-TO DO document implemented methods
 
 ## Defining the API
 
