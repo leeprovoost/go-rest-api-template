@@ -196,7 +196,7 @@ VERSION
 Vendored go packages using govendor:
 
 ```
-/vendor
+vendor/
 ```
 
 ### Starting the application: main.go and server.go
@@ -911,47 +911,31 @@ coverage: 34.9% of statements
 ok    github.com/leeprovoost/go-rest-api-template 0.009s
 ```
 
-## Command-line flags
-
-The app binds itself by default to port 3001 and assumes that the fixtures.json file is in the project root directory. If that is not the case and you want to change that, then you can use some command line flags (or just change the code obviously).
-
-This is how you would start the app with command line flags:
-
-```
-./go-rest-api-template -port=80 -fixtures=/tmp/fixtures.json
-```
-
-We achieve that by adding a flag parsers in the `main.go` init section:
-
-```
-fixturesLocation := flag.String("fixtures", "./fixtures.json", "location of fixtures.json file")
-port = flag.String("port", "3009", "serve traffic on this port")
-flag.Parse()
-```
-
-The `flag.String` function takes three arguments: the command-flag name, the default value and a description. Don't forget to add the `flag.Parse()` call after you've defined all the flags. Otherwise your system won't read the flag values.
-
 ## Starting the app on a production server
 
 This is how you could run your app on a server:
 
-First, you copy the binary and the `fixtures.json` files into a directory, e.g. `/opt/go-rest-api-template`.
+First, you copy the binary and the `fixtures.json` + `VERSION` files into a directory, e.g. `/opt/go-rest-api-template`.
 
 Then start the app as a service. Store the app's PID in a text file so we can kill it later.
 
 ```
 #!/bin/bash
-sudo nohup /opt/go-rest-api-template/go-rest-api-template -fixtures=/opt/go-rest-api-template/fixtures.json -port=80 >> /var/log/go-rest-api-template.log 2>&1&
-echo $! > /var/log/go-rest-api-template-pid.txt
+export ENV=DEV
+export PORT=8080
+export VERSION=/opt/go-rest-api-template/VERSION
+export FIXTURES=/opt/go-rest-api-template/fixtures.json
+sudo nohup /opt/go-rest-api-template/go-rest-api-template >> /var/log/go-rest-api-template.log 2>&1&
+echo $! > /opt/go-rest-api-template/go-rest-api-template-pid.txt
 ```
 
-When you want to kill your app later during a redeployment or a server shutdown, then you can kill the app bu looking up the previously stored PID:
+When you want to kill your app later during a redeployment or a server shutdown, then you can kill the app by looking up the previously stored PID:
 
 ```
 #!/bin/bash
-if [ -f /var/log/go-rest-api-template-pid.txt ]; then
-  kill -9 `cat /var/log/go-rest-api-template-pid.txt`
-  rm -f /var/log/go-rest-api-template-pid.txt
+if [ -f /opt/go-rest-api-template/go-rest-api-template-pid.txt ]; then
+  kill -9 `cat /opt/go-rest-api-template/go-rest-api-template-pid.txt`
+  rm -f /opt/go-rest-api-template/go-rest-api-template-pid.txt
 fi
 ```
 
