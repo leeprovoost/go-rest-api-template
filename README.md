@@ -550,7 +550,7 @@ So our initial handler function for returning a list of users was:
 
 ```
 func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
-  render.JSON(w, http.StatusOK, db.List())
+  // return user data
 }
 ```
 
@@ -558,59 +558,96 @@ Where the `render` variable is a global variable. We'd prefer to pass the Render
 
 ```
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, render Render) {
-  render.JSON(w, http.StatusOK, db.List())
+  // return user data
 }
 ```
 
 Perfect. Or, is it? What if we want to pass more variables to the handler function? Like Metrics? Or some environment variables? We'd continuously have to change ALL our handlers and the type signature will become quite long and hard to maintain. An alternative is to create a server or an environment struct and use that as a container for our variables we want to pass around the system.
 
-In our `main.go` we'll add:
+In our `helpers.go` we'll add:
 
 ```
-type appContext struct {
-  metrics *stats.Stats
-  render  *render.Render
-  version string
-	env     string
-	port    string
-	db      DataStorer
+type AppContext struct {
+	Render  *render.Render
+	Version string
+	Env     string
+	Port    string
+	DB      DataStorer
 }
 ```
 
 And in our `func main()` function we initialise that struct:
 
 ```
-func main() {
-  ctx := appContext{
-    metrics: stats.New(),
-    render:  render.New(),
-    version: version,
-		env:     env,
-		port:    port,
-		db:      db,
-  }
-  // ...
+// initialse application context
+ctx := AppContext{
+	Render:  render.New(),
+	Version: version,
+	Env:     env,
+	Port:    port,
+	DB:      db,
 }
 ```
 
 Our handler looks now like this:
 
 ```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
-  // code that retrieves users from database
-  ctx.render.JSON(w, http.StatusOK, responseObject
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx AppContext) {
+  // return user data
 }
 ```
 
 The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, appContext` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our appContext struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
 
 ```
-func makeHandler(ctx appContext, fn func(http.ResponseWriter, *http.Request, appContext)) http.HandlerFunc {
-  return func(w http.ResponseWriter, r *http.Request) {
-    fn(w, r, ctx)
-  }
+func makeHandler(ctx AppContext, fn func(http.ResponseWriter, *http.Request, AppContext)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fn(w, r, ctx)
+	}
 }
 ```
+
+We can use this `makeHandler` function now in our `server.go` when we initialise all the routes and the corresponding route handlers.
+
+In the previous examples we've ignored the implementation of the `ListUsersHandler`, but let's have a closer look at that now:
+
+```
+// ListUsersHandler returns a list of users
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx AppContext) {
+	list, err := ctx.DB.ListUsers()
+	if err != nil {
+		response := Status{
+			Status:  "404",
+			Message: "can't find any users",
+		}
+		log.Println(err)
+		ctx.Render.JSON(w, http.StatusNotFound, response)
+		return
+	}
+	responseObject := make(map[string][]User)
+	responseObject["users"] = list
+	ctx.Render.JSON(w, http.StatusOK, responseObject)
+}
+```
+
+After we retrieve the data from our database, we check whether there are errors in the response. Rather than passing on the response to the user, we create a new custom `Status` struct with a new bespoke error message. Why? That's to avoid that we're leaking sensitive information from our systems to the user. It's the equivalent of sending back a Java stacktrace to a user. It can disclose information to people that are trying to hack into your system by exposing some of the weaknesses.
+
+So this code:
+
+```
+if err != nil {
+  response := Status{
+    Status:  "404",
+    Message: "can't find any users",
+  }
+  log.Println(err)
+  ctx.Render.JSON(w, http.StatusNotFound, response)
+  return
+}
+```
+
+constructs a new `Status` response struct. Adds a 404 status so that computers can understand it, but also adds a human-readable message. It then prints the error to the server log. I've used here a simple `log.Println` but there are multiple ways you can do that. Last but not least you send the `Status` struct as a JSON response back to the client and add the 404 Not Found response to the HTTP headers (using `http.StatusNotFound`).
+
 
 ### Special Route: Health check
 
@@ -951,6 +988,10 @@ ok    github.com/leeprovoost/go-rest-api-template 0.009s
 ```
 
 ### Testing the Handlers
+
+TO DO
+
+## Vendoring of dependencies
 
 TO DO
 
