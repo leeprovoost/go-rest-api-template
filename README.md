@@ -166,32 +166,32 @@ go-rest-api-template.log
 
 Where I work, we've hit the limitations of fresh and have switched to Gulp as a task runner. Our Gulp setup takes care of running tests, using OSX notifications to warn you of build failures and provides an overview of your `govendor` package status. I'll open source our Gulp for Go configuration at some point.
 
-### Code Structure
+### High-level Code Structure
 
 Main server files (bootstrapping of http server):
 
 ```
-main.go
-server.go
+main.go --> figure out application settings from various sources, start application context and kick the server
+server.go --> actual server kicking is happening here: mainly loading of routes and middleware
 ```
 
 Route definitions and handlers:
 
 ```
-router.go
-handlers.go
-handlers_test.go
+router.go --> server routes, e.g. GET /healthcheck, and binding of those routes to the correct route handlers
+handlers.go --> defines the actual logic that gets executed when you visit a route and takes care of the response to the client
+handlers_test.go --> tests for our route handlers
 ```
 
 Data model descriptions and operations on the data:
 
 ```
-models.go
-database.go
-database_test.go
+models.go --> structs describing our data, bit similar to objects in other languages
+database.go --> our mock/fake database implementation
+database_test.go --> tests our mock/fake database
 ```
 
-Test data:
+Test data in JSON format:
 
 ```
 fixtures.json
@@ -221,7 +221,7 @@ Defines application version using semantic versioning:
 VERSION
 ```
 
-Vendored go packages using govendor:
+Folder where we store all our go dependencies using the `govendor` tool:
 
 ```
 vendor/
