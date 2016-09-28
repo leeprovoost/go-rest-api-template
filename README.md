@@ -360,7 +360,9 @@ If you want to prevent a certain struct field to be marshalled/unmarshalled then
 
 ### Operations on our (mock) database
 
-I wanted to create a template REST API that didn't depend on a database, so started with a simple in-memory database that we can work with. The good thing is that this will be the start of a so-called data access layer that abstracts away the underlying data store. We can achieve that by starting with creating an interface (which is a good practice in Go anyway). Note the use of the -er at the end of the interface name, as per Go convention.
+I wanted to create a template REST API that didn't depend on a database, so started with creating a simple in-memory database that we can work with. I admit that this was mainly to satisfy my own curiosity. I might change that in the future to using an off-the-shelve in-memory Go database.
+
+The good thing is that this will be the start of a so-called data access layer that abstracts away the underlying data store. We can achieve that by starting with creating an interface (which is a good practice in Go anyway). Note the use of the -er at the end of the interface name, as per Go convention.
 
 Open the `database.go` file and you will see:
 
@@ -382,11 +384,12 @@ Let's have a look at the type signature of the `Get` operation:
 GetUser(i int) (User, error)
 ```
 
-What this tells us is that it is expecting an integer as an argument (which will be the User id in our case), and returns a pair of values: a user object and an error object. Returning pairs of values is a nice Go feature and is often used to return information about errors.
+What this tells us is that it is expecting an integer as an argument (which will be the User id in our case), and returns a pair of values: a User object and an error object. Returning pairs of values is a nice Go feature and is often used to return information about errors.
 
 An example of how this could be used is the following:
 
 ```
+// call the GetUser function with a given user id, this returns (hopefully) the user and an error object
 user, err := ctx.db.GetUser(uid)
 if err != nil {
   ctx.render.JSON(w, http.StatusNotFound, err)
@@ -395,7 +398,7 @@ if err != nil {
 ctx.render.JSON(w, http.StatusOK, user)
 ```
 
-We check whether the error object is nil. If it is, then we return a HTTP 200 OK, if not then we return HTTP 404 NOT FOUND. Let's go into more detail when we talk about our API handlers.
+We check whether the error object is nil. If it is, then we return a HTTP 200 OK, if not then we return HTTP 404 Not Found. Let's go into more detail when we talk about our API handlers.
 
 BTW in other languages you might be used to write the above as:
 
@@ -433,14 +436,20 @@ func (db *MockDB) GetUser(i int) (User, error) {
 }
 ```
 
-* `func (db *MockDB)`: TODO
-* `GetUser(i int) (User, error)`: TODO
-* `return User{}, stacktrace.NewError("Failure trying to retrieve user")`: TODO
-* `return user, nil`: TODO
+* `func (db *MockDB)`: This might be something new for you and I admit that it took me a little while to appreciate this. It's called a pointer receiver and is part of [A Tour of Go](https://tour.golang.org/methods/4). This means that the `GetUser` function can work on a `MockDB` struct. For people coming from languages that use objects and methods, it's similar. So in an object-oriented world: if `db` would be an object of the class `MockDB`, then `GetUser `would be a method that can be invoked on that object and you'd call it like `db.GetUser`.
+* `GetUser(i int) (User, error)`: This is the function signature and says that we have a function named `GetUser` that accepts one argument of the type `int` (e.g. 0, 1, 2, 3) and will return two variables. The first one is a `User` struct, the second one is an `error` struct.
+* `return User{}, stacktrace.NewError("Failure trying to retrieve user")`: In case there is an error, we return an empty `User` object and an `error`. We have to return an `User` object because that's what the function signature enforces, but this will be empty and frankly doesn't really matter. It doesn't matter because we will first check the `error` struct. The basic `error` struct in Go doesn't really say much, which is why we use here Palantir's `stacktrace` package. It adds some more contextual information about where the issue occured.
+* `return user, nil`: If everything goes well, then we just return the user data as well as an empty error (nil).
 
-When I discussed the `DataStorer` interface, I didn't touch on a very important use case: testing.
+Before we move on to loading the mock data, I wanted to briefly touch on the `DataStorer` interface. One of the advantages of using an interface is that you can swap out the implementation. This can be useful for testing. So instead of `GetUser` calling the actual datastore, you could write a different implementation that just returns a hardcoded `User` struct. However, Go has a implicit way of linking the interface to the struct. Unlike in Java where you have to explicitly state that a Class implements an Interface (and thus you benefit from the IDE checking whether you have implemented all the methods), Go just tries to figure out whether there are structs that match the definition of your interface. In order to make this more explicit, I always add a small test. When you open `interface_test.go` then you'll see:
 
-TODO
+```
+func TestDoStructsSatisfyInterface(t *testing.T) {
+	var _ DataStorer = (*MockDB)(nil)
+}
+```
+
+`TestDoStructsSatisfyInterface` tries to typecast the `MockDB` pointer to the `DataStorer` interface. If you haven't implemented your interface functions properly, then your Go tests will complain.
 
 ### Fixtures
 
