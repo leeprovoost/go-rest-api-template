@@ -734,7 +734,7 @@ func GetUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
 }
 ```
 
-This reads the uid variable from the route (`/users/{uid}`), converts the string to an integer and then looks up the user in our UserList by ID. If the user does not exit, we return a 404 and an error object. If the user exists, we return a 200 and a JSON object with the user.
+This reads the uid (User ID) variable from the route (`/users/{uid}`), converts the string to an integer and then looks up the user in our UserList by ID. If the user does not exit, we return a 404 and an error object. If the user exists, we return a 200 and a JSON object with the user.
 
 Example:
 
@@ -817,41 +817,53 @@ Results in:
 }
 ```
 
-### Testing the Handlers
-
-TO DO
-
 ### Testing the Database
 
 There are lots of opinions on testing, how much you should be testing, which layers of your applications, etc. When I'm working with micro services, I tend to focus on two types of tests to start with: testing the data access layer and testing the actual HTTP service.
 
 In this example, we want to test the List, Add, Get, Update and Delete operations on our in-memory document database. The data access code is stored in the `database.go` file, so following Go convention we will create a new file called `database_test.go`.
 
-In the `database_test.go` file, we have two sections:
-
-First, we're going to create a common initialiser, this code sets up our database, inserts a couple of test records and then fires off the tests:
+Before we can run the tests in `database_test.go` we need to make sure that we have a valid application context with a mock database initialised. I've added a helper function in `helpers.go` named `CreateContextForTestSetup` and that takes care of both the database setup as well as the AppContext.
 
 ```
-func TestMain(m *testing.M) {
-  list := make(map[int]User)
-  list[0] = User{0, "John", "Doe", "1985-12-31T00:00:00Z", "London"}
-  list[1] = User{1, "Jane", "Doe", "1992-01-01T00:00:00Z", "Milton Keynes"}
-  db = &Database{list, 1}
-  retCode := m.Run()
-  os.Exit(retCode)
+// CreateContextForTestSetup initialises an application context struct
+// for testing purposes
+func CreateContextForTestSetup() AppContext {
+	testVersion := "0.0.0"
+	db := CreateMockDatabase()
+	ctx := AppContext{
+		Render:  render.New(),
+		Version: testVersion,
+		Env:     local,
+		Port:    "3001",
+		DB:      db,
+	}
+	return ctx
+}
+
+// CreateMockDatabase initialises a database for test purposes
+func CreateMockDatabase() *MockDB {
+	list := make(map[int]User)
+	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
+	list[0] = User{0, "John", "Doe", dt, "London"}
+	dt, _ = time.Parse(time.RFC3339, "1992-01-01T00:00:00Z")
+	list[1] = User{1, "Jane", "Doe", dt, "Milton Keynes"}
+	return &MockDB{list, 1}
 }
 ```
-Once this is ready, we can start writing tests. Let's have a look at the easiest one where we list the elements in our database:
+
+Let's have a look at the easiest test where we list the elements in our database:
 
 ```
-func TestList(t *testing.T) {
-  list := db.List()
-  count := len(list["users"])
-  assert.Equal(t, 2, count, "There should be 2 items in the list.")
+func TestListUsers(t *testing.T) {
+	ctx := CreateContextForTestSetup()
+	list, _ := ctx.DB.ListUsers()
+	count := len(list)
+	assert.Equal(t, 2, count, "There should be 2 items in the list.")
 }
 ```
 
-This first calls the `db.List()` function, which returns a list of users. We then count the number of elements and last but not least we then check whether that count equals 2.
+This first calls `CreateContextForTestSetup()` the create the application context and mock database, then the `ctx.DB.ListUsers()` function, which returns a list of users. We then count the number of elements and last but not least we then check whether that count equals 2.
 
 In standard Go, you would actually write something like:
 
@@ -872,24 +884,24 @@ The `TestList` is only testing for a positive result, but we really need to test
 This is our test code for the Delete functionality:
 
 ```
-func TestDeleteSuccess(t *testing.T) {
-  ok, err := db.Delete(1)
-  assert.Equal(t, true, ok, "they should be equal")
-  assert.Nil(t, err)
+func TestDeleteUserSuccess(t *testing.T) {
+	ctx := CreateContextForTestSetup()
+	err := ctx.DB.DeleteUser(1)
+	assert.Nil(t, err)
 }
 
-func TestDeleteFail(t *testing.T) {
-  ok, err := db.Delete(10)
-  assert.Equal(t, false, ok, "they should be equal")
-  assert.NotNil(t, err)
+func TestDeleteUserFail(t *testing.T) {
+	ctx := CreateContextForTestSetup()
+	err := ctx.DB.DeleteUser(10)
+	assert.NotNil(t, err)
 }
 ```
 
-The first test function `TestDeleteSuccess` tries to delete a known existing user, with Id 1. We're expecting that the error object is Nil. The second test function `TestDeleteFail` tries to look up a non-existing user with Id 10, and as expected, this should return an actual Error object.
+The first test function `TestDeleteSuccess` tries to delete a known existing user, with id 1. We're expecting that the error object is Nil. The second test function `TestDeleteFail` tries to look up a non-existing user with id 10, and as expected, this should return an actual Error object.
 
 How do we run the tests?
 
-Simple:
+Simple. Open your terminal, go to your project root:
 
 ```
 go test
@@ -937,6 +949,10 @@ PASS
 coverage: 34.9% of statements
 ok    github.com/leeprovoost/go-rest-api-template 0.009s
 ```
+
+### Testing the Handlers
+
+TO DO
 
 ## Starting the app on a production server
 
