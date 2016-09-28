@@ -522,20 +522,16 @@ We now need to do the same for handling passports. Don't forget that a passport 
 
 When we want to retrieve an specific passport, we don't need to prefix the route with `/users/{uid}` anymore because we know exactly which passport we want to retrieve. So, instead of `GET /users/{uid}/passports/{pid}`, we can just use `GET /passports/{pid}`.
 
-Once you have the API design sorted, it's just a matter of creating the code that gets called when a specific route is hit. We implement those with Handlers.
+Once you have the API design sorted, it's just a matter of creating the code that gets called when a specific route is hit. We implement those with Handlers and those routes are defined in `routes.go`:
 
 ```
-router.HandleFunc("/users", makeHandler(env, ListUsersHandler)).Methods("GET")
-router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, GetUserHandler)).Methods("GET")
-router.HandleFunc("/users", makeHandler(env, CreateUserHandler)).Methods("POST")
-router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, UpdateUserHandler)).Methods("PUT")
-router.HandleFunc("/users/{uid:[0-9]+}", makeHandler(env, DeleteUserHandler)).Methods("DELETE")
-
-router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("GET")
-router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("GET")
-router.HandleFunc("/users/{uid}/passports", makeHandler(env, PassportsHandler)).Methods("POST")
-router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("PUT")
-router.HandleFunc("/passports/{pid:[0-9]+}", makeHandler(env, PassportsHandler)).Methods("DELETE")
+Route{"Healthcheck", "GET", "/healthcheck", HealthcheckHandler},
+//=== USERS ===
+Route{"ListUsers", "GET", "/users", ListUsersHandler},
+Route{"GetUser", "GET", "/users/{uid:[0-9]+}", GetUserHandler},
+Route{"CreateUser", "POST", "/users", CreateUserHandler},
+Route{"UpdateUser", "PUT", "/users/{uid:[0-9]+}", UpdateUserHandler},
+Route{"DeleteUser", "DELETE", "/users/{uid:[0-9]+}", DeleteUserHandler},
 ```
 
 In order to make our code more robust, I've added pattern matching in the routes.  This `[0-9]+` pattern says that we only accept digits from 0 to 9 and we can have one or more digits. Everything else will most likely trigger an HTTP 404 Not Found status code being returned to the client.
