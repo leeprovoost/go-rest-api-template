@@ -1,8 +1,8 @@
 # go-rest-api-template [ ![Codeship Status for leeprovoost/go-rest-api-template](https://codeship.com/projects/89ed2300-9d8f-0133-5815-1a74f7994c2d/status?branch=master)](https://codeship.com/projects/127524)
 
-*WORK IN PROGRESS: documentation is not yet on par with a recent major refactoring exercise (6 July 2016)*
+*WORK IN PROGRESS: documentation is not yet on par with a recent major refactoring exercise (28 September 2016)*
 
-Template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.6.
+Template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against Go 1.7.1.
 
 ## Introduction
 
@@ -25,7 +25,7 @@ The main ones are:
 
 Whilst working on this, I've tried to write up my thought process as much as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR or raise an issue.
 
-Another shameless plug: I'm occasionally writing about my lessons learned developing AWS platforms and Go applications on [Medium](https://medium.com/@leeprovoost).
+Last but not least: I'm occasionally writing about my lessons learned developing Go applications and Amazon Web Services systems on [Medium](https://medium.com/@leeprovoost).
 
 ### Knowledge of Go
 
@@ -34,24 +34,26 @@ If you're new to programming in Go, I would highly recommend you to read the fol
 * [A Tour of Go](https://tour.golang.org/welcome/1)
 * [Effective Go](https://golang.org/doc/effective_go.html)
 * [50 Shades of Go: Traps, Gotchas, and Common Mistakes for New Golang Devs](http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/)
+* [Learn X in Y Minutes](https://learnxinyminutes.com/docs/go/)
 
 You can work your way through those in two to three days. I did try out a couple of books but didn't find them that useful. If you really want to get some books, there is a [github](https://github.com/dariubs/GoBooks) repo that tries to list the main ones.
 
-A good project to keep on eye on to discover new Go packages and software is [awesome-go](https://github.com/avelino/awesome-go). The maintainers enforce strict standards around documentation, tests, structure, etc. so they are doing a brilliant job improving the overall quality of code in the Go community.
+A good project to keep on eye on to discover new Go packages and software is [awesome-go](https://github.com/avelino/awesome-go). The maintainers enforce strict standards around documentation, tests, structure, etc. so they are doing a brilliant job improving the overall quality of code in the Go community. It's not easy to keep track of the high rate of change on that project, so my suggestion would be to track new additions using the [changedetection.com](https://www.changedetection.com/) website.
 
 ### Development tools
 
 I've tried many different editors and it seems like it's a common Go newbie [frustration](https://groups.google.com/forum/#!topic/golang-nuts/6ZgrZsPzHr0). Coming from Java, I've tried "proper" IDEs like [LiteIDE](https://github.com/visualfc/liteide) and IntelliJ with the [golang plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin) but never really fell in love with them.
 
-I've used Sublime Text with the [GoSublime](https://github.com/DisposaBoy/GoSublime) plugin for a long time, but have now settled on Atom with the [go-plus](https://github.com/joefitzgerald/go-plus) plugin and that is working very well. It provides the "lightness" of an editor but with some of the power you'd expect from an IDE. It has code completion, linting, formatting and even shows you what parts of the code are covered by tests.
+I've used Sublime Text with the [GoSublime](https://github.com/DisposaBoy/GoSublime) plugin for a long time, but have now settled on Atom with the [go-plus](https://github.com/joefitzgerald/go-plus) plugin and that is working very well. It has code completion, linting, formatting and even shows you what parts of the code are covered by tests.
 
-The choice of an editor is a personal one, so the only advice I can give you is to try different ones. It looks like currently the following seem to be the most mature:
+The choice of an editor/IDE is a personal one, so the only advice I can give you is to try different ones. It looks like currently the following seem to be the most mature:
 
-* Sublime Text 3 with [GoSublime](https://github.com/DisposaBoy/GoSublime). I've been made aware that there is a more recent Go plugin for Sublime Text called [GoTools](https://packagecontrol.io/packages/GoTools)
+* Sublime Text 3 with [GoSublime](https://github.com/DisposaBoy/GoSublime). I've been made aware that there is another Go plugin for Sublime Text called [GoTools](https://packagecontrol.io/packages/GoTools)
 * Atom with [go-plus](https://github.com/joefitzgerald/go-plus). There is a good article describing a full Go setup [here](http://marcio.io/2015/07/supercharging-atom-editor-for-go-development/).
 * vim with [vim-go](https://github.com/fatih/vim-go)
 * [LiteIDE](https://github.com/visualfc/liteide)
 * Microsoft did a pretty good job with their [Visual Studio Code](https://code.visualstudio.com/) and Luke Hoban created a brilliant Go binding for it: [vscode-go](https://github.com/Microsoft/vscode-go)
+* IntelliJ with the [Go plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin)
 
 Last but not least, I can highly recommend trying out [GitKraken](https://www.gitkraken.com/). I've never been a huge fan of desktop UI clients for git, but this one sets a new bar. Slick UI and very useful information about your local and remote branches and code history.
 
@@ -63,13 +65,17 @@ Last but not least, I can highly recommend trying out [GitKraken](https://www.gi
 go build && ./go-rest-api-template
 ```
 
-The app will bind itself to port 3001 (defined in `main.go`). If you want to change it (e.g. bind it to the default http port 80), then use the following environment variable `PORT` (see `main.go`). Same for the location of the fixtures.json model.
+Which is faster than first typing `go build` to generate an executable called `go-rest-api-template` and then run that executable by typing `./go-rest-api-template`.
+
+The `go-rest-api-template` app will bind itself to port 3001 (defined in `main.go`). If you want to change it (e.g. bind it to the default http port 80), then use the following environment variable `PORT` (see `main.go`). Same for the location of the `fixtures.json` model.
 
 ```
 export PORT=80
 export FIXTURES=/tmp/fixtures.json
 go build && ./go-rest-api-template
 ```
+
+Alternatively, you can just change line 23 of `main.go` and change the hardcoded port to whichever one you prefer.
 
 One comment from a security point of view: whilst 80 is the default port for HTTP (and 443 for HTTPS), it's usually not recommended to actually bind your application to that port when it runs on a server instance like AWS EC2. That's because ports below 1024 are privileged ports and require elevated privileges for the app to bind itself to such port. If someone compromises your app, it could potentially take advantage of the application user with the elevated privileges. Instead, run it on a higher port like 8001 and run it with a newly created restricted user (instead of using the root user). You can then use a load balancer or a proxy (e.g. AWS ELB, HAProxy, nginx) to accept your incoming request from the internet on port 80 or 443 and then forward that to your application port.
 
@@ -377,7 +383,7 @@ type MockDB struct {
 ```
 The UserList will hold a list of User structs and the MaxUserID holds the latest used integer. MaxUserID mimics the behaviour of an auto-generated ID in conventional databases. In this case MaxUserID represents the highest used database ID.
 
-TODO: document GetUser code
+Let's have a closer at the `GetUser` function:
 
 ```
 // GetUser returns a single JSON document
@@ -389,6 +395,15 @@ func (db *MockDB) GetUser(i int) (User, error) {
 	return user, nil
 }
 ```
+
+* `func (db *MockDB)`: TODO
+* `GetUser(i int) (User, error)`: TODO
+* `return User{}, stacktrace.NewError("Failure trying to retrieve user")`: TODO
+* `return user, nil`: TODO
+
+When I discussed the `DataStorer` interface, I didn't touch on a very important use case: testing.
+
+TODO
 
 ### Fixtures
 

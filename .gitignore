@@ -29,3 +29,6 @@ _testmain.go
 # fresh
 tmp
 go-rest-api-template.log
+
+# Intellij
+.idea
