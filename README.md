@@ -817,24 +817,6 @@ Results in:
 }
 ```
 
-Adding a user:
-
-```
-TO DO
-```
-
-Deleting a user:
-
-```
-TO DO
-```
-
-Updating an existing user:
-
-```
-TO DO
-```
-
 ### Testing the Handlers
 
 TO DO
