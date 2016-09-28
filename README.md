@@ -341,7 +341,7 @@ You may not want to expose your data to the consumer of your web service in this
 
 Note the use of `time.Time` for the dates instead of using a standard `string` type. We'll discuss the pain of marshalling and unmarshalling of JSON dates a bit later.
 
-If you want to prevent a certain struct field to be marshalled/unmarshalled then add `json:"-"`.
+If you want to prevent a certain struct field to be marshalled/unmarshalled then use `json:"-"`.
 
 ### Operations on our (mock) database
 
