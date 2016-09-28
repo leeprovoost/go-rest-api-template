@@ -453,29 +453,7 @@ func TestDoStructsSatisfyInterface(t *testing.T) {
 
 ### Fixtures
 
-In order to make it a bit more useful, we will initialise it with some user objects. Luckily, we can make use of the `init` function that gets automatically called when you start the application. This init() function will be in our `main.go` file when you start up the server:
-
-```
-func init() {
-  // read JSON fixtures file
-  var jsonObject map[string][]User
-  file, err := ioutil.ReadFile("./fixtures.json")
-  if err != nil {
-    log.Fatalf("File error: %v\n", err)
-  }
-  err = json.Unmarshal(file, &jsonObject)
-  if err != nil {
-    log.Fatal(err)
-  }
-  // load data in database
-  list := make(map[int]User)
-  list[0] = jsonObject["users"][0]
-  list[1] = jsonObject["users"][1]
-  db = &Database{list, 1}
-}
-```
-
-We are first going to load the data from a `fixtures.json` file:
+In order to make it a bit more useful, we will initialise it with some user objects. I've created a helper function in `helpers.go` called `LoadFixturesIntoMockDatabase` that just loads the `fixtures.json` file. The structure of that file looks like this:
 
 ```
 {
@@ -501,15 +479,16 @@ We are first going to load the data from a `fixtures.json` file:
 When we can't load the file, we will stop the bootstrapping of the application. This is taken care of by Go's log handler, which fires off a fatal error:
 
 ```
-file, err := ioutil.ReadFile("./fixtures.json")
+// load fixtures data into mock database
+db, err := LoadFixturesIntoMockDatabase(fixtures)
 if err != nil {
-  log.Fatalf("File error: %v\n", err)
+  log.Fatal(err)
 }
 ```
 
 The `fixtures.json` file contains a JSON representation of a Go map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be represented as: `map[string][]User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
 
-The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`? The first is discouraged altogether because that's an European way of writing dates and will cause confusion around the world. Not this particular example, but imagine you have 3-4-2015. Is it third of April or fourth of March? Unfortunately there isn't an "enforced standard" for dates in JSON, so I've tried to use one that is commonly used and also understood by Go's `json.Marshaler` and `json.Unmarshaler` to avoid that we have to write our own custom marshaler/unarshaler.
+The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`? The first is discouraged altogether because that's an European way of writing dates and will cause confusion around the world. Imagine you have 3-4-2015. Is it third of April or fourth of March? Unfortunately there isn't an "enforced standard" for dates in JSON, so I've tried to use one that is commonly used and also understood by Go's `json.Marshaler` and `json.Unmarshaler` to avoid that we have to write our own custom marshaler/unarshaler.
 
 If you have a look at Go's `time/format` [code](http://golang.org/src/time/format.go) then you'll see on line 54:
 
@@ -526,8 +505,6 @@ hour:minutes:seconds
 Z (for time zone)
 offset from UTC
 ```
-
-We now need to implement the various methods from our DataStore interface.
 
 ## Defining the API
 
