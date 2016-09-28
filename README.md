@@ -235,14 +235,14 @@ Loading our environment variables, but also provide some default values that are
 
 ```
 var (
-  // environment variables
+  // try to read environment variables
   env      = os.Getenv("ENV")      // LOCAL, DEV, STG, PRD
   port     = os.Getenv("PORT")     // server traffic on this port
   version  = os.Getenv("VERSION")  // path to VERSION file
   fixtures = os.Getenv("FIXTURES") // path to fixtures file
 )
 if env == "" || env == local {
-  // running from localhost, so set some default values
+  // check if we are running on our local machine, then set some default values
   env = local
   port = "3001"
   version = "VERSION"
@@ -295,7 +295,7 @@ type AppContext struct {
 
 `Render` helps us with rendering the correct response to the client, e.g. JSON, XML, etc. Version holds the path to our `VERSION` file. `Env` holds information about our platform environment (e.g. STG, DEV). `Port` is the server port that our application binds to. `DB` is our database struct that provides a data abstraction layer.
 
-Once all of that is set up properly, we can now start the server. The `StartServer` function takes our `AppContext` struct and initialises all our routes and starts our Negroni server. This is all defined in `server.go` and we'll discuss the details over the next few sections.
+Once all of that is set up properly, we can now start the server. The `StartServer` function takes our `AppContext` struct and initialises all our routes and starts our `negroni` server. This is all defined in `server.go` and we'll discuss the details over the next few sections.
 
 One important thing worth mentioning is the way we run the application and bind the app to a given port. It's common to see Go apps being started as:
 
