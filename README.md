@@ -99,22 +99,44 @@ You should see following output if all goes well:
 
 ```
 Loading settings from ./runner.conf
-8:41:18 runner      | InitFolders
-8:41:18 runner      | mkdir ./tmp
-8:41:18 watcher     | Watching .
-8:41:18 main        | Waiting (loop 1)...
-8:41:18 main        | receiving first event /
-8:41:18 main        | sleeping for 600 milliseconds
-8:41:19 main        | flushing events
-8:41:19 main        | Started! (12 Goroutines)
-8:41:19 main        | remove tmp/go-rest-api-template.log: no such file or directory
-8:41:19 build       | Building...
-8:41:20 runner      | Running...
-8:41:20 main        | --------------------
-8:41:20 main        | Waiting (loop 2)...
-8:41:20 app         | Location of fixtures.json file: ./fixtures.json
-8:41:20 app         | Starting server on port: 3001
-8:41:20 app         | [negroni] listening on :3001
+11:10:42 runner      | InitFolders
+11:10:42 runner      | mkdir ./tmp
+11:10:42 runner      | mkdir ./tmp: file exists
+11:10:42 watcher     | Watching .
+11:10:42 watcher     | Watching vendor
+11:10:42 watcher     | Watching vendor/github.com
+11:10:42 watcher     | Watching vendor/github.com/codegangsta
+11:10:42 watcher     | Watching vendor/github.com/codegangsta/negroni
+11:10:42 watcher     | Watching vendor/github.com/davecgh
+11:10:42 watcher     | Watching vendor/github.com/davecgh/go-spew
+11:10:42 watcher     | Watching vendor/github.com/davecgh/go-spew/spew
+11:10:42 watcher     | Watching vendor/github.com/gorilla
+11:10:42 watcher     | Watching vendor/github.com/gorilla/context
+11:10:42 watcher     | Watching vendor/github.com/gorilla/mux
+11:10:42 watcher     | Watching vendor/github.com/palantir
+11:10:42 watcher     | Watching vendor/github.com/palantir/stacktrace
+11:10:42 watcher     | Watching vendor/github.com/palantir/stacktrace/cleanpath
+11:10:42 watcher     | Watching vendor/github.com/pmezard
+11:10:42 watcher     | Watching vendor/github.com/pmezard/go-difflib
+11:10:42 watcher     | Watching vendor/github.com/pmezard/go-difflib/difflib
+11:10:42 watcher     | Watching vendor/github.com/stretchr
+11:10:42 watcher     | Watching vendor/github.com/stretchr/testify
+11:10:42 watcher     | Watching vendor/github.com/stretchr/testify/assert
+11:10:42 watcher     | Watching vendor/github.com/unrolled
+11:10:42 watcher     | Watching vendor/github.com/unrolled/render
+11:10:42 watcher     | Watching vendor/github.com/unrolled/secure
+11:10:42 main        | Waiting (loop 1)...
+11:10:42 main        | receiving first event /
+11:10:42 main        | sleeping for 600 milliseconds
+11:10:42 main        | flushing events
+11:10:42 main        | Started! (75 Goroutines)
+11:10:42 main        | remove tmp/go-rest-api-template.log: no such file or directory
+11:10:42 build       | Building...
+11:10:48 runner      | Running...
+11:10:48 main        | --------------------
+11:10:48 main        | Waiting (loop 2)...
+11:10:48 app         | [negroni] listening on localhost:3001
+11:10:48 app         | 2016/09/28 11:10:48 ===> Starting app (v0.2.0) on port 3001 in LOCAL mode.
 ```
 
 Fresh should work without any configuration, but to make it more explicit you can add a `runner.conf` file in your project root:
@@ -142,7 +164,7 @@ tmp
 go-rest-api-template.log
 ```
 
-Where I work, we've hit the limitations of fresh and have switched to Gulp as a task runner. Our Gulp setup takes care of running tests, using OSX notifications to warn you of build failures and provides an overview of your govendor package status. I'll open source our Gulp for Go configuration soon.
+Where I work, we've hit the limitations of fresh and have switched to Gulp as a task runner. Our Gulp setup takes care of running tests, using OSX notifications to warn you of build failures and provides an overview of your `govendor` package status. I'll open source our Gulp for Go configuration at some point.
 
 ### Code Structure
 
