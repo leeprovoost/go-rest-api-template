@@ -987,10 +987,6 @@ coverage: 34.9% of statements
 ok    github.com/leeprovoost/go-rest-api-template 0.009s
 ```
 
-### Testing the Handlers
-
-TO DO
-
 ## Vendoring of dependencies
 
 Before we wrap up, I'd like to briefly talk about vendoring. Most software relies on some third-party (open source) software. In the Node.js world they are called npm packages, in the Java world they are MAven packages and in Go they are just called a Go package.
