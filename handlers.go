@@ -42,8 +42,9 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx AppContext) 
 		ctx.Render.JSON(w, http.StatusNotFound, response)
 		return
 	}
-	responseObject := make(map[string][]User)
+	responseObject := make(map[string]interface{})
 	responseObject["users"] = list
+	responseObject["count"] = len(list)
 	ctx.Render.JSON(w, http.StatusOK, responseObject)
 }
 

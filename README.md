@@ -622,8 +622,9 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx AppContext) 
 		ctx.Render.JSON(w, http.StatusNotFound, response)
 		return
 	}
-	responseObject := make(map[string][]User)
+	responseObject := make(map[string]interface{})
 	responseObject["users"] = list
+	responseObject["count"] = len(list)
 	ctx.Render.JSON(w, http.StatusOK, responseObject)
 }
 ```
@@ -752,6 +753,39 @@ Example:
         }
     ]
 }
+```
+
+In this project, we're adding an extra field named `count` so we tell the client how many items they can expect
+
+```
+{
+    "count": 2,
+    "users": [
+        {
+            "dateOfBirth": "1985-12-31T00:00:00Z",
+            "firstName": "John",
+            "id": 0,
+            "lastName": "Doe",
+            "locationOfBirth": "London"
+        },
+        {
+            "dateOfBirth": "1992-01-01T00:00:00Z",
+            "firstName": "Jane",
+            "id": 1,
+            "lastName": "Doe",
+            "locationOfBirth": "Milton Keynes"
+        }
+    ]
+}
+```
+
+It's important that we use the `interface{}` type in the map, rather than a specific `[]User` type. Otherwise, we won't be able to assign whatever data we want to the map:
+
+```
+responseObject := make(map[string]interface{})
+responseObject["users"] = list
+responseObject["count"] = len(list)
+ctx.Render.JSON(w, http.StatusOK, responseObject)
 ```
 
 Another example is the retrieval of a specific object:
