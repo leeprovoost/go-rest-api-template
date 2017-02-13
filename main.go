@@ -1,47 +1,76 @@
 package main
 
 import (
-	"log"
 	"os"
+	"strings"
 
+	log "github.com/Sirupsen/logrus"
+	"github.com/leeprovoost/go-rest-api-template/data"
+	"github.com/leeprovoost/go-rest-api-template/server"
 	"github.com/unrolled/render"
 )
 
-const local string = "LOCAL"
+func init() {
+	if "LOCAL" == strings.ToUpper(os.Getenv("ENV")) {
+		log.SetFormatter(&log.TextFormatter{})
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetFormatter(&log.JSONFormatter{})
+		log.SetLevel(log.InfoLevel)
+	}
+}
 
 func main() {
+	// ===========================================================================
+	// Load environment variables
+	// ===========================================================================
 	var (
-		// environment variables
-		env      = os.Getenv("ENV")      // LOCAL, DEV, STG, PRD
-		port     = os.Getenv("PORT")     // server traffic on this port
-		version  = os.Getenv("VERSION")  // path to VERSION file
-		fixtures = os.Getenv("FIXTURES") // path to fixtures file
+		env      = strings.ToUpper(os.Getenv("ENV")) // LOCAL, DEV, STG, PRD
+		port     = os.Getenv("PORT")                 // server traffic on this port
+		version  = os.Getenv("VERSION")              // path to VERSION file
+		fixtures = os.Getenv("FIXTURES")             // path to fixtures file
 	)
-	if env == "" || env == local {
-		// running from localhost, so set some default values
-		env = local
-		port = "3001"
-		version = "VERSION"
-		fixtures = "fixtures.json"
-	}
-	// reading version from file
+	// ===========================================================================
+	// Read version information
+	// ===========================================================================
 	version, err := ParseVersionFile(version)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"env":  env,
+			"err":  err,
+			"path": os.Getenv("VERSION"),
+		}).Fatal("Can't find a VERSION file")
+		return
 	}
-	// load fixtures data into mock database
-	db, err := LoadFixturesIntoMockDatabase(fixtures)
+	log.WithFields(log.Fields{
+		"env":     env,
+		"path":    os.Getenv("VERSION"),
+		"version": version,
+	}).Info("Loaded VERSION file")
+	// ===========================================================================
+	//  Load fixtures data into mock database
+	// ===========================================================================
+	db, err := data.LoadFixturesIntoMockDatabase(fixtures)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"env":      env,
+			"err":      err,
+			"fixtures": fixtures,
+		}).Fatal("Can't find a fixtures.json file")
+		return
 	}
-	// initialse application context
-	ctx := AppContext{
+	// ===========================================================================
+	// Initialise application context
+	// ===========================================================================
+	appEnv := server.AppEnv{
 		Render:  render.New(),
 		Version: version,
 		Env:     env,
 		Port:    port,
 		DB:      db,
 	}
-	// start application
-	StartServer(ctx)
+	// ===========================================================================
+	// Start application
+	// ===========================================================================
+	server.StartServer(appEnv)
 }

@@ -2,17 +2,11 @@
 *.o
 *.a
 *.so
-gin-bin
-go-rest-template-bluemix
 go-rest-api-template
 
 # Folders
 _obj
 _test
-
-# Architecture specific extensions/prefixes
-*.[568vq]
-[568vq].out
 
 *.cgo1.go
 *.cgo2.c
@@ -29,6 +23,3 @@ _testmain.go
 # fresh
 tmp
 go-rest-api-template.log
-
-# Intellij
-.idea

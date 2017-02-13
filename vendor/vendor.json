@@ -3,10 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "dnj6px0tS6k2tKIqK4wCW+4bXjk=",
-			"path": "github.com/codegangsta/negroni",
-			"revision": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b",
-			"revisionTime": "2015-03-19T17:13:04Z"
+			"checksumSHA1": "cT6+XPBZiXsFbb7cXT6AYNrZyuM=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "3f603f494d61c73457fb234161d8982b9f0f0b71",
+			"revisionTime": "2017-02-07T18:34:08Z"
 		},
 		{
 			"checksumSHA1": "5rPfda8jFccr3A6heL+JAmi9K9g=",
@@ -63,6 +63,18 @@
 			"path": "github.com/unrolled/secure",
 			"revision": "4b41e52ab568cbfd31eda3612d98192da1575c77",
 			"revisionTime": "2016-03-19T03:15:19Z"
+		},
+		{
+			"checksumSHA1": "ezZyPBDiKHM5y+YmlIhrWIzgbfw=",
+			"path": "github.com/urfave/negroni",
+			"revision": "61dbefc515b4dede6eb2de7df1e54d49edce892d",
+			"revisionTime": "2017-01-27T05:19:55Z"
+		},
+		{
+			"checksumSHA1": "0SIHiKpZ7earBAzuyvWOQv93Kgc=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "aaabbdc969c3935a2a7f61efac801e7163c73a2a",
+			"revisionTime": "2017-02-10T14:16:29Z"
 		}
 	],
 	"rootPath": "github.com/leeprovoost/go-rest-api-template"
