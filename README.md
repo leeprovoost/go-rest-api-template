@@ -51,7 +51,7 @@ The choice of an editor/IDE is a personal one, so the only advice I can give you
 * vim with [vim-go](https://github.com/fatih/vim-go)
 * [LiteIDE](https://github.com/visualfc/liteide)
 * Microsoft did a pretty good job with their [Visual Studio Code](https://code.visualstudio.com/) and Luke Hoban created a brilliant Go binding for it: [vscode-go](https://github.com/Microsoft/vscode-go)
-* IntelliJ with the [Go plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin)
+* IntelliJ with the [Go plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin) or [Gogland](https://www.jetbrains.com/go/)
 
 Last but not least, I can highly recommend trying out [GitKraken](https://www.gitkraken.com/). I've never been a huge fan of desktop UI clients for git, but this one sets a new bar. Slick UI and very useful information about your local and remote branches and code history.
 
