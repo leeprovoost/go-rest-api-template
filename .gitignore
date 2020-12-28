@@ -23,3 +23,9 @@ _testmain.go
 # fresh
 tmp
 go-rest-api-template.log
+
+# macOS
+.DS_Store
+
+# other
+.idea
