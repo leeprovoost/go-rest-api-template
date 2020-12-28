@@ -7,32 +7,54 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"github.com/urfave/negroni"
 )
 
 func TestHealthcheckHandler(t *testing.T) {
-	ctx := CreateContextForTestSetup()
-	r, _ := http.NewRequest("GET", "/healthcheck", nil)
+	appEnv := CreateContextForTestSetup()
+	r, _ := http.NewRequest(http.MethodGet, "/healthcheck", nil)
 	w := httptest.NewRecorder()
-	makeHandler(ctx, HealthcheckHandler).ServeHTTP(w, r)
+	router := mux.NewRouter().StrictSlash(true)
+	// recreate route from routes.go
+	router.
+		Methods(http.MethodGet).
+		Path("/healthcheck").
+		Name("HealthcheckHandler").
+		Handler(MakeHandler(appEnv, HealthcheckHandler))
+	n := negroni.New()
+	n.UseHandler(router)
+	n.ServeHTTP(w, r)
+	// test response headers and codes
 	assert.Equal(t, http.StatusOK, w.Code, "they should be equal")
-	assert.Equal(t, "application/json; charset=UTF-8", w.HeaderMap["Content-Type"][0], "they should be equal")
+	assert.Equal(t, "GNU Terry Pratchett", w.HeaderMap["X-Clacks-Overhead"][0], "they should be equal")
 	// parse json body
 	var f interface{}
 	json.Unmarshal(w.Body.Bytes(), &f)
-	obj := f.(map[string]interface{})
-	assert.Equal(t, "go-rest-api-template", obj["appName"], "they should be equal")
-	assert.Equal(t, ctx.Version, obj["version"], "they should be equal")
+	m := f.(map[string]interface{})
+	assert.Equal(t, "go-rest-api-template", m["appName"], "they should be equal")
+	assert.Equal(t, appEnv.Version, m["version"], "they should be equal")
 }
 
 func TestListUsersHandler(t *testing.T) {
-	ctx := CreateContextForTestSetup()
-	req, _ := http.NewRequest("GET", "/users", nil)
+	appEnv := CreateContextForTestSetup()
+	r, _ := http.NewRequest(http.MethodGet, "/users", nil)
 	w := httptest.NewRecorder()
-	makeHandler(ctx, ListUsersHandler).ServeHTTP(w, req)
+	router := mux.NewRouter().StrictSlash(true)
+	// recreate route from routes.go
+	router.
+		Methods(http.MethodGet).
+		Path("/users").
+		Name("ListUsersHandler").
+		Handler(MakeHandler(appEnv, ListUsersHandler))
+	n := negroni.New()
+	n.UseHandler(router)
+	n.ServeHTTP(w, r)
+	// test response headers and codes
 	assert.Equal(t, http.StatusOK, w.Code, "they should be equal")
-	assert.Equal(t, "application/json; charset=UTF-8", w.HeaderMap["Content-Type"][0], "they should be equal")
-	//parse json body
+	assert.Equal(t, "GNU Terry Pratchett", w.HeaderMap["X-Clacks-Overhead"][0], "they should be equal")
+	// parse json body
 	var f interface{}
 	json.Unmarshal(w.Body.Bytes(), &f)
 	m := f.(map[string]interface{})

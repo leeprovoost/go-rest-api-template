@@ -13,11 +13,14 @@ import (
 // HandlerFunc is a custom implementation of the http.HandlerFunc
 type HandlerFunc func(http.ResponseWriter, *http.Request, AppEnv)
 
-// makeHandler allows us to pass an environment struct to our handlers, without resorting to global
+// MakeHandler allows us to pass an environment struct to our handlers, without resorting to global
 // variables. It accepts an environment (Env) struct and our own handler function. It returns
 // a function of the type http.HandlerFunc so can be passed on to the HandlerFunc in main.go.
-func makeHandler(appEnv AppEnv, fn func(http.ResponseWriter, *http.Request, AppEnv)) http.HandlerFunc {
+func MakeHandler(appEnv AppEnv, fn func(http.ResponseWriter, *http.Request, AppEnv)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Terry Pratchett tribute
+		w.Header().Set("X-Clacks-Overhead", "GNU Terry Pratchett")
+		// return function with AppEnv
 		fn(w, r, appEnv)
 	}
 }
@@ -33,7 +36,7 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv)
 
 // ListUsersHandler returns a list of users
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	list, err := appEnv.DB.ListUsers()
+	list, err := appEnv.UserStore.ListUsers()
 	if err != nil {
 		response := models.Status{
 			Status:  strconv.Itoa(http.StatusNotFound),
@@ -56,7 +59,7 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
 func GetUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
 	vars := mux.Vars(req)
 	uid, _ := strconv.Atoi(vars["uid"])
-	user, err := appEnv.DB.GetUser(uid)
+	user, err := appEnv.UserStore.GetUser(uid)
 	if err != nil {
 		response := models.Status{
 			Status:  strconv.Itoa(http.StatusNotFound),
@@ -96,7 +99,7 @@ func CreateUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) 
 		DateOfBirth:     u.DateOfBirth,
 		LocationOfBirth: u.LocationOfBirth,
 	}
-	user, _ = appEnv.DB.AddUser(user)
+	user, _ = appEnv.UserStore.AddUser(user)
 	appEnv.Render.JSON(w, http.StatusCreated, user)
 }
 
@@ -124,7 +127,7 @@ func UpdateUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) 
 		DateOfBirth:     u.DateOfBirth,
 		LocationOfBirth: u.LocationOfBirth,
 	}
-	user, err = appEnv.DB.UpdateUser(user)
+	user, err = appEnv.UserStore.UpdateUser(user)
 	if err != nil {
 		response := models.Status{
 			Status:  strconv.Itoa(http.StatusInternalServerError),
@@ -144,7 +147,7 @@ func UpdateUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) 
 func DeleteUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
 	vars := mux.Vars(req)
 	uid, _ := strconv.Atoi(vars["uid"])
-	err := appEnv.DB.DeleteUser(uid)
+	err := appEnv.UserStore.DeleteUser(uid)
 	if err != nil {
 		response := models.Status{
 			Status:  strconv.Itoa(http.StatusInternalServerError),

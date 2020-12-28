@@ -15,11 +15,12 @@ Just to be clear: this is not a framework, library, package or anything like tha
 The main ones are:
 
 * [gorilla/mux](http://www.gorillatoolkit.org/pkg/mux) for routing
-* [codegangsta/negroni](https://github.com/codegangsta/negroni) as a middleware handler
+* [urfave/negroni](https://github.com/urfave/negroni) as a middleware handler
 * [strechr/testify](https://github.com/stretchr/testify) for writing easier test assertions
 * [unrolled/render](https://github.com/unrolled/render) for HTTP response rendering
 * [palantir/stacktrace](https://github.com/palantir/stacktrace) to provide more context to error messages
 * [unrolled/secure](https://github.com/unrolled/secure) to improve API security
+* [Sirupsen/logrus](https://github.com/Sirupsen/logrus) for structured logging
 
 Whilst working on this, I've tried to write up my thought process as much as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR or raise an issue.
 
@@ -27,7 +28,7 @@ Last but not least: I'm occasionally writing about my lessons learned developing
 
 ### Knowledge of Go
 
-If you're new to programming in Go, I would highly recommend you to read the following three resources:
+If you're new to programming in Go, I would highly recommend you to read the following resources:
 
 * [A Tour of Go](https://tour.golang.org/welcome/1)
 * [Effective Go](https://golang.org/doc/effective_go.html)
@@ -53,7 +54,7 @@ The choice of an editor/IDE is a personal one, so the only advice I can give you
 * Microsoft did a pretty good job with their [Visual Studio Code](https://code.visualstudio.com/) and Luke Hoban created a brilliant Go binding for it: [vscode-go](https://github.com/Microsoft/vscode-go)
 * IntelliJ with the [Go plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin)
 
-Last but not least, I can highly recommend trying out [GitKraken](https://www.gitkraken.com/). I've never been a huge fan of desktop UI clients for git, but this one sets a new bar. Slick UI and very useful information about your local and remote branches and code history.
+Last but not least, I can highly recommend trying out [Tower](https://www.git-tower.com/mac/). I've never been a huge fan of desktop UI clients for git, but this one sets a new bar. Slick UI and very useful information about your local and remote branches and code history.
 
 ### How to run
 
@@ -68,12 +69,12 @@ Which is faster than first typing `go build` to generate an executable called `g
 The `go-rest-api-template` app will bind itself to port 3001 (defined in `main.go`). If you want to change it (e.g. bind it to the default http port 80), then use the following environment variable `PORT` (see `main.go`). Same for the location of the `fixtures.json` model.
 
 ```
+export ENV=LOCAL
+export VERSION=VERSION
 export PORT=80
 export FIXTURES=/tmp/fixtures.json
 go build && ./go-rest-api-template
 ```
-
-Alternatively, you can just change line 23 of `main.go` and change the hardcoded port to whichever one you prefer.
 
 One comment from a security point of view: whilst 80 is the default port for HTTP (and 443 for HTTPS), it's usually not recommended to actually bind your application to that port when it runs on a server instance like AWS EC2. That's because ports below 1024 are privileged ports and require elevated privileges for the app to bind itself to such port. If someone compromises your app, it could potentially take advantage of the application user with the elevated privileges. Instead, run it on a higher port like 8001 and run it with a newly created restricted user (instead of using the root user). You can then use a load balancer or a proxy (e.g. AWS ELB, HAProxy, nginx) to accept your incoming request from the internet on port 80 or 443 and then forward that to your application port.
 
@@ -151,7 +152,6 @@ log_color_main:    cyan
 log_color_build:   yellow
 log_color_runner:  green
 log_color_watcher: magenta
-log_color_app:
 ```
 
 As you can see, it creates a `tmp` directory in your project root and a log file. You can tell `.gitignore` to stop checking it into your git repository by adding the following lines in your `.gitignore` file:
@@ -162,31 +162,43 @@ tmp
 go-rest-api-template.log
 ```
 
+I've added a simple task to our `Makefile` that allows you to run the app with all the correct environment variables. Just run:
+
+```
+make fresh
+```
+
 Where I work, we've hit the limitations of fresh and have switched to Gulp as a task runner. Our Gulp setup takes care of running tests, using OSX notifications to warn you of build failures and provides an overview of your `govendor` package status. I'll open source our Gulp for Go configuration at some point.
 
 ### High-level Code Structure
 
-Main server files (bootstrapping of http server):
+Main server files:
 
 ```
-main.go --> figure out application settings from various sources, start application context and kick the server
-server.go --> actual server kicking is happening here: mainly loading of routes and middleware
+main.go --> this ties all the various application logic packages together and loads the correct environment variables
+util.go --> some generic helper functions
 ```
 
 Route definitions and handlers:
 
 ```
-router.go --> server routes, e.g. GET /healthcheck, and binding of those routes to the correct route handlers
-handlers.go --> defines the actual logic that gets executed when you visit a route and takes care of the response to the client
-handlers_test.go --> tests for our route handlers
+server/main.go --> actual server kicking is happening here: mainly loading of routes and middleware
+server/router.go --> server routes, e.g. GET /healthcheck, and binding of those routes to the correct route handlers
+server/handlers.go --> defines the actual logic that gets executed when you visit a route and takes care of the response to the client
+server/handlers_test.go --> tests for our route handlers
+server/appenv.go --> defines the application context object
 ```
 
 Data model descriptions and operations on the data:
 
 ```
-models.go --> structs describing our data, bit similar to objects in other languages
-database.go --> our mock/fake database implementation
-database_test.go --> tests our mock/fake database
+models/healthcheck.go --> healthcheck data structure definition
+models/passport.go --> passport data structure definition
+models/status.go --> status data structure definition
+modls/user.go --> user data structure definition
+data/database.go --> our mock/fake database implementation
+data/database_test.go --> tests our mock/fake database
+data/util.go --> helper functions
 ```
 
 Test data in JSON format:
@@ -201,18 +213,6 @@ Configuration file for [fresh](go get github.com/pilu/fresh):
 runner.conf
 ```
 
-Test that checks whether structs comply with the DataStorer interface:
-
-```
-interface_test.go
-```
-
-Helper structs and functions:
-
-```
-helpers.go
-```
-
 Defines application version using semantic versioning:
 
 ```
@@ -225,11 +225,31 @@ Folder where we store all our go dependencies using the `govendor` tool:
 vendor/
 ```
 
-### Starting the application: main.go and server.go
+Makefile that describes some tasks:
+
+```
+Makefile
+```
+
+### Starting the application: main.go and server/main.go
 
 The main entry point to our app is `main.go` where we take care of the following:
 
-Loading our environment variables, but also provide some default values that are useful when you run it on your local development machine:
+Configuring our logrus structured logging package. Instead of using the standard log package, we use logrus that allows us to print information in a JSON format. However, during development, we just want to see a human-readable format:
+
+```
+func init() {
+	if "LOCAL" == strings.ToUpper(os.Getenv("ENV")) {
+		log.SetFormatter(&log.TextFormatter{})
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetFormatter(&log.JSONFormatter{})
+		log.SetLevel(log.InfoLevel)
+	}
+}
+```
+
+Loading our environment variables. The default values that we are using during development are defined in our `Makefile`.
 
 ```
 var (
@@ -239,13 +259,6 @@ var (
   version  = os.Getenv("VERSION")  // path to VERSION file
   fixtures = os.Getenv("FIXTURES") // path to fixtures file
 )
-if env == "" || env == local {
-  // check if we are running on our local machine, then set some default values
-  env = local
-  port = "3001"
-  version = "VERSION"
-  fixtures = "fixtures.json"
-}
 ```
 
 I'm using the environment variables technique to tell the app in what environment it lives:
@@ -255,34 +268,44 @@ I'm using the environment variables technique to tell the app in what environmen
 * `STG`: staging servers
 * `PRD`: production servers
 
-When it can't detect an environment variable, it assumes that it's running on your local development workstation.
-
-We then load our version file. I have added a helper function in `helpers.go` that can parse a `VERSION` file using semantic versioning.
+We then load our version file. I have added a helper function in `util.go` that can parse a `VERSION` file using semantic versioning.
 
 ```
 // reading version from file
 version, err := ParseVersionFile(version)
 if err != nil {
-  log.Fatal(err)
+  log.WithFields(log.Fields{
+    "env":  env,
+    "err":  err,
+    "path": os.Getenv("VERSION"),
+  }).Fatal("Can't find a VERSION file")
+  return
 }
+log.WithFields(log.Fields{
+  "env":     env,
+  "path":    os.Getenv("VERSION"),
+  "version": version,
+}).Info("Loaded VERSION file")
 ```
+
+When we can't find a version file, then we throw an error. When we do find a version file, then we're just writing a log entry.
 
 The check for error (`if err != nil`) is a common Go way of handling return values that contain errors. the `main` function is one of the few places where I use log.Fatal in my application. `log.Fatal` logs your file to the console, but also exits your application. This is for me the correct behaviour here because without a correct `VERSION` file, the app shouldn't work. It's too risky that you may have deployed the incorrect application version.
 
-This API doesn't talk to a real database but to a very simple in-memory mock database. That's why I have a `fixtures.json` file with some data. I have added a helper function in `helpers.go` that can read and parse that file into our in-memory mock database. Have a look at the next Data section to find out more about the in-memory database. I may change this in the future into an integration with an actual database.
+This API doesn't talk to a real database but to a very simple in-memory mock database. That's why I have a `fixtures.json` file with some data. I have added a helper function in `data/util.go` that can read and parse that file into our in-memory mock database. Have a look at the next Data section to find out more about the in-memory database. I may change this in the future into an integration with an actual database.
 
 ```
 // load fixtures data into mock database
 db, err := LoadFixturesIntoMockDatabase(fixtures)
 ```
 
-Once all the data is read from our environment variables and `fixtures.json` file, we can then initialise our application context. `AppContext` is a struct that holds some application info that we can pass around (e,g, provide to our handlers). It's a neat way to avoid using global variables and avoiding that you have application variables all over the place.
+Once all the data is read from our environment variables and `fixtures.json` file, we can then initialise our application context. `AppEnv` is a struct that holds some application info that we can pass around (e,g, provide to our handlers). It's a neat way to avoid using global variables and avoiding that you have application variables all over the place.
 
-I have defined the `AppContext` struct in `helpers.go`:
+I have defined the `AppEnv` struct in `server/appenv.go`:
 
 ```
-// AppContext holds application configuration data
-type AppContext struct {
+// AppEnv holds application configuration data
+type AppEnv struct {
 	Render  *render.Render
 	Version string
 	Env     string
@@ -293,7 +316,7 @@ type AppContext struct {
 
 `Render` helps us with rendering the correct response to the client, e.g. JSON, XML, etc. Version holds the path to our `VERSION` file. `Env` holds information about our platform environment (e.g. STG, DEV). `Port` is the server port that our application binds to. `DB` is our database struct that provides a data abstraction layer.
 
-Once all of that is set up properly, we can now start the server. The `StartServer` function takes our `AppContext` struct and initialises all our routes and starts our `negroni` server. This is all defined in `server.go`.
+Once all of that is set up properly, we can now start the server. The `StartServer` function takes our `AppEnv` struct and initialises all our routes and starts our `negroni` server. This is all defined in `server/main.go`.
 
 Most `negroni` code examples ([like the one on the official github repo](https://github.com/urfave/negroni)) will start the application using:
 
@@ -328,7 +351,7 @@ Last but not least, a big thank you to [edoardo849](https://github.com/edoardo84
 
 ### Data model
 
-We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports. We'll define this in `models.go`.
+We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports. We'll define this in `models/passport.go` and `models/user.go`.
 
 ```
 type User struct {
@@ -356,30 +379,65 @@ Note the use of `time.Time` for the dates instead of using a standard `string` t
 
 If you want to prevent a certain struct field to be marshalled/unmarshalled then use `json:"-"`.
 
+During development, it can be useful to print the contents of some variables to your console. We've added a little helper so Go knows how to properly display the contents of the structs. See this example in `models/user.go`:
+
+```
+// User holds personal user information
+type User struct {
+	ID              int       `json:"id"`
+	FirstName       string    `json:"firstName"`
+	LastName        string    `json:"lastName"`
+	DateOfBirth     time.Time `json:"dateOfBirth"`
+	LocationOfBirth string    `json:"locationOfBirth"`
+}
+
+// GoString implements the GoStringer interface so we can display the full struct during debugging
+// usage: fmt.Printf("%#v", i)
+// ensure that i is a pointer, so might need to do &i in some cases
+func (u *User) GoString() string {
+	return fmt.Sprintf(`
+{
+	ID: %d,
+	FirstName: %s,
+	LastName: %s,
+	DateOfBirth: %s,
+	LocationOfBirth: %s,
+}`,
+		u.ID,
+		u.FirstName,
+		u.LastName,
+		u.DateOfBirth,
+		u.LocationOfBirth,
+	)
+}
+```
+
 ### Operations on our (mock) database
 
 I wanted to create a template REST API that didn't depend on a database, so started with creating a simple in-memory database that we can work with. I admit that this was mainly to satisfy my own curiosity. I might change that in the future to using an off-the-shelve in-memory Go database.
 
 The good thing is that this will be the start of a so-called data access layer that abstracts away the underlying data store. We can achieve that by starting with creating an interface (which is a good practice in Go anyway). Note the use of the -er at the end of the interface name, as per Go convention.
 
-Open the `database.go` file and you will see:
+Open the `data/database.go` file and you will see:
 
 ```
 type DataStorer interface {
-	ListUsers() ([]User, error)
-	GetUser(i int) (User, error)
-	AddUser(u User) (User, error)
-	UpdateUser(u User) (User, error)
+	ListUsers() ([]models.User, error)
+	GetUser(i int) (models.User, error)
+	AddUser(u models.User) (models.User, error)
+	UpdateUser(u models.User) (models.User, error)
 	DeleteUser(i int) error
 }
 ```
 
 This allows us to define a set of operations on the data as a contract, without people having to worry about the actual implementation of how the data is stored and accessed. I've added the basic operations to list, retrieve, create, update and delete data, so the standard CRUD-style operations (accepting that CRUD has some subtle differences with REST).
 
-Let's have a look at the type signature of the `Get` operation:
+We're using `models.User` instead of just `User` because the `User` struct is defined in the models subpackage.
+
+Let's now have a look at the type signature of the `Get` operation:
 
 ```
-GetUser(i int) (User, error)
+GetUser(i int) (models.User, error)
 ```
 
 What this tells us is that it is expecting an integer as an argument (which will be the User id in our case), and returns a pair of values: a User object and an error object. Returning pairs of values is a nice Go feature and is often used to return information about errors.
@@ -388,12 +446,20 @@ An example of how this could be used is the following:
 
 ```
 // call the GetUser function with a given user id, this returns (hopefully) the user and an error object
-user, err := ctx.db.GetUser(uid)
+user, err := appEnv.DB.GetUser(uid)
 if err != nil {
-  ctx.render.JSON(w, http.StatusNotFound, err)
+  response := models.Status{
+    Status:  strconv.Itoa(http.StatusNotFound),
+    Message: "can't find user",
+  }
+  log.WithFields(log.Fields{
+    "env":    appEnv.Env,
+    "status": http.StatusNotFound,
+  }).Error("Can't find user")
+  appEnv.Render.JSON(w, http.StatusNotFound, response)
   return
 }
-ctx.render.JSON(w, http.StatusOK, user)
+appEnv.Render.JSON(w, http.StatusOK, user)
 ```
 
 We check whether the error object is nil. If it is, then we return a HTTP 200 OK, if not then we return HTTP 404 Not Found. Let's go into more detail when we talk about our API handlers.
@@ -415,7 +481,7 @@ Let's have a look at the actual mock in-memory database. We need to create a Dat
 
 ```
 type MockDB struct {
-	UserList  map[int]User
+	UserList  map[int]models.User
 	MaxUserID int
 }
 ```
@@ -425,33 +491,32 @@ Let's have a closer at the `GetUser` function:
 
 ```
 // GetUser returns a single JSON document
-func (db *MockDB) GetUser(i int) (User, error) {
+func (db *MockDB) GetUser(i int) (models.User, error) {
 	user, ok := db.UserList[i]
 	if !ok {
-		return User{}, stacktrace.NewError("Failure trying to retrieve user")
+		return models.User{}, stacktrace.NewError("Failure trying to retrieve user")
 	}
 	return user, nil
 }
 ```
 
 * `func (db *MockDB)`: This might be something new for you and I admit that it took me a little while to appreciate this. It's called a pointer receiver and is part of [A Tour of Go](https://tour.golang.org/methods/4). This means that the `GetUser` function can work on a `MockDB` struct. For people coming from languages that use objects and methods, it's similar. So in an object-oriented world: if `db` would be an object of the class `MockDB`, then `GetUser `would be a method that can be invoked on that object and you'd call it like `db.GetUser`.
-* `GetUser(i int) (User, error)`: This is the function signature and says that we have a function named `GetUser` that accepts one argument of the type `int` (e.g. 0, 1, 2, 3) and will return two variables. The first one is a `User` struct, the second one is an `error` struct.
-* `return User{}, stacktrace.NewError("Failure trying to retrieve user")`: In case there is an error, we return an empty `User` object and an `error`. We have to return an `User` object because that's what the function signature enforces, but this will be empty and frankly doesn't really matter. It doesn't matter because we will first check the `error` struct. The basic `error` struct in Go doesn't really say much, which is why we use here Palantir's `stacktrace` package. It adds some more contextual information about where the issue occured.
+* `GetUser(i int) (models.User, error)`: This is the function signature and says that we have a function named `GetUser` that accepts one argument of the type `int` (e.g. 0, 1, 2, 3) and will return two variables. The first one is a `User` struct, the second one is an `error` struct.
+* `return models.User{}, stacktrace.NewError("Failure trying to retrieve user")`: In case there is an error, we return an empty `User` object and an `error`. We have to return an `User` object because that's what the function signature enforces, but this will be empty and frankly doesn't really matter. It doesn't matter because we will first check the `error` struct. The basic `error` struct in Go doesn't really say much, which is why we use here Palantir's `stacktrace` package. It adds some more contextual information about where the issue occured.
 * `return user, nil`: If everything goes well, then we just return the user data as well as an empty error (nil).
 
-Before we move on to loading the mock data, I wanted to briefly touch on the `DataStorer` interface. One of the advantages of using an interface is that you can swap out the implementation. This can be useful for testing. So instead of `GetUser` calling the actual datastore, you could write a different implementation that just returns a hardcoded `User` struct. However, Go has a implicit way of linking the interface to the struct. Unlike in Java where you have to explicitly state that a Class implements an Interface (and thus you benefit from the IDE checking whether you have implemented all the methods), Go just tries to figure out whether there are structs that match the definition of your interface. In order to make this more explicit, I always add a small test. When you open `interface_test.go` then you'll see:
+Before we move on to loading the mock data, I wanted to briefly touch on the `DataStorer` interface. One of the advantages of using an interface is that you can swap out the implementation. This can be useful for testing. So instead of `GetUser` calling the actual datastore, you could write a different implementation that just returns a hardcoded `User` struct. However, Go has a implicit way of linking the interface to the struct. Unlike in Java where you have to explicitly state that a Class implements an Interface (and thus you benefit from the IDE checking whether you have implemented all the methods), Go just tries to figure out whether there are structs that match the definition of your interface. In order to make this more explicit, I always add a small test, see at the top of `data/database.go`:
 
 ```
-func TestDoStructsSatisfyInterface(t *testing.T) {
-	var _ DataStorer = (*MockDB)(nil)
-}
+// Compile-time proof of interface implementation
+var _ DataStorer = (*MockDB)(nil)
 ```
 
-`TestDoStructsSatisfyInterface` tries to typecast the `MockDB` pointer to the `DataStorer` interface. If you haven't implemented your interface functions properly, then your Go tests will complain.
+This tries to typecast the `MockDB` pointer to the `DataStorer` interface. If you haven't implemented your interface functions properly, then your Go tests will complain.
 
 ### Fixtures
 
-In order to make it a bit more useful, we will initialise it with some user objects. I've created a helper function in `helpers.go` called `LoadFixturesIntoMockDatabase` that just loads the `fixtures.json` file. The structure of that file looks like this:
+In order to make it a bit more useful, we will initialise it with some user objects. I've created a helper function in `data/util.go` called `LoadFixturesIntoMockDatabase` that just loads the `fixtures.json` file. The structure of that file looks like this:
 
 ```
 {
@@ -478,13 +543,18 @@ When we can't load the file, we will stop the bootstrapping of the application. 
 
 ```
 // load fixtures data into mock database
-db, err := LoadFixturesIntoMockDatabase(fixtures)
+db, err := data.LoadFixturesIntoMockDatabase(fixtures)
 if err != nil {
-  log.Fatal(err)
+  log.WithFields(log.Fields{
+    "env":      env,
+    "err":      err,
+    "fixtures": fixtures,
+  }).Fatal("Can't find a fixtures.json file")
+  return
 }
 ```
 
-The `fixtures.json` file contains a JSON representation of a Go map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be represented as: `map[string][]User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
+The `fixtures.json` file contains a JSON representation of a Go map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be represented as: `map[string][]models.User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
 
 The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`? The first is discouraged altogether because that's an European way of writing dates and will cause confusion around the world. Imagine you have 3-4-2015. Is it third of April or fourth of March? Unfortunately there isn't an "enforced standard" for dates in JSON, so I've tried to use one that is commonly used and also understood by Go's `json.Marshaler` and `json.Unmarshaler` to avoid that we have to write our own custom marshaler/unmarshaler.
 
@@ -562,10 +632,10 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request, render Render) {
 
 Perfect. Or, is it? What if we want to pass more variables to the handler function? Like Metrics? Or some environment variables? We'd continuously have to change ALL our handlers and the type signature will become quite long and hard to maintain. An alternative is to create a server or an environment struct and use that as a container for our variables we want to pass around the system.
 
-In our `helpers.go` we'll add:
+In our `server/appenv.go` we'll add:
 
 ```
-type AppContext struct {
+type AppEnv struct {
 	Render  *render.Render
 	Version string
 	Env     string
@@ -578,7 +648,7 @@ And in our `func main()` function we initialise that struct:
 
 ```
 // initialse application context
-ctx := AppContext{
+appEnv := server.AppEnv{
 	Render:  render.New(),
 	Version: version,
 	Env:     env,
@@ -590,42 +660,45 @@ ctx := AppContext{
 Our handler looks now like this:
 
 ```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx AppContext) {
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
   // return user data
 }
 ```
 
-The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, appContext` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `makeHandler` that takes our appContext struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
+The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, appContext` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `MakeHandler` that takes our appContext struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
 
 ```
-func makeHandler(ctx AppContext, fn func(http.ResponseWriter, *http.Request, AppContext)) http.HandlerFunc {
+func MakeHandler(appEnv AppEnv, fn func(http.ResponseWriter, *http.Request, AppEnv)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fn(w, r, ctx)
+		fn(w, r, appEnv)
 	}
 }
 ```
 
-We can use this `makeHandler` function now in our `server.go` when we initialise all the routes and the corresponding route handlers.
+We can use this `MakeHandler` function now in our `handlers.go` when we initialise all the routes and the corresponding route handlers.
 
 In the previous examples we've ignored the implementation of the `ListUsersHandler`, but let's have a closer look at that now:
 
 ```
 // ListUsersHandler returns a list of users
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx AppContext) {
-	list, err := ctx.DB.ListUsers()
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
+  list, err := appEnv.DB.ListUsers()
 	if err != nil {
-		response := Status{
-			Status:  "404",
+		response := models.Status{
+			Status:  strconv.Itoa(http.StatusNotFound),
 			Message: "can't find any users",
 		}
-		log.Println(err)
-		ctx.Render.JSON(w, http.StatusNotFound, response)
+		log.WithFields(log.Fields{
+			"env":    appEnv.Env,
+			"status": http.StatusNotFound,
+		}).Error("Can't find any users")
+		appEnv.Render.JSON(w, http.StatusNotFound, response)
 		return
 	}
 	responseObject := make(map[string]interface{})
 	responseObject["users"] = list
 	responseObject["count"] = len(list)
-	ctx.Render.JSON(w, http.StatusOK, responseObject)
+	appEnv.Render.JSON(w, http.StatusOK, responseObject)
 }
 ```
 
@@ -635,17 +708,20 @@ So this code:
 
 ```
 if err != nil {
-  response := Status{
-    Status:  "404",
+  response := models.Status{
+    Status:  strconv.Itoa(http.StatusNotFound),
     Message: "can't find any users",
   }
-  log.Println(err)
-  ctx.Render.JSON(w, http.StatusNotFound, response)
+  log.WithFields(log.Fields{
+    "env":    appEnv.Env,
+    "status": http.StatusNotFound,
+  }).Error("Can't find any users")
+  appEnv.Render.JSON(w, http.StatusNotFound, response)
   return
 }
 ```
 
-constructs a new `Status` response struct. Adds a 404 status so that computers can understand it, but also adds a human-readable message. It then prints the error to the server log. I've used here a simple `log.Println` but there are multiple ways you can do that. Last but not least you send the `Status` struct as a JSON response back to the client and add the 404 Not Found response to the HTTP headers (using `http.StatusNotFound`).
+constructs a new `Status` response struct. Adds a 404 status so that computers can understand it, but also adds a human-readable message. We need to convert the `http.StatusNotFound` from an integer to a string using `strconv.Itoa` because the status codes in the `Status` object are strings. It then prints the error to the server log. Last but not least you send the `Status` struct as a JSON response back to the client and add the 404 Not Found response to the HTTP headers (using `http.StatusNotFound`).
 
 
 ### Special Route: Health check
@@ -659,12 +735,12 @@ Route{"Healthcheck", "GET", "/healthcheck", HealthcheckHandler},
 Monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 200 OK when the service is up and running and will also say what the application name is and the version number.
 
 ```
-func HealthcheckHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
-	check := Healthcheck{
+func HealthcheckHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
+	check := models.Healthcheck{
 		AppName: "go-rest-api-template",
-		Version: ctx.version,
+		Version: appEnv.Version,
 	}
-	ctx.render.JSON(w, http.StatusOK, check)
+	appEnv.Render.JSON(w, http.StatusOK, check)
 }
 ```
 
@@ -675,12 +751,12 @@ This health check is very simple. It just checks whether the service is up and r
 Let's have a look at interacting with our data. Returning a list of users is quite easy, it's just showing the UserList:
 
 ```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
-  ctx.render.JSON(w, http.StatusOK, db.List())
+func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
+  appEnv.render.JSON(w, http.StatusOK, db.List())
 }
 ```
 
-BTW, notice the `ctx.render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
+BTW, notice the `appEnv.render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
 
 So, this will return the following to the client:
 
@@ -785,21 +861,29 @@ It's important that we use the `interface{}` type in the map, rather than a spec
 responseObject := make(map[string]interface{})
 responseObject["users"] = list
 responseObject["count"] = len(list)
-ctx.Render.JSON(w, http.StatusOK, responseObject)
+appEnv.Render.JSON(w, http.StatusOK, responseObject)
 ```
 
 Another example is the retrieval of a specific object:
 
 ```
-func GetUserHandler(w http.ResponseWriter, req *http.Request, ctx appContext) {
-  vars := mux.Vars(req)
-  uid, _ := strconv.Atoi(vars["uid"])
-  user, err := ctx.db.Get(uid)
-  if err == nil {
-    ctx.render.JSON(w, http.StatusOK, user)
-  } else {
-    ctx.render.JSON(w, http.StatusNotFound, err)
-  }
+func GetUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
+	vars := mux.Vars(req)
+	uid, _ := strconv.Atoi(vars["uid"])
+	user, err := appEnv.DB.GetUser(uid)
+	if err != nil {
+		response := models.Status{
+			Status:  strconv.Itoa(http.StatusNotFound),
+			Message: "can't find user",
+		}
+		log.WithFields(log.Fields{
+			"env":    appEnv.Env,
+			"status": http.StatusNotFound,
+		}).Error("Can't find user")
+		appEnv.Render.JSON(w, http.StatusNotFound, response)
+		return
+	}
+	appEnv.Render.JSON(w, http.StatusOK, user)
 }
 ```
 
@@ -892,31 +976,42 @@ There are lots of opinions on testing, how much you should be testing, which lay
 
 In this example, we want to test the List, Add, Get, Update and Delete operations on our in-memory document database. The data access code is stored in the `database.go` file, so following Go convention we will create a new file called `database_test.go`.
 
-Before we can run the tests in `database_test.go` we need to make sure that we have a valid application context with a mock database initialised. I've added a helper function in `helpers.go` named `CreateContextForTestSetup` and that takes care of both the database setup as well as the AppContext.
+Before we can run the tests in `database_test.go` we need to make sure that we have a valid application context with a mock database initialised. I've added a helper function in `helpers.go` named `CreateContextForTestSetup` and that takes care of both the database setup as well as the AppEnv.
 
 ```
 // CreateContextForTestSetup initialises an application context struct
 // for testing purposes
-func CreateContextForTestSetup() AppContext {
+func CreateContextForTestSetup() AppEnv {
 	testVersion := "0.0.0"
 	db := CreateMockDatabase()
-	ctx := AppContext{
+	appEnv := AppEnv{
 		Render:  render.New(),
 		Version: testVersion,
 		Env:     local,
 		Port:    "3001",
 		DB:      db,
 	}
-	return ctx
+	return appEnv
 }
 
 // CreateMockDatabase initialises a database for test purposes
 func CreateMockDatabase() *MockDB {
-	list := make(map[int]User)
+  list := make(map[int]models.User)
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
-	list[0] = User{0, "John", "Doe", dt, "London"}
+	list[0] = models.User{
+		ID:              0,
+		FirstName:       "John",
+		LastName:        "Doe",
+		DateOfBirth:     dt,
+		LocationOfBirth: "London",
+	}
 	dt, _ = time.Parse(time.RFC3339, "1992-01-01T00:00:00Z")
-	list[1] = User{1, "Jane", "Doe", dt, "Milton Keynes"}
+	list[1] = models.User{
+		ID: 1, FirstName: "Jane",
+		LastName:        "Doe",
+		DateOfBirth:     dt,
+		LocationOfBirth: "Milton Keynes",
+	}
 	return &MockDB{list, 1}
 }
 ```
@@ -925,14 +1020,14 @@ Let's have a look at the easiest test where we list the elements in our database
 
 ```
 func TestListUsers(t *testing.T) {
-	ctx := CreateContextForTestSetup()
-	list, _ := ctx.DB.ListUsers()
+	appEnv := server.CreateContextForTestSetup()
+	list, _ := appEnv.DB.ListUsers()
 	count := len(list)
 	assert.Equal(t, 2, count, "There should be 2 items in the list.")
 }
 ```
 
-This first calls `CreateContextForTestSetup()` the create the application context and mock database, then the `ctx.DB.ListUsers()` function, which returns a list of users. We then count the number of elements and last but not least we then check whether that count equals 2.
+This first calls `CreateContextForTestSetup()` the create the application context and mock database, then the `appEnv.DB.ListUsers()` function, which returns a list of users. We then count the number of elements and last but not least we then check whether that count equals 2.
 
 In standard Go, you would actually write something like:
 
@@ -954,14 +1049,14 @@ This is our test code for the Delete functionality:
 
 ```
 func TestDeleteUserSuccess(t *testing.T) {
-	ctx := CreateContextForTestSetup()
-	err := ctx.DB.DeleteUser(1)
+	appEnv := server.CreateContextForTestSetup()
+	err := appEnv.DB.DeleteUser(1)
 	assert.Nil(t, err)
 }
 
 func TestDeleteUserFail(t *testing.T) {
-	ctx := CreateContextForTestSetup()
-	err := ctx.DB.DeleteUser(10)
+	appEnv := server.CreateContextForTestSetup()
+	err := appEnv.DB.DeleteUser(10)
 	assert.NotNil(t, err)
 }
 ```
@@ -973,13 +1068,13 @@ How do we run the tests?
 Simple. Open your terminal, go to your project root:
 
 ```
-go test
+go test ./...
 ```
 
-If you want it more verbose, then:
+We need to add `./...` so that it also runs all the tests in the subpackages. If you want it more verbose, then:
 
 ```
-go test -v
+go test ./... -v
 ```
 
 Which will give you:
@@ -1008,7 +1103,7 @@ ok    github.com/leeprovoost/go-rest-api-template 0.008s
 Do you want to get some more info on your code coverage? No worries, Go has you covered (no pun intended):
 
 ```
-go test -cover
+go test ./... -cover
 ```
 
 This will give you:

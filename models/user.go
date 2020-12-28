@@ -14,6 +14,15 @@ type User struct {
 	LocationOfBirth string    `json:"locationOfBirth"`
 }
 
+// DataStorage defines all the database operations
+type UserStorage interface {
+	ListUsers() ([]User, error)
+	GetUser(i int) (User, error)
+	AddUser(u User) (User, error)
+	UpdateUser(u User) (User, error)
+	DeleteUser(i int) error
+}
+
 // GoString implements the GoStringer interface so we can display the full struct during debugging
 // usage: fmt.Printf("%#v", i)
 // ensure that i is a pointer, so might need to do &i in some cases

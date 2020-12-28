@@ -1,11 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/leeprovoost/go-rest-api-template/data"
+	"github.com/leeprovoost/go-rest-api-template/db"
 	"github.com/leeprovoost/go-rest-api-template/server"
 	"github.com/unrolled/render"
 )
@@ -25,10 +26,9 @@ func main() {
 	// Load environment variables
 	// ===========================================================================
 	var (
-		env      = strings.ToUpper(os.Getenv("ENV")) // LOCAL, DEV, STG, PRD
-		port     = os.Getenv("PORT")                 // server traffic on this port
-		version  = os.Getenv("VERSION")              // path to VERSION file
-		fixtures = os.Getenv("FIXTURES")             // path to fixtures file
+		env     = strings.ToUpper(os.Getenv("ENV")) // LOCAL, DEV, STG, PRD
+		port    = os.Getenv("PORT")                 // server traffic on this port
+		version = os.Getenv("VERSION")              // path to VERSION file
 	)
 	// ===========================================================================
 	// Read version information
@@ -48,29 +48,22 @@ func main() {
 		"version": version,
 	}).Info("Loaded VERSION file")
 	// ===========================================================================
-	//  Load fixtures data into mock database
+	// Initialise data storage
 	// ===========================================================================
-	db, err := data.LoadFixturesIntoMockDatabase(fixtures)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"env":      env,
-			"err":      err,
-			"fixtures": fixtures,
-		}).Fatal("Can't find a fixtures.json file")
-		return
-	}
+	userStore := db.NewUserService(db.CreateMockDataSet())
 	// ===========================================================================
 	// Initialise application context
 	// ===========================================================================
 	appEnv := server.AppEnv{
-		Render:  render.New(),
-		Version: version,
-		Env:     env,
-		Port:    port,
-		DB:      db,
+		Render:    render.New(),
+		Version:   version,
+		Env:       env,
+		Port:      port,
+		UserStore: userStore,
 	}
 	// ===========================================================================
 	// Start application
 	// ===========================================================================
+	fmt.Println(version)
 	server.StartServer(appEnv)
 }
