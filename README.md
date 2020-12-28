@@ -41,10 +41,6 @@ A good project to keep on eye on to discover new Go packages and software is [aw
 
 ### Development tools
 
-I've tried many different editors and it seems like it's a common Go newbie [frustration](https://groups.google.com/forum/#!topic/golang-nuts/6ZgrZsPzHr0). Coming from Java, I've tried "proper" IDEs like [LiteIDE](https://github.com/visualfc/liteide) and IntelliJ with the [golang plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin) but never really fell in love with them.
-
-I've used Sublime Text with the [GoSublime](https://github.com/DisposaBoy/GoSublime) plugin for a long time, but have now settled on Atom with the [go-plus](https://github.com/joefitzgerald/go-plus) plugin and that is working very well. It has code completion, linting, formatting and even shows you what parts of the code are covered by tests.
-
 The choice of an editor/IDE is a personal one, so the only advice I can give you is to try different ones. It looks like currently the following seem to be the most mature:
 
 * [Atom](https://atom.io/) with [go-plus](https://github.com/joefitzgerald/go-plus) 
@@ -1124,9 +1120,7 @@ If you want to add a package to your `/vendor` folder, then just run `go get you
 
 This project has already all its dependencies vendored into the `/vendor` folder, so no need to do it again.
 
-One piece of advice: it's generally a good practice to do this for your own project, unless you are writing a reusable library/package to be consumed by other people. The recommendation in the latter case is to not do any vendoring because you don't know what the vendoring strategy/toolset is of the people that are consuming your library/package.
-
-Side nnote: if you are upgrading from a pre-go mod project (in my case govendor) then that's quite easy. Enter the following commands step by step:
+Side note: if you are upgrading from a pre-go mod project (in my case govendor) then that's quite easy. Enter the following commands step by step:
 
 ```
 go mod init github.com/leeprovoost/go-rest-api-template
