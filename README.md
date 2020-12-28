@@ -47,14 +47,10 @@ I've used Sublime Text with the [GoSublime](https://github.com/DisposaBoy/GoSubl
 
 The choice of an editor/IDE is a personal one, so the only advice I can give you is to try different ones. It looks like currently the following seem to be the most mature:
 
-* Sublime Text 3 with [GoSublime](https://github.com/DisposaBoy/GoSublime). I've been made aware that there is another Go plugin for Sublime Text called [GoTools](https://packagecontrol.io/packages/GoTools)
-* Atom with [go-plus](https://github.com/joefitzgerald/go-plus). There is a good article describing a full Go setup [here](http://marcio.io/2015/07/supercharging-atom-editor-for-go-development/).
+* [Atom](https://atom.io/) with [go-plus](https://github.com/joefitzgerald/go-plus) 
 * vim with [vim-go](https://github.com/fatih/vim-go)
-* [LiteIDE](https://github.com/visualfc/liteide)
-* Microsoft did a pretty good job with their [Visual Studio Code](https://code.visualstudio.com/) and Luke Hoban created a brilliant Go binding for it: [vscode-go](https://github.com/Microsoft/vscode-go)
-* IntelliJ with the [Go plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin) or [Gogland](https://www.jetbrains.com/go/)
-
-Last but not least, I can highly recommend trying out [Tower](https://www.git-tower.com/mac/). I've never been a huge fan of desktop UI clients for git, but this one sets a new bar. Slick UI and very useful information about your local and remote branches and code history.
+* Microsoft did a pretty good job with their [Visual Studio Code](https://code.visualstudio.com/) and then install the [Go plugin](https://code.visualstudio.com/docs/languages/go)
+* IntelliJ [Goland](https://www.jetbrains.com/go/)
 
 ### How to run
 
