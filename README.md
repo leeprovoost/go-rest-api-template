@@ -215,9 +215,11 @@ Defines application version using semantic versioning:
 VERSION
 ```
 
-Folder where we store all our go dependencies using the `govendor` tool:
+Go modules definitiona files and directory where we store the vendored modules:
 
 ```
+go.mod
+go.sum
 vendor/
 ```
 
@@ -1118,18 +1120,22 @@ What you commonly see in the Node.js world is that people push their own code to
 
 One way to solve it is to simply a copy of the third-party dependency into your own project and treat it as you would treat the code you've written yourself. They're part of the git project and checked in together. Since Go 1.5, the Go world has agreed to use the `/vendor` folder in your project for this. (Before Go 1.5 it was the wild wild west...)
 
-Rather than manually copying packages, there are some tools out there that can help you. I like `[govendor](https://github.com/kardianos/govendor)`.
-
-If you want to add a package to your `/vendor` folder, there are two ways you can do it:
-
-* You either have the package already in your `GOPATH`: just run `govendor add your/desired/package`
-* You don't have it on your system: just run `govendor fetch your/desired/package`
-
-There are plenty more commands available to update and sync packages on the project [README.md](https://github.com/kardianos/govendor).
+If you want to add a package to your `/vendor` folder, then just run `go get your/desired/package`
 
 This project has already all its dependencies vendored into the `/vendor` folder, so no need to do it again.
 
 One piece of advice: it's generally a good practice to do this for your own project, unless you are writing a reusable library/package to be consumed by other people. The recommendation in the latter case is to not do any vendoring because you don't know what the vendoring strategy/toolset is of the people that are consuming your library/package.
+
+Side nnote: if you are upgrading from a pre-go mod project (in my case govendor) then that's quite easy. Enter the following commands step by step:
+
+```
+go mod init github.com/leeprovoost/go-rest-api-template
+go mod tidy
+rm ./vendor/vendor.jsonn
+go mod vendor
+```
+
+This is documented [here](https://blog.golang.org/migrating-to-go-modules) and the last `go mod vendor` is menntioned [here](https://github.com/golang/go/issues/37734#issuecomment-596695647).
 
 ## Starting the app on a production server
 
