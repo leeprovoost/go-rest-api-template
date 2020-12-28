@@ -20,7 +20,7 @@ The main ones are:
 * [unrolled/render](https://github.com/unrolled/render) for HTTP response rendering
 * [palantir/stacktrace](https://github.com/palantir/stacktrace) to provide more context to error messages
 * [unrolled/secure](https://github.com/unrolled/secure) to improve API security
-* [Sirupsen/logrus](https://github.com/Sirupsen/logrus) for structured logging
+* [sirupsen/logrus](https://github.com/sirupsen/logrus) for structured logging
 
 Whilst working on this, I've tried to write up my thought process as much as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR or raise an issue.
 
@@ -1119,6 +1119,14 @@ One way to solve it is to simply a copy of the third-party dependency into your 
 If you want to add a package to your `/vendor` folder, then just run `go get your/desired/package`
 
 This project has already all its dependencies vendored into the `/vendor` folder, so no need to do it again.
+
+When you want to upgrade a module:
+
+```
+go get -u github.com/unnrolled/render
+go mod tidy
+go mod vendor
+```
 
 Side note: if you are upgrading from a pre-go mod project (in my case govendor) then that's quite easy. Enter the following commands step by step:
 

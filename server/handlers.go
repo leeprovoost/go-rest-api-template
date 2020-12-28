@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/leeprovoost/go-rest-api-template/models"
+	log "github.com/sirupsen/logrus"
 )
 
 // HandlerFunc is a custom implementation of the http.HandlerFunc

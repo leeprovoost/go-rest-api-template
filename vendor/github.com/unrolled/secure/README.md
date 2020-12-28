@@ -11,7 +11,7 @@ package main
 import (
     "net/http"
 
-    "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -20,17 +20,19 @@ var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     secureMiddleware := secure.New(secure.Options{
-        AllowedHosts:          []string{"example.com", "ssl.example.com"},
+        AllowedHosts:          []string{"example\\.com", ".*\\.example\\.com"},
+        AllowedHostsAreRegex:  true,
+        HostsProxyHeaders:     []string{"X-Forwarded-Host"},
         SSLRedirect:           true,
         SSLHost:               "ssl.example.com",
         SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
-        STSSeconds:            315360000,
+        STSSeconds:            31536000,
         STSIncludeSubdomains:  true,
         STSPreload:            true,
         FrameDeny:             true,
         ContentTypeNosniff:    true,
         BrowserXssFilter:      true,
-        ContentSecurityPolicy: "default-src 'self'",
+        ContentSecurityPolicy: "script-src $NONCE",
         PublicKey:             `pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"`,
     })
 
@@ -44,15 +46,15 @@ Be sure to include the Secure middleware as close to the top (beginning) as poss
 The above example will only allow requests with a host name of 'example.com', or 'ssl.example.com'. Also if the request is not HTTPS, it will be redirected to HTTPS with the host name of 'ssl.example.com'.
 Once those requirements are satisfied, it will add the following headers:
 ~~~ go
-Strict-Transport-Security: 315360000; includeSubdomains; preload
+Strict-Transport-Security: 31536000; includeSubdomains; preload
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 X-XSS-Protection: 1; mode=block
-Content-Security-Policy: default-src 'self'
+Content-Security-Policy: script-src 'nonce-a2ZobGFoZg=='
 PublicKey: pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"
 ~~~
 
-###Set the `IsDevelopment` option to `true` when developing!
+### Set the `IsDevelopment` option to `true` when developing!
 When `IsDevelopment` is true, the AllowedHosts, SSLRedirect, STS header, and HPKP header will not be in effect. This allows you to work in development/test mode and not have any annoying redirects to HTTPS (ie. development can happen on HTTP), or block `localhost` has a bad host.
 
 ### Available options
@@ -62,21 +64,28 @@ Secure comes with a variety of configuration options (Note: these are not the de
 // ...
 s := secure.New(secure.Options{
     AllowedHosts: []string{"ssl.example.com"}, // AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
+    AllowedHostsAreRegex: false,  // AllowedHostsAreRegex determines, if the provided AllowedHosts slice contains valid regular expressions. Default is false.
+    HostsProxyHeaders: []string{"X-Forwarded-Hosts"}, // HostsProxyHeaders is a set of header keys that may hold a proxied hostname value for the request.
     SSLRedirect: true, // If SSLRedirect is set to true, then only allow HTTPS requests. Default is false.
     SSLTemporaryRedirect: false, // If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
     SSLHost: "ssl.example.com", // SSLHost is the host name that is used to redirect HTTP requests to HTTPS. Default is "", which indicates to use the same host.
+    SSLHostFunc: nil, // SSLHostFunc is a function pointer, the return value of the function is the host name that has same functionality as `SSHost`. Default is nil. If SSLHostFunc is nil, the `SSLHost` option will be used.
     SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"}, // SSLProxyHeaders is set of header keys with associated values that would indicate a valid HTTPS request. Useful when using Nginx: `map[string]string{"X-Forwarded-Proto": "https"}`. Default is blank map.
-    STSSeconds: 315360000, // STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
+    STSSeconds: 31536000, // STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
     STSIncludeSubdomains: true, // If STSIncludeSubdomains is set to true, the `includeSubdomains` will be appended to the Strict-Transport-Security header. Default is false.
     STSPreload: true, // If STSPreload is set to true, the `preload` flag will be appended to the Strict-Transport-Security header. Default is false.
     ForceSTSHeader: false, // STS header is only included when the connection is HTTPS. If you want to force it to always be added, set to true. `IsDevelopment` still overrides this. Default is false.
     FrameDeny: true, // If FrameDeny is set to true, adds the X-Frame-Options header with the value of `DENY`. Default is false.
-    CustomFrameOptionsValue: "SAMEORIGIN", // CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option.
+    CustomFrameOptionsValue: "SAMEORIGIN", // CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option. Default is "".
     ContentTypeNosniff: true, // If ContentTypeNosniff is true, adds the X-Content-Type-Options header with the value `nosniff`. Default is false.
     BrowserXssFilter: true, // If BrowserXssFilter is true, adds the X-XSS-Protection header with the value `1; mode=block`. Default is false.
-    ContentSecurityPolicy: "default-src 'self'", // ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
+    CustomBrowserXssValue: "1; report=https://example.com/xss-report", // CustomBrowserXssValue allows the X-XSS-Protection header value to be set with a custom value. This overrides the BrowserXssFilter option. Default is "".
+    ContentSecurityPolicy: "default-src 'self'", // ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "". Passing a template string will replace `$NONCE` with a dynamic nonce value of 16 bytes for each request which can be later retrieved using the Nonce function.
     PublicKey: `pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"`, // PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
-    
+    ReferrerPolicy: "same-origin", // ReferrerPolicy allows the Referrer-Policy header with the value to be set with a custom value. Default is "".
+    FeaturePolicy: "vibrate 'none';", // FeaturePolicy allows the Feature-Policy header with the value to be set with a custom value. Default is "".
+    ExpectCTHeader: `enforce, max-age=30, report-uri="https://www.example.com/ct-report"`,
+
     IsDevelopment: true, // This will cause the AllowedHosts, SSLRedirect, and STSSeconds/STSIncludeSubdomains options to be ignored during development. When deploying to production, be sure to set this to false.
 })
 // ...
@@ -92,6 +101,8 @@ s := secure.New()
 
 l := secure.New(secure.Options{
     AllowedHosts: []string,
+    AllowedHostsAreRegex: false,
+    HostsProxyHeaders: []string,
     SSLRedirect: false,
     SSLTemporaryRedirect: false,
     SSLHost: "",
@@ -106,10 +117,13 @@ l := secure.New(secure.Options{
     BrowserXssFilter: false,
     ContentSecurityPolicy: "",
     PublicKey: "",
+    ReferrerPolicy: "",
+    FeaturePolicy: "",
+    ExpectCTHeader: "",
     IsDevelopment: false,
 })
 ~~~
-Also note the default bad host handler throws an error:
+Also note the default bad host handler returns an error:
 ~~~ go
 http.Error(w, "Bad Host", http.StatusInternalServerError)
 ~~~
@@ -126,7 +140,7 @@ import (
     "log"
     "net/http"
 
-    "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -148,7 +162,7 @@ func main() {
 
     // HTTPS
     // To generate a development cert and key, run the following from your *nix terminal:
-    // go run $GOROOT/src/pkg/crypto/tls/generate_cert.go --host="localhost"
+    // go run $GOROOT/src/crypto/tls/generate_cert.go --host="localhost"
     log.Fatal(http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", app))
 }
 ~~~
@@ -158,7 +172,38 @@ The STS header will only be sent on verified HTTPS connections (and when `IsDeve
 
 * The `preload` flag is required for domain inclusion in Chrome's [preload](https://hstspreload.appspot.com/) list.
 
+### Content Security Policy
+If you need dynamic support for CSP while using Websockets, check out this other middleware [awakenetworks/csp](https://github.com/awakenetworks/csp).
+
 ## Integration examples
+
+### [chi](https://github.com/pressly/chi)
+~~~ go
+// main.go
+package main
+
+import (
+    "net/http"
+
+    "github.com/pressly/chi"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+)
+
+func main() {
+    secureMiddleware := secure.New(secure.Options{
+        FrameDeny: true,
+    })
+
+    r := chi.NewRouter()
+
+    r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("X-Frame-Options header is now `DENY`."))
+    })
+    r.Use(secureMiddleware.Handler)
+
+    http.ListenAndServe("127.0.0.1:3000", r)
+}
+~~~
 
 ### [Echo](https://github.com/labstack/echo)
 ~~~ go
@@ -178,14 +223,12 @@ func main() {
     })
 
     e := echo.New()
-
-    e.Get("/", func(c *echo.Context) error {
-        c.String(http.StatusOK, "X-Frame-Options header is now `DENY`.")
-        return nil
+    e.GET("/", func(c echo.Context) error {
+        return c.String(http.StatusOK, "X-Frame-Options header is now `DENY`.")
     })
-    e.Use(secureMiddleware.Handler)
 
-    e.Run("127.0.0.1:3000")
+    e.Use(echo.WrapMiddleware(secureMiddleware.Handler))
+    e.Logger.Fatal(e.Start("127.0.0.1:3000"))
 }
 ~~~
 
@@ -196,7 +239,7 @@ package main
 
 import (
     "github.com/gin-gonic/gin"
-    "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
@@ -209,10 +252,14 @@ func main() {
 
             // If there was an error, do not continue.
             if err != nil {
+                c.Abort()
                 return
             }
 
-            c.Next()
+            // Avoid header rewrite if response is a redirection.
+            if status := c.Writer.Status(); status > 300 && status < 399 {
+                c.Abort()
+            }
         }
     }()
 
@@ -235,7 +282,7 @@ package main
 import (
     "net/http"
 
-    "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
     "github.com/zenazn/goji"
     "github.com/zenazn/goji/web"
 )
@@ -259,37 +306,60 @@ func main() {
 package main
 
 import (
-	"github.com/kataras/iris"
-	"github.com/unrolled/secure"
+    "github.com/kataras/iris"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
-	secureMiddleware := secure.New(secure.Options{
+    secureMiddleware := secure.New(secure.Options{
         FrameDeny: true,
-        })
+    })
 
-	iris.UseFunc(func(c *iris.Context) {
-		err := secureMiddleware.Process(c.ResponseWriter, c.Request)
+    iris.UseFunc(func(c *iris.Context) {
+        err := secureMiddleware.Process(c.ResponseWriter, c.Request)
 
-		// If there was an error, do not continue.
-		if err != nil {
-			return
-		}
+        // If there was an error, do not continue.
+        if err != nil {
+            return
+        }
 
-		c.Next()
-	})
+        c.Next()
+    })
 
-	iris.Get("/home", func(c *iris.Context) {
-		c.SendStatus(200,"X-Frame-Options header is now `DENY`.")
-	})
+    iris.Get("/home", func(c *iris.Context) {
+        c.SendStatus(200, "X-Frame-Options header is now `DENY`.")
+    })
 
-	iris.Listen(":8080")
-
+    iris.Listen(":8080")
 }
+~~~
 
-~~~~
+### [Mux](https://github.com/gorilla/mux)
+~~~ go
+//main.go
+package main
 
-### [Negroni](https://github.com/codegangsta/negroni)
+import (
+    "log"
+    "net/http"
+    
+    "github.com/gorilla/mux"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+)
+
+func main() {
+    secureMiddleware := secure.New(secure.Options{
+        FrameDeny: true,
+    })
+    
+    r := mux.NewRouter()
+    r.Use(secureMiddleware.Handler)
+    http.Handle("/", r)
+    log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", 8080), nil))
+}
+~~~
+
+### [Negroni](https://github.com/urfave/negroni)
 Note this implementation has a special helper function called `HandlerFuncWithNext`.
 ~~~ go
 // main.go
@@ -298,8 +368,8 @@ package main
 import (
     "net/http"
 
-    "github.com/codegangsta/negroni"
-    "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
+    "github.com/urfave/negroni"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
@@ -318,28 +388,4 @@ func main() {
 
     n.Run("127.0.0.1:3000")
 }
-~~~
-
-## Nginx
-If you would like to add the above security rules directly to your [Nginx](http://wiki.nginx.org/Main) configuration, everything is below:
-~~~
-# Allowed Hosts:
-if ($host !~* ^(example.com|ssl.example.com)$ ) {
-    return 500;
-}
-
-# SSL Redirect:
-server {
-    listen      80;
-    server_name example.com ssl.example.com;
-    return 301 https://ssl.example.com$request_uri;
-}
-
-# Headers to be added:
-add_header Strict-Transport-Security "max-age=315360000";
-add_header X-Frame-Options "DENY";
-add_header X-Content-Type-Options "nosniff";
-add_header X-XSS-Protection "1; mode=block";
-add_header Content-Security-Policy "default-src 'self'";
-add_header Public-Key-Pins 'pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"';
 ~~~

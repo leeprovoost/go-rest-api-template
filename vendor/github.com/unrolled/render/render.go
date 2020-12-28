@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 const (
@@ -49,6 +50,8 @@ type Delims struct {
 type Options struct {
 	// Directory to load templates. Default is "templates".
 	Directory string
+	// FileSystem to access files
+	FileSystem FileSystem
 	// Asset function to use in place of directory. Defaults to nil.
 	Asset func(name string) ([]byte, error)
 	// AssetNames function to use in place of directory. Defaults to nil.
@@ -57,12 +60,14 @@ type Options struct {
 	Layout string
 	// Extensions to parse template files from. Defaults to [".tmpl"].
 	Extensions []string
-	// Funcs is a slice of FuncMaps to apply to the template upon compilation. This is useful for helper functions. Defaults to [].
+	// Funcs is a slice of FuncMaps to apply to the template upon compilation. This is useful for helper functions. Defaults to empty map.
 	Funcs []template.FuncMap
 	// Delims sets the action delimiters to the specified strings in the Delims struct.
 	Delims Delims
 	// Appends the given character set to the Content-Type header. Default is "UTF-8".
 	Charset string
+	// If DisableCharset is set to true, it will not append the above Charset value to the Content-Type header. Default is false.
+	DisableCharset bool
 	// Outputs human readable JSON.
 	IndentJSON bool
 	// Outputs human readable XML. Default is false.
@@ -71,8 +76,18 @@ type Options struct {
 	PrefixJSON []byte
 	// Prefixes the XML output with the given bytes.
 	PrefixXML []byte
-	// Allows changing of output to XHTML instead of HTML. Default is "text/html".
+	// Allows changing the binary content type.
+	BinaryContentType string
+	// Allows changing the HTML content type.
 	HTMLContentType string
+	// Allows changing the JSON content type.
+	JSONContentType string
+	// Allows changing the JSONP content type.
+	JSONPContentType string
+	// Allows changing the Text content type.
+	TextContentType string
+	// Allows changing the XML content type.
+	XMLContentType string
 	// If IsDevelopment is set to true, this will recompile the templates on every request. Default is false.
 	IsDevelopment bool
 	// Unescape HTML characters "&<>" to their original values. Default is false.
@@ -85,12 +100,17 @@ type Options struct {
 	RequireBlocks bool
 	// Disables automatic rendering of http.StatusInternalServerError when an error occurs. Default is false.
 	DisableHTTPErrorRendering bool
+	// Enables using partials without the current filename suffix which allows use of the same template in multiple files. e.g {{ partial "carosuel" }} inside the home template will match carosel-home or carosel.
+	// ***NOTE*** - This option should be named RenderPartialsWithoutSuffix as that is what it does. "Prefix" is a typo. Maintaining the existing name for backwards compatibility.
+	RenderPartialsWithoutPrefix bool
 }
 
 // HTMLOptions is a struct for overriding some rendering Options for specific HTML call.
 type HTMLOptions struct {
 	// Layout template name. Overrides Options.Layout.
 	Layout string
+	// Funcs added to Options.Funcs.
+	Funcs template.FuncMap
 }
 
 // Render is a service that provides functions for easily writing JSON, XML,
@@ -99,15 +119,14 @@ type Render struct {
 	// Customize Secure with an Options struct.
 	opt             Options
 	templates       *template.Template
+	templatesLk     sync.Mutex
 	compiledCharset string
 }
 
 // New constructs a new Render instance with the supplied options.
 func New(options ...Options) *Render {
 	var o Options
-	if len(options) == 0 {
-		o = Options{}
-	} else {
+	if len(options) > 0 {
 		o = options[0]
 	}
 
@@ -118,11 +137,6 @@ func New(options ...Options) *Render {
 	r.prepareOptions()
 	r.compileTemplates()
 
-	// Create a new buffer pool for writing templates into.
-	if bufPool == nil {
-		bufPool = NewBufferPool(64)
-	}
-
 	return &r
 }
 
@@ -131,16 +145,36 @@ func (r *Render) prepareOptions() {
 	if len(r.opt.Charset) == 0 {
 		r.opt.Charset = defaultCharset
 	}
-	r.compiledCharset = "; charset=" + r.opt.Charset
+	if r.opt.DisableCharset == false {
+		r.compiledCharset = "; charset=" + r.opt.Charset
+	}
 
 	if len(r.opt.Directory) == 0 {
 		r.opt.Directory = "templates"
 	}
+	if r.opt.FileSystem == nil {
+		r.opt.FileSystem = &LocalFileSystem{}
+	}
 	if len(r.opt.Extensions) == 0 {
 		r.opt.Extensions = []string{".tmpl"}
 	}
+	if len(r.opt.BinaryContentType) == 0 {
+		r.opt.BinaryContentType = ContentBinary
+	}
 	if len(r.opt.HTMLContentType) == 0 {
 		r.opt.HTMLContentType = ContentHTML
+	}
+	if len(r.opt.JSONContentType) == 0 {
+		r.opt.JSONContentType = ContentJSON
+	}
+	if len(r.opt.JSONPContentType) == 0 {
+		r.opt.JSONPContentType = ContentJSONP
+	}
+	if len(r.opt.TextContentType) == 0 {
+		r.opt.TextContentType = ContentText
+	}
+	if len(r.opt.XMLContentType) == 0 {
+		r.opt.XMLContentType = ContentXML
 	}
 }
 
@@ -158,7 +192,7 @@ func (r *Render) compileTemplatesFromDir() {
 	r.templates.Delims(r.opt.Delims.Left, r.opt.Delims.Right)
 
 	// Walk the supplied directory and compile any files that match our extension list.
-	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	r.opt.FileSystem.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		// Fix same-extension-dirs bug: some dir might be named to: "users.tmpl", "local.html".
 		// These dirs should be excluded as they are not valid golang templates, but files under
 		// them should be treat as normal.
@@ -179,7 +213,7 @@ func (r *Render) compileTemplatesFromDir() {
 
 		for _, extension := range r.opt.Extensions {
 			if ext == extension {
-				buf, err := ioutil.ReadFile(path)
+				buf, err := r.opt.FileSystem.ReadFile(path)
 				if err != nil {
 					panic(err)
 				}
@@ -257,8 +291,8 @@ func (r *Render) execute(name string, binding interface{}) (*bytes.Buffer, error
 	return buf, r.templates.ExecuteTemplate(buf, name, binding)
 }
 
-func (r *Render) addLayoutFuncs(name string, binding interface{}) {
-	funcs := template.FuncMap{
+func (r *Render) layoutFuncs(name string, binding interface{}) template.FuncMap {
+	return template.FuncMap{
 		"yield": func() (template.HTML, error) {
 			buf, err := r.execute(name, binding)
 			// Return safe HTML here since we are rendering our own template.
@@ -270,6 +304,9 @@ func (r *Render) addLayoutFuncs(name string, binding interface{}) {
 		"block": func(partialName string) (template.HTML, error) {
 			log.Print("Render's `block` implementation is now depericated. Use `partial` as a drop in replacement.")
 			fullPartialName := fmt.Sprintf("%s-%s", partialName, name)
+			if r.TemplateLookup(fullPartialName) == nil && r.opt.RenderPartialsWithoutPrefix {
+				fullPartialName = partialName
+			}
 			if r.opt.RequireBlocks || r.TemplateLookup(fullPartialName) != nil {
 				buf, err := r.execute(fullPartialName, binding)
 				// Return safe HTML here since we are rendering our own template.
@@ -279,6 +316,9 @@ func (r *Render) addLayoutFuncs(name string, binding interface{}) {
 		},
 		"partial": func(partialName string) (template.HTML, error) {
 			fullPartialName := fmt.Sprintf("%s-%s", partialName, name)
+			if r.TemplateLookup(fullPartialName) == nil && r.opt.RenderPartialsWithoutPrefix {
+				fullPartialName = partialName
+			}
 			if r.opt.RequirePartials || r.TemplateLookup(fullPartialName) != nil {
 				buf, err := r.execute(fullPartialName, binding)
 				// Return safe HTML here since we are rendering our own template.
@@ -287,34 +327,48 @@ func (r *Render) addLayoutFuncs(name string, binding interface{}) {
 			return "", nil
 		},
 	}
-	if tpl := r.templates.Lookup(name); tpl != nil {
-		tpl.Funcs(funcs)
-	}
 }
 
 func (r *Render) prepareHTMLOptions(htmlOpt []HTMLOptions) HTMLOptions {
+	layout := r.opt.Layout
+	funcs := template.FuncMap{}
+
+	for _, tmp := range r.opt.Funcs {
+		for k, v := range tmp {
+			funcs[k] = v
+		}
+	}
+
 	if len(htmlOpt) > 0 {
-		return htmlOpt[0]
+		opt := htmlOpt[0]
+		if len(opt.Layout) > 0 {
+			layout = opt.Layout
+		}
+
+		for k, v := range opt.Funcs {
+			funcs[k] = v
+		}
 	}
 
 	return HTMLOptions{
-		Layout: r.opt.Layout,
+		Layout: layout,
+		Funcs:  funcs,
 	}
 }
 
 // Render is the generic function called by XML, JSON, Data, HTML, and can be called by custom implementations.
-func (r *Render) Render(w http.ResponseWriter, e Engine, data interface{}) error {
+func (r *Render) Render(w io.Writer, e Engine, data interface{}) error {
 	err := e.Render(w, data)
-	if err != nil && !r.opt.DisableHTTPErrorRendering {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if hw, ok := w.(http.ResponseWriter); err != nil && !r.opt.DisableHTTPErrorRendering && ok {
+		http.Error(hw, err.Error(), http.StatusInternalServerError)
 	}
 	return err
 }
 
 // Data writes out the raw bytes as binary data.
-func (r *Render) Data(w http.ResponseWriter, status int, v []byte) error {
+func (r *Render) Data(w io.Writer, status int, v []byte) error {
 	head := Head{
-		ContentType: ContentBinary,
+		ContentType: r.opt.BinaryContentType,
 		Status:      status,
 	}
 
@@ -326,17 +380,25 @@ func (r *Render) Data(w http.ResponseWriter, status int, v []byte) error {
 }
 
 // HTML builds up the response from the specified template and bindings.
-func (r *Render) HTML(w http.ResponseWriter, status int, name string, binding interface{}, htmlOpt ...HTMLOptions) error {
+func (r *Render) HTML(w io.Writer, status int, name string, binding interface{}, htmlOpt ...HTMLOptions) error {
+	r.templatesLk.Lock()
+	defer r.templatesLk.Unlock()
+
 	// If we are in development mode, recompile the templates on every HTML request.
 	if r.opt.IsDevelopment {
 		r.compileTemplates()
 	}
 
 	opt := r.prepareHTMLOptions(htmlOpt)
-	// Assign a layout if there is one.
-	if len(opt.Layout) > 0 {
-		r.addLayoutFuncs(name, binding)
-		name = opt.Layout
+	if tpl := r.templates.Lookup(name); tpl != nil {
+		if len(opt.Layout) > 0 {
+			tpl.Funcs(r.layoutFuncs(name, binding))
+			name = opt.Layout
+		}
+
+		if len(opt.Funcs) > 0 {
+			tpl.Funcs(opt.Funcs)
+		}
 	}
 
 	head := Head{
@@ -354,9 +416,9 @@ func (r *Render) HTML(w http.ResponseWriter, status int, name string, binding in
 }
 
 // JSON marshals the given interface object and writes the JSON response.
-func (r *Render) JSON(w http.ResponseWriter, status int, v interface{}) error {
+func (r *Render) JSON(w io.Writer, status int, v interface{}) error {
 	head := Head{
-		ContentType: ContentJSON + r.compiledCharset,
+		ContentType: r.opt.JSONContentType + r.compiledCharset,
 		Status:      status,
 	}
 
@@ -372,9 +434,9 @@ func (r *Render) JSON(w http.ResponseWriter, status int, v interface{}) error {
 }
 
 // JSONP marshals the given interface object and writes the JSON response.
-func (r *Render) JSONP(w http.ResponseWriter, status int, callback string, v interface{}) error {
+func (r *Render) JSONP(w io.Writer, status int, callback string, v interface{}) error {
 	head := Head{
-		ContentType: ContentJSONP + r.compiledCharset,
+		ContentType: r.opt.JSONPContentType + r.compiledCharset,
 		Status:      status,
 	}
 
@@ -388,9 +450,9 @@ func (r *Render) JSONP(w http.ResponseWriter, status int, callback string, v int
 }
 
 // Text writes out a string as plain text.
-func (r *Render) Text(w http.ResponseWriter, status int, v string) error {
+func (r *Render) Text(w io.Writer, status int, v string) error {
 	head := Head{
-		ContentType: ContentText + r.compiledCharset,
+		ContentType: r.opt.TextContentType + r.compiledCharset,
 		Status:      status,
 	}
 
@@ -402,9 +464,9 @@ func (r *Render) Text(w http.ResponseWriter, status int, v string) error {
 }
 
 // XML marshals the given interface object and writes the XML response.
-func (r *Render) XML(w http.ResponseWriter, status int, v interface{}) error {
+func (r *Render) XML(w io.Writer, status int, v interface{}) error {
 	head := Head{
-		ContentType: ContentXML + r.compiledCharset,
+		ContentType: r.opt.XMLContentType + r.compiledCharset,
 		Status:      status,
 	}
 

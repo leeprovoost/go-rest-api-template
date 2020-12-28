@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/leeprovoost/go-rest-api-template/db"
 	"github.com/leeprovoost/go-rest-api-template/server"
+	log "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 )
 
