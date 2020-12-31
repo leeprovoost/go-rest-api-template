@@ -1,8 +1,7 @@
-package server
+package passport
 
 import (
-	"github.com/leeprovoost/go-rest-api-template/db"
-	"github.com/leeprovoost/go-rest-api-template/models"
+	"github.com/leeprovoost/go-rest-api-template/internal/passport/models"
 	"github.com/unrolled/render"
 )
 
@@ -24,7 +23,7 @@ func CreateContextForTestSetup() AppEnv {
 		Version:   testVersion,
 		Env:       "LOCAL",
 		Port:      "3001",
-		UserStore: db.NewUserService(db.CreateMockDataSet()),
+		UserStore: NewUserService(CreateMockDataSet()),
 	}
 	return appEnv
 }

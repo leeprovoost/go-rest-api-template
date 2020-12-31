@@ -1,9 +1,9 @@
-package models
+package health
 
 import "fmt"
 
-// Healthcheck will store information about its name and version
-type Healthcheck struct {
+// Check will store information about its name and version
+type Check struct {
 	AppName string `json:"appName"`
 	Version string `json:"version"`
 }
@@ -11,13 +11,13 @@ type Healthcheck struct {
 // GoString implements the GoStringer interface so we can display the full struct during debugging
 // usage: fmt.Printf("%#v", i)
 // ensure that i is a pointer, so might need to do &i in some cases
-func (h *Healthcheck) GoString() string {
+func (c *Check) GoString() string {
 	return fmt.Sprintf(`
 {
 	AppName: %s,
 	Version: %s,
 }`,
-		h.AppName,
-		h.Version,
+		c.AppName,
+		c.Version,
 	)
 }

@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/leeprovoost/go-rest-api-template/db"
-	"github.com/leeprovoost/go-rest-api-template/server"
+	passport "github.com/leeprovoost/go-rest-api-template/internal/passport"
+	vparse "github.com/leeprovoost/go-rest-api-template/pkg/version"
 	log "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 )
@@ -33,7 +33,7 @@ func main() {
 	// ===========================================================================
 	// Read version information
 	// ===========================================================================
-	version, err := ParseVersionFile(version)
+	version, err := vparse.ParseVersionFile(version)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"env":  env,
@@ -50,11 +50,11 @@ func main() {
 	// ===========================================================================
 	// Initialise data storage
 	// ===========================================================================
-	userStore := db.NewUserService(db.CreateMockDataSet())
+	userStore := passport.NewUserService(passport.CreateMockDataSet())
 	// ===========================================================================
 	// Initialise application context
 	// ===========================================================================
-	appEnv := server.AppEnv{
+	appEnv := passport.AppEnv{
 		Render:    render.New(),
 		Version:   version,
 		Env:       env,
@@ -65,5 +65,5 @@ func main() {
 	// Start application
 	// ===========================================================================
 	fmt.Println(version)
-	server.StartServer(appEnv)
+	passport.StartServer(appEnv)
 }

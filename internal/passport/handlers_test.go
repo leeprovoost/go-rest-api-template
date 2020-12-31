@@ -1,4 +1,4 @@
-package server
+package passport
 
 import (
 	"encoding/json"

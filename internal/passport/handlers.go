@@ -1,4 +1,4 @@
-package server
+package passport
 
 import (
 	"encoding/json"
@@ -6,7 +6,9 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/leeprovoost/go-rest-api-template/models"
+	models "github.com/leeprovoost/go-rest-api-template/internal/passport/models"
+	"github.com/leeprovoost/go-rest-api-template/pkg/health"
+	"github.com/leeprovoost/go-rest-api-template/pkg/status"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -27,7 +29,7 @@ func MakeHandler(appEnv AppEnv, fn func(http.ResponseWriter, *http.Request, AppE
 
 // HealthcheckHandler returns useful info about the app
 func HealthcheckHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	check := models.Healthcheck{
+	check := health.Check{
 		AppName: "go-rest-api-template",
 		Version: appEnv.Version,
 	}
@@ -38,7 +40,7 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv)
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
 	list, err := appEnv.UserStore.ListUsers()
 	if err != nil {
-		response := models.Status{
+		response := status.Response{
 			Status:  strconv.Itoa(http.StatusNotFound),
 			Message: "can't find any users",
 		}
@@ -61,7 +63,7 @@ func GetUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
 	uid, _ := strconv.Atoi(vars["uid"])
 	user, err := appEnv.UserStore.GetUser(uid)
 	if err != nil {
-		response := models.Status{
+		response := status.Response{
 			Status:  strconv.Itoa(http.StatusNotFound),
 			Message: "can't find user",
 		}
@@ -81,7 +83,7 @@ func CreateUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) 
 	var u models.User
 	err := decoder.Decode(&u)
 	if err != nil {
-		response := models.Status{
+		response := status.Response{
 			Status:  strconv.Itoa(http.StatusBadRequest),
 			Message: "malformed user object",
 		}
@@ -109,7 +111,7 @@ func UpdateUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) 
 	var u models.User
 	err := decoder.Decode(&u)
 	if err != nil {
-		response := models.Status{
+		response := status.Response{
 			Status:  strconv.Itoa(http.StatusBadRequest),
 			Message: "malformed user object",
 		}
@@ -129,7 +131,7 @@ func UpdateUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) 
 	}
 	user, err = appEnv.UserStore.UpdateUser(user)
 	if err != nil {
-		response := models.Status{
+		response := status.Response{
 			Status:  strconv.Itoa(http.StatusInternalServerError),
 			Message: "something went wrong",
 		}
@@ -149,7 +151,7 @@ func DeleteUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) 
 	uid, _ := strconv.Atoi(vars["uid"])
 	err := appEnv.UserStore.DeleteUser(uid)
 	if err != nil {
-		response := models.Status{
+		response := status.Response{
 			Status:  strconv.Itoa(http.StatusInternalServerError),
 			Message: "something went wrong",
 		}

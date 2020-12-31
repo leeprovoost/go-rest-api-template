@@ -1,23 +1,22 @@
-package db
+package passport
 
 import (
 	"testing"
 	"time"
 
-	"github.com/leeprovoost/go-rest-api-template/models"
-	"github.com/leeprovoost/go-rest-api-template/server"
+	"github.com/leeprovoost/go-rest-api-template/internal/passport/models"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestListUsers(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
+	appEnv := CreateContextForTestSetup()
 	list, _ := appEnv.UserStore.ListUsers()
 	count := len(list)
 	assert.Equal(t, 2, count, "There should be 2 items in the list.")
 }
 
 func TestGetUserSuccess(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
+	appEnv := CreateContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u, err := appEnv.UserStore.GetUser(0)
 	if assert.Nil(t, err) {
@@ -30,13 +29,13 @@ func TestGetUserSuccess(t *testing.T) {
 }
 
 func TestGetUserFail(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
+	appEnv := CreateContextForTestSetup()
 	_, err := appEnv.UserStore.GetUser(10)
 	assert.NotNil(t, err)
 }
 
 func TestAddUser(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
+	appEnv := CreateContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1972-03-07T00:00:00Z")
 	u := models.User{
 		FirstName:       "Apple",
@@ -54,7 +53,7 @@ func TestAddUser(t *testing.T) {
 }
 
 func TestUpdateUserSuccess(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
+	appEnv := CreateContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u := models.User{
 		ID:              0,
@@ -75,7 +74,7 @@ func TestUpdateUserSuccess(t *testing.T) {
 }
 
 func TestUpdateUserFail(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
+	appEnv := CreateContextForTestSetup()
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	u := models.User{
 		ID:              20,
@@ -89,13 +88,13 @@ func TestUpdateUserFail(t *testing.T) {
 }
 
 func TestDeleteUserSuccess(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
+	appEnv := CreateContextForTestSetup()
 	err := appEnv.UserStore.DeleteUser(1)
 	assert.Nil(t, err)
 }
 
 func TestDeleteUserFail(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
+	appEnv := CreateContextForTestSetup()
 	err := appEnv.UserStore.DeleteUser(10)
 	assert.NotNil(t, err)
 }

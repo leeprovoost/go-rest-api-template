@@ -1,4 +1,4 @@
-package server
+package passport
 
 // Route is the model for the router setup
 type Route struct {

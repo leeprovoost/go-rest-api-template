@@ -14,7 +14,7 @@ type User struct {
 	LocationOfBirth string    `json:"locationOfBirth"`
 }
 
-// DataStorage defines all the database operations
+// UserStorage defines all the database operations
 type UserStorage interface {
 	ListUsers() ([]User, error)
 	GetUser(i int) (User, error)
