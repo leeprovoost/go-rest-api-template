@@ -2,7 +2,7 @@
 *.o
 *.a
 *.so
-go-rest-api-template
+api-service
 
 # Folders
 _obj
@@ -22,7 +22,7 @@ _testmain.go
 
 # fresh
 tmp
-go-rest-api-template.log
+api-service.log
 
 # macOS
 .DS_Store

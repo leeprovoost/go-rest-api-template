@@ -50,29 +50,29 @@ The choice of an editor/IDE is a personal one, so the only advice I can give you
 
 ### How to run
 
-`go run main.go` works fine if you have a single file or a script you're working on, but once you have a more complex project with lots of files then you'll have to start using the proper go build tool and run the compiled executable.
+`go run main.go` works fine if you have a single file or a script you're working on, but once you have a more complex project with lots of files then you'll have to start using the proper go build tool and run the compiled executable:
 
 ```
-go build && ./go-rest-api-template
+go build && ./api-service
 ```
 
-Which is faster than first typing `go build` to generate an executable called `go-rest-api-template` and then run that executable by typing `./go-rest-api-template`.
+Which is faster than first typing `go build` to generate an executable called `api-service` and then run that executable by typing `./api-service`.
 
-The `go-rest-api-template` app will bind itself to port 3001 (defined in `main.go`). If you want to change it (e.g. bind it to the default http port 80), then use the following environment variable `PORT` (see `main.go`). Same for the location of the `fixtures.json` model.
+The `api-service` app will bind itself to the port that you have defined in your environment variables or your Makefile (in our case `3001`). You can copy paste the following in your terminal to run the application (ensure you are in the `cmd/api-service` folder):
 
 ```
 export ENV=LOCAL
 export VERSION=VERSION
-export PORT=80
-export FIXTURES=/tmp/fixtures.json
-go build && ./go-rest-api-template
+export PORT=3001
+export FIXTURES=./fixtures.json
+go build && ./api-service
 ```
 
-One comment from a security point of view: whilst 80 is the default port for HTTP (and 443 for HTTPS), it's usually not recommended to actually bind your application to that port when it runs on a server instance like AWS EC2. That's because ports below 1024 are privileged ports and require elevated privileges for the app to bind itself to such port. If someone compromises your app, it could potentially take advantage of the application user with the elevated privileges. Instead, run it on a higher port like 8001 and run it with a newly created restricted user (instead of using the root user). You can then use a load balancer or a proxy (e.g. AWS ELB, HAProxy, nginx) to accept your incoming request from the internet on port 80 or 443 and then forward that to your application port.
+One comment from a security point of view: you will commonly read that port 80 is the default port for HTTP (and 443 for HTTPS), it's usually not recommended to actually bind your application to that port when it runs on a server instance like AWS EC2. That's because ports below 1024 are privileged ports and require elevated privileges for the app to bind itself to such port. If someone compromises your app, it could potentially take advantage of the application user with the elevated privileges. Instead, run it on a higher port like 8001 and run it with a newly created restricted user (instead of using the root user). You can then use a load balancer or a proxy (e.g. AWS ELB/ALB, HAProxy, nginx) to accept your incoming request from the internet on port 80 or 443 and then forward that to your application port.
 
 ### Live Code Reloading
 
-Manually stopping and restarting your server can get quite annoying after a while, so let's set up a task runner that automatically restarts the server when it detects changes.
+Manually stopping and restarting your server during development can get quite annoying after a while, so let's set up a task runner that automatically restarts the server when it detects changes. People from the JavaScript world will be quite familiar with tools like gulp. I've chosen a Go native task runner called fresh.
 
 Install [fresh](https://github.com/pilu/fresh):
 
@@ -135,9 +135,9 @@ Fresh should work without any configuration, but to make it more explicit you ca
 ```
 root:              .
 tmp_path:          ./tmp
-build_name:        go-rest-api-template
-build_log:         go-rest-api-template.log
-valid_ext:         .go, .tpl, .tmpl, .html
+build_name:        api-service
+build_log:         api-service.log
+valid_ext:         .go, .tpl, .tmpl, .html, .mod, .sum, modules.txt
 build_delay:       600
 colors:            1
 log_color_main:    cyan
@@ -151,7 +151,7 @@ As you can see, it creates a `tmp` directory in your project root and a log file
 ```
 # fresh
 tmp
-go-rest-api-template.log
+api-service.log
 ```
 
 I've added a simple task to our `Makefile` that allows you to run the app with all the correct environment variables. Just run:
@@ -160,74 +160,89 @@ I've added a simple task to our `Makefile` that allows you to run the app with a
 make fresh
 ```
 
-Where I work, we've hit the limitations of fresh and have switched to Gulp as a task runner. Our Gulp setup takes care of running tests, using OSX notifications to warn you of build failures and provides an overview of your `govendor` package status. I'll open source our Gulp for Go configuration at some point.
+Where I work, we've hit the limitations of fresh and have switched to Gulp as a task runner. Our Gulp setup takes care of running tests, using OSX notifications to warn you of build failures, etc. 
 
 ### High-level Code Structure
 
-Main server files:
+The following structure is something that has been evolved over the years. Back when I started writing Go applications, we didn't have best practices like this project ```https://github.com/golang-standards/project-layout```. I will sound very old now, but "back in the olden days", Go didn't even have a proper package/module management system, so we've come a long way. Let me first show the the project structure and explain what the key folders do, immediately followed by some explanation what each file does:
 
 ```
-main.go --> this ties all the various application logic packages together and loads the correct environment variables
-util.go --> some generic helper functions
+- cmd --> folder that has one or more application entry points
+  |- api-service
+     |- tmp
+     |- fixtures.json
+     |- main.go
+     |- Makefile
+     |- runner.conf
+     |- VERSION
+- internal --> folder where we store application code that should not be reused by other applications
+  |- passport
+     |- models
+        |- passport.go
+        |- user.go
+     |- appenv.go
+     |- db_user_test.go
+     |- db_user.go
+     |- handlers_test.go
+     |- handlers.go
+     |- main.go
+     |- routes.go
+- pkg --> folder where we store application code that can be reused by other applications
+  |- health
+     |- check.go
+  |- status
+     |- response.go
+  |- version
+     |- parser.go
+- vendor --> directory where we store the vendored modules
+- .gitignore
+- go.mod
+- go.sum
+- LICENSE
+- README.md
 ```
 
-Route definitions and handlers:
+And now with some annotations:
 
 ```
-server/main.go --> actual server kicking is happening here: mainly loading of routes and middleware
-server/router.go --> server routes, e.g. GET /healthcheck, and binding of those routes to the correct route handlers
-server/handlers.go --> defines the actual logic that gets executed when you visit a route and takes care of the response to the client
-server/handlers_test.go --> tests for our route handlers
-server/appenv.go --> defines the application context object
+- cmd
+  |- api-service --> folder for our passport api
+     |- tmp --> temporary folder for our fresh task runner
+     |- fixtures.json --> test data in JSON format
+     |- main.go --> this ties all the various application logic packages together and loads the correct environment variables
+     |- Makefile --> Makefile that describes some tasks:
+     |- runner.conf --> configuration file for [fresh](go get github.com/pilu/fresh)
+     |- VERSION --> defines application version using semantic versioning
+- internal 
+  |- passport
+     |- models
+        |- passport.go --> passport data structure definition
+        |- user.go --> user data structure definition
+     |- appenv.go --> defines the application context object
+     |- db_user_test.go --> tests our mock/fake database
+     |- db_user.go --> our mock/fake database implementation
+     |- handlers_test.go --> tests for our route handlers
+     |- handlers.go --> defines the actual logic that gets executed when you visit a route and takes care of the response to the client
+     |- main.go --> actual server initialisation is happening here: mainly loading of routes and middleware
+     |- routes.go --> server routes, e.g. GET /healthcheck, and binding of those routes to the correct route handlers
+- pkg 
+  |- health
+     |- check.go --> healthcheck data structure definition
+  |- status
+     |- response.go --> status data structure definition
+  |- version
+     |- parser.go
+- vendor
+- .gitignore --> define what files git should ignore and not check in
+- go.mod --> Go modules definition file 
+- go.sum --> Go modules definition file 
+- LICENSE --> (optional) License file
+- README.md --> this document
 ```
 
-Data model descriptions and operations on the data:
+### Starting the application
 
-```
-models/healthcheck.go --> healthcheck data structure definition
-models/passport.go --> passport data structure definition
-models/status.go --> status data structure definition
-modls/user.go --> user data structure definition
-data/database.go --> our mock/fake database implementation
-data/database_test.go --> tests our mock/fake database
-data/util.go --> helper functions
-```
-
-Test data in JSON format:
-
-```
-fixtures.json
-```
-
-Configuration file for [fresh](go get github.com/pilu/fresh):
-
-```
-runner.conf
-```
-
-Defines application version using semantic versioning:
-
-```
-VERSION
-```
-
-Go modules definitiona files and directory where we store the vendored modules:
-
-```
-go.mod
-go.sum
-vendor/
-```
-
-Makefile that describes some tasks:
-
-```
-Makefile
-```
-
-### Starting the application: main.go and server/main.go
-
-The main entry point to our app is `main.go` where we take care of the following:
+The main entry point to our app is `cmd/api-service/main.go` where we take care of the following:
 
 Configuring our logrus structured logging package. Instead of using the standard log package, we use logrus that allows us to print information in a JSON format. However, during development, we just want to see a human-readable format:
 
