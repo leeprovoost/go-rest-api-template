@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -64,6 +63,5 @@ func main() {
 	// ===========================================================================
 	// Start application
 	// ===========================================================================
-	fmt.Println(version)
 	passport.StartServer(appEnv)
 }

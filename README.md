@@ -1,6 +1,6 @@
 # go-rest-api-template
 
-Template for building REST Web Services in Golang. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against `go1.15.6 darwin/amd64`.
+A template for building REST Web Services in Go. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against `go1.15.6 darwin/amd64`.
 
 ## Introduction
 
@@ -164,7 +164,7 @@ Where I work, we've hit the limitations of fresh and have switched to Gulp as a 
 
 ### High-level Code Structure
 
-The following structure is something that has been evolved over the years. Back when I started writing Go applications, we didn't have best practices like this project ```https://github.com/golang-standards/project-layout```. I will sound very old now, but "back in the olden days", Go didn't even have a proper package/module management system, so we've come a long way. Let me first show the the project structure and explain what the key folders do, immediately followed by some explanation what each file does:
+The following structure is something that has been evolved over the years. Back when I started writing Go applications, we didn't have best practices like this project ```https://github.com/golang-standards/project-layout```. I will sound very old now, but "back in the olden days", Go didn't even have a proper package/module management system, so we've come a long way. Let me first show the project structure and explain what the key folders do, immediately followed by some explanation what each file does:
 
 ```
 - cmd --> folder that has one or more application entry points
@@ -231,7 +231,7 @@ And now with some annotations:
   |- status
      |- response.go --> status data structure definition
   |- version
-     |- parser.go
+     |- parser.go --> parses VERSION file
 - vendor
 - .gitignore --> define what files git should ignore and not check in
 - go.mod --> Go modules definition file 
@@ -258,7 +258,7 @@ func init() {
 }
 ```
 
-Loading our environment variables. The default values that we are using during development are defined in our `Makefile`.
+Next up is to load our environment variables. The default values that we are using during development are defined in our `Makefile`.
 
 ```
 var (
@@ -272,16 +272,16 @@ var (
 
 I'm using the environment variables technique to tell the app in what environment it lives:
 
-* `LOCAL`: local development machine
+* `LOCAL`: local development environment
 * `DEV`: development or integration server
 * `STG`: staging servers
 * `PRD`: production servers
 
-We then load our version file. I have added a helper function in `util.go` that can parse a `VERSION` file using semantic versioning.
+We then load our version file. I have added a helper function in `pkg/version/parse.go` that can parse a `VERSION` file using semantic versioning.
 
 ```
 // reading version from file
-version, err := ParseVersionFile(version)
+version, err := vparse.ParseVersionFile(version)
 if err != nil {
   log.WithFields(log.Fields{
     "env":  env,
@@ -301,16 +301,15 @@ When we can't find a version file, then we throw an error. When we do find a ver
 
 The check for error (`if err != nil`) is a common Go way of handling return values that contain errors. the `main` function is one of the few places where I use log.Fatal in my application. `log.Fatal` logs your file to the console, but also exits your application. This is for me the correct behaviour here because without a correct `VERSION` file, the app shouldn't work. It's too risky that you may have deployed the incorrect application version.
 
-This API doesn't talk to a real database but to a very simple in-memory mock database. That's why I have a `fixtures.json` file with some data. I have added a helper function in `data/util.go` that can read and parse that file into our in-memory mock database. Have a look at the next Data section to find out more about the in-memory database. I may change this in the future into an integration with an actual database.
+This API doesn't talk to a real database but to a very simple in-memory mock database. The data is hardcoded into the `CreateMockDataSet()` function and loaded at application start time. I will change this with an actual database at some point.
 
 ```
-// load fixtures data into mock database
-db, err := LoadFixturesIntoMockDatabase(fixtures)
+userStore := passport.NewUserService(passport.CreateMockDataSet())
 ```
 
-Once all the data is read from our environment variables and `fixtures.json` file, we can then initialise our application context. `AppEnv` is a struct that holds some application info that we can pass around (e,g, provide to our handlers). It's a neat way to avoid using global variables and avoiding that you have application variables all over the place.
+Once all the data is read from our environment variables and the mock data has been loaded, we can then initialise our application context. `AppEnv` is a struct that holds some application info that we can pass around (e,g, provide to our handlers). It's a neat way to avoid using global variables and avoiding that you have application variables all over the place.
 
-I have defined the `AppEnv` struct in `server/appenv.go`:
+I have defined the `AppEnv` struct in `internal/passport/appenv.go`:
 
 ```
 // AppEnv holds application configuration data
@@ -325,15 +324,15 @@ type AppEnv struct {
 
 `Render` helps us with rendering the correct response to the client, e.g. JSON, XML, etc. Version holds the path to our `VERSION` file. `Env` holds information about our platform environment (e.g. STG, DEV). `Port` is the server port that our application binds to. `DB` is our database struct that provides a data abstraction layer.
 
-Once all of that is set up properly, we can now start the server. The `StartServer` function takes our `AppEnv` struct and initialises all our routes and starts our `negroni` server. This is all defined in `server/main.go`.
+Once all of that is set up properly, we can now start the server. The `StartServer` function takes our `AppEnv` struct and initialises all our routes and starts our `negroni` server. This is all defined in `internal/passport/main.go`.
 
-Most `negroni` code examples ([like the one on the official github repo](https://github.com/urfave/negroni)) will start the application using:
+Most `negroni` code examples ([like the one on the official GitHub repo](https://github.com/urfave/negroni)) will start the application using:
 
 ```
 n := negroni.Classic()
 ```
 
-When you look at our `server.go` file, then you'll see that we do it slightly differently:
+When you look at our `internal/passport/main.go` file, then you'll see that we do it slightly differently:
 
 ```
 // start now
@@ -360,7 +359,7 @@ Last but not least, a big thank you to [edoardo849](https://github.com/edoardo84
 
 ### Data model
 
-We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports. We'll define this in `models/passport.go` and `models/user.go`.
+We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports. We'll define this in `internal/passport/models/passport.go` and `internal/passport/models/user.go`.
 
 ```
 type User struct {
@@ -423,52 +422,55 @@ func (u *User) GoString() string {
 
 ### Operations on our (mock) database
 
-I wanted to create a template REST API that didn't depend on a database, so started with creating a simple in-memory database that we can work with. I admit that this was mainly to satisfy my own curiosity. I might change that in the future to using an off-the-shelve in-memory Go database.
+I wanted to create a template REST API that didn't depend on a database, so started with creating a simple in-memory database that we can work with. I admit that this was mainly to satisfy my own curiosity. I might change that in the future to using an off-the-shelf in-memory Go database.
 
-The good thing is that this will be the start of a so-called data access layer that abstracts away the underlying data store. We can achieve that by starting with creating an interface (which is a good practice in Go anyway). Note the use of the -er at the end of the interface name, as per Go convention.
+The good thing is that this will be the start of a so-called data access layer that abstracts away the underlying data store. We can achieve that by starting with creating an interface (which is a good practice in Go anyway). 
 
-Open the `data/database.go` file and you will see:
+Open the `internal/passport/models/user.go` file and you will see:
 
 ```
-type DataStorer interface {
-	ListUsers() ([]models.User, error)
-	GetUser(i int) (models.User, error)
-	AddUser(u models.User) (models.User, error)
-	UpdateUser(u models.User) (models.User, error)
+// UserStorage defines all the database operations
+type UserStorage interface {
+	ListUsers() ([]User, error)
+	GetUser(i int) (User, error)
+	AddUser(u User) (User, error)
+	UpdateUser(u User) (User, error)
 	DeleteUser(i int) error
 }
 ```
 
 This allows us to define a set of operations on the data as a contract, without people having to worry about the actual implementation of how the data is stored and accessed. I've added the basic operations to list, retrieve, create, update and delete data, so the standard CRUD-style operations (accepting that CRUD has some subtle differences with REST).
 
-We're using `models.User` instead of just `User` because the `User` struct is defined in the models subpackage.
-
 Let's now have a look at the type signature of the `Get` operation:
 
 ```
-GetUser(i int) (models.User, error)
+GetUser(i int) (User, error)
 ```
 
 What this tells us is that it is expecting an integer as an argument (which will be the User id in our case), and returns a pair of values: a User object and an error object. Returning pairs of values is a nice Go feature and is often used to return information about errors.
 
-An example of how this could be used is the following:
+An example of how this could be used is in `internal/passport/handlers.go:
 
 ```
-// call the GetUser function with a given user id, this returns (hopefully) the user and an error object
-user, err := appEnv.DB.GetUser(uid)
-if err != nil {
-  response := models.Status{
-    Status:  strconv.Itoa(http.StatusNotFound),
-    Message: "can't find user",
-  }
-  log.WithFields(log.Fields{
-    "env":    appEnv.Env,
-    "status": http.StatusNotFound,
-  }).Error("Can't find user")
-  appEnv.Render.JSON(w, http.StatusNotFound, response)
-  return
+// GetUserHandler returns a user object
+func GetUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
+	vars := mux.Vars(req)
+	uid, _ := strconv.Atoi(vars["uid"])
+	user, err := appEnv.UserStore.GetUser(uid)
+	if err != nil {
+		response := status.Response{
+			Status:  strconv.Itoa(http.StatusNotFound),
+			Message: "can't find user",
+		}
+		log.WithFields(log.Fields{
+			"env":    appEnv.Env,
+			"status": http.StatusNotFound,
+		}).Error("Can't find user")
+		appEnv.Render.JSON(w, http.StatusNotFound, response)
+		return
+	}
+	appEnv.Render.JSON(w, http.StatusOK, user)
 }
-appEnv.Render.JSON(w, http.StatusOK, user)
 ```
 
 We check whether the error object is nil. If it is, then we return a HTTP 200 OK, if not then we return HTTP 404 Not Found. Let's go into more detail when we talk about our API handlers.
@@ -476,7 +478,7 @@ We check whether the error object is nil. If it is, then we return a HTTP 200 OK
 BTW in other languages you might be used to write the above as:
 
 ```
-user, err := ctx.db.GetUser(uid)
+user, err := appEnv.UserStore.GetUser(uid)
 if err == nil {
   ctx.render.JSON(w, http.StatusOK, user)
 } else {
@@ -486,10 +488,11 @@ if err == nil {
 
 But the Go way is to check if an error exists and handle that immediately. If there is no error, just continue with the normal application flow.
 
-Let's have a look at the actual mock in-memory database. We need to create a Database struct that will hold the data:
+Let's have a look at the actual mock in-memory database. We need to create a struct that will hold the data:
 
 ```
-type MockDB struct {
+// UserService will hold the connection and key db info
+type UserService struct {
 	UserList  map[int]models.User
 	MaxUserID int
 }
@@ -500,8 +503,8 @@ Let's have a closer at the `GetUser` function:
 
 ```
 // GetUser returns a single JSON document
-func (db *MockDB) GetUser(i int) (models.User, error) {
-	user, ok := db.UserList[i]
+func (service *UserService) GetUser(i int) (models.User, error) {
+	user, ok := service.UserList[i]
 	if !ok {
 		return models.User{}, stacktrace.NewError("Failure trying to retrieve user")
 	}
@@ -509,63 +512,36 @@ func (db *MockDB) GetUser(i int) (models.User, error) {
 }
 ```
 
-* `func (db *MockDB)`: This might be something new for you and I admit that it took me a little while to appreciate this. It's called a pointer receiver and is part of [A Tour of Go](https://tour.golang.org/methods/4). This means that the `GetUser` function can work on a `MockDB` struct. For people coming from languages that use objects and methods, it's similar. So in an object-oriented world: if `db` would be an object of the class `MockDB`, then `GetUser `would be a method that can be invoked on that object and you'd call it like `db.GetUser`.
+* `func (service *UserService)`: This might be something new for you and I admit that it took me a little while to appreciate this. It's called a pointer receiver and is part of [A Tour of Go](https://tour.golang.org/methods/4). This means that the `GetUser` function can work on a `UserService` struct. For people coming from languages that use objects and methods, it's similar. 
 * `GetUser(i int) (models.User, error)`: This is the function signature and says that we have a function named `GetUser` that accepts one argument of the type `int` (e.g. 0, 1, 2, 3) and will return two variables. The first one is a `User` struct, the second one is an `error` struct.
 * `return models.User{}, stacktrace.NewError("Failure trying to retrieve user")`: In case there is an error, we return an empty `User` object and an `error`. We have to return an `User` object because that's what the function signature enforces, but this will be empty and frankly doesn't really matter. It doesn't matter because we will first check the `error` struct. The basic `error` struct in Go doesn't really say much, which is why we use here Palantir's `stacktrace` package. It adds some more contextual information about where the issue occured.
 * `return user, nil`: If everything goes well, then we just return the user data as well as an empty error (nil).
 
-Before we move on to loading the mock data, I wanted to briefly touch on the `DataStorer` interface. One of the advantages of using an interface is that you can swap out the implementation. This can be useful for testing. So instead of `GetUser` calling the actual datastore, you could write a different implementation that just returns a hardcoded `User` struct. However, Go has a implicit way of linking the interface to the struct. Unlike in Java where you have to explicitly state that a Class implements an Interface (and thus you benefit from the IDE checking whether you have implemented all the methods), Go just tries to figure out whether there are structs that match the definition of your interface. In order to make this more explicit, I always add a small test, see at the top of `data/database.go`:
+Before we move on to loading the mock data, I wanted to briefly touch on the `UserStorage` interface. One of the advantages of using an interface is that you can swap out the implementation. This can be useful for testing. So instead of `GetUser` calling the actual datastore, you could write a different implementation that just returns a hardcoded `User` struct. However, Go has a implicit way of linking the interface to the struct. Unlike in Java where you have to explicitly state that a Class implements an Interface (and thus you benefit from the IDE checking whether you have implemented all the methods), Go just tries to figure out whether there are structs that match the definition of your interface. In order to make this more explicit, I always add a small test, see at the top of `internal/passport/db_user.go`:
 
 ```
 // Compile-time proof of interface implementation
-var _ DataStorer = (*MockDB)(nil)
+var _ models.UserStorage = (*UserService)(nil)
 ```
 
-This tries to typecast the `MockDB` pointer to the `DataStorer` interface. If you haven't implemented your interface functions properly, then your Go tests will complain.
+This tries to typecast the `UserService` pointer to the `UserStorage` interface. If you haven't implemented your interface functions properly, then your Go tests will complain.
 
-### Fixtures
+### Mock data
 
-In order to make it a bit more useful, we will initialise it with some user objects. I've created a helper function in `data/util.go` called `LoadFixturesIntoMockDatabase` that just loads the `fixtures.json` file. The structure of that file looks like this:
+In order to make it a bit more useful, we will initialise it with some user objects. I've created a helper function in `internal/passport/db_user.go` called `CreateMockDataSet` that just loads some test data. The structure of that data looks as follows:
 
 ```
-{
-  "users": [
-    {
-        "dateOfBirth": "1985-12-31T00:00:00Z",
-        "firstName": "John",
-        "id": 0,
-        "lastName": "Doe",
-        "locationOfBirth": "London"
-    },
-    {
-        "dateOfBirth": "1992-01-01T00:00:00Z",
-        "firstName": "Jane",
-        "id": 1,
-        "lastName": "Doe",
-        "locationOfBirth": "Milton Keynes"
-    }
-  ]
+dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
+list[0] = models.User{
+	ID:              0,
+	FirstName:       "John",
+	LastName:        "Doe",
+	DateOfBirth:     dt,
+	LocationOfBirth: "London",
 }
 ```
 
-When we can't load the file, we will stop the bootstrapping of the application. This is taken care of by Go's log handler, which fires off a fatal error:
-
-```
-// load fixtures data into mock database
-db, err := data.LoadFixturesIntoMockDatabase(fixtures)
-if err != nil {
-  log.WithFields(log.Fields{
-    "env":      env,
-    "err":      err,
-    "fixtures": fixtures,
-  }).Fatal("Can't find a fixtures.json file")
-  return
-}
-```
-
-The `fixtures.json` file contains a JSON representation of a Go map where the key is a string (i.e. `"users"`) and the map value is a string of User objects. In Go, this would be represented as: `map[string][]models.User`. We load the fixtures file, marshal it into the type we just defined and then load it into our database.
-
-The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`? The first is discouraged altogether because that's an European way of writing dates and will cause confusion around the world. Imagine you have 3-4-2015. Is it third of April or fourth of March? Unfortunately there isn't an "enforced standard" for dates in JSON, so I've tried to use one that is commonly used and also understood by Go's `json.Marshaler` and `json.Unmarshaler` to avoid that we have to write our own custom marshaler/unmarshaler.
+The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`? The first is discouraged altogether because that's a European way of writing dates and will cause confusion around the world. Imagine you have 3-4-2015. Is it April the third or March the fourth? Unfortunately there isn't an "enforced standard" for dates in JSON, so I've tried to use one that is commonly used and also understood by Go's `json.Marshaler` and `json.Unmarshaler` to avoid that we have to write our own custom marshaler/unmarshaler.
 
 If you have a look at Go's `time/format` [code](http://golang.org/src/time/format.go) then you'll see on line 54:
 
@@ -733,7 +709,7 @@ if err != nil {
 constructs a new `Status` response struct. Adds a 404 status so that computers can understand it, but also adds a human-readable message. We need to convert the `http.StatusNotFound` from an integer to a string using `strconv.Itoa` because the status codes in the `Status` object are strings. It then prints the error to the server log. Last but not least you send the `Status` struct as a JSON response back to the client and add the 404 Not Found response to the HTTP headers (using `http.StatusNotFound`).
 
 
-### Special Route: Health check
+### Special Route: Health-check
 
 When you look at the overview of the handlers in `routes.go`, you will notice a special route:
 
@@ -765,7 +741,7 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
 }
 ```
 
-BTW, notice the `appEnv.render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
+BTW, did you notice the `appEnv.render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
 
 So, this will return the following to the client:
 
