@@ -301,11 +301,13 @@ When we can't find a version file, then we throw an error. When we do find a ver
 
 The check for error (`if err != nil`) is a common Go way of handling return values that contain errors. the `main` function is one of the few places where I use log.Fatal in my application. `log.Fatal` logs your file to the console, but also exits your application. This is for me the correct behaviour here because without a correct `VERSION` file, the app shouldn't work. It's too risky that you may have deployed the incorrect application version.
 
-This API doesn't talk to a real database but to a very simple in-memory mock database. The data is hardcoded into the `CreateMockDataSet()` function and loaded at application start time. I will change this with an actual database at some point.
+This API doesn't talk to a real database but to a very simple in-memory mock database. The data is hardcoded into the `CreateMockDataSet()` function and loaded at application start time. I will change this with an actual database at some point. 
 
 ```
 userStore := passport.NewUserService(passport.CreateMockDataSet())
 ```
+
+Note that `func NewUserService(list map[int]models.User, count int) models.UserStorage` expects two parameters, but it looks like we are only passing one? That's because the `func CreateMockDataSet() (map[int]models.User, int) ` function returns two results. The first one is the list of users, the second one is the count. Hence why this satisfies the type signature of `NewUserService`.
 
 Once all the data is read from our environment variables and the mock data has been loaded, we can then initialise our application context. `AppEnv` is a struct that holds some application info that we can pass around (e,g, provide to our handlers). It's a neat way to avoid using global variables and avoiding that you have application variables all over the place.
 
@@ -565,7 +567,7 @@ offset from UTC
 
 Now that we have defined the data access layer, we need to translate that to a REST interface:
 
-* Retrieve a list of all users: `GET /users` -> The `GET` just refers to the HTTP action you would use. If you want to test this in the command line, then you can use curl: `curl -X GET http://localhost:3009/users` or `curl -X POST http://localhost:3009/users`
+* Retrieve a list of all users: `GET /users` -> The `GET` just refers to the HTTP action you would use. If you want to test this in the command line, then you can use curl: `curl -X GET http://localhost:3009/users`
 * Retrieve the details of an individual user: `GET /users/{uid}` -> {uid} allows us to create a variable, named uid, that we can use in our code. An example of this url would be `GET /users/1`
 * Create a new user: `POST /users`
 * Update a user: `PUT /users/{uid}`
@@ -617,32 +619,33 @@ func ListUsersHandler(w http.ResponseWriter, req *http.Request, render Render) {
 
 Perfect. Or, is it? What if we want to pass more variables to the handler function? Like Metrics? Or some environment variables? We'd continuously have to change ALL our handlers and the type signature will become quite long and hard to maintain. An alternative is to create a server or an environment struct and use that as a container for our variables we want to pass around the system.
 
-In our `server/appenv.go` we'll add:
+In our `internal/passport/appenv.go` we'll add:
 
 ```
+// AppEnv holds application configuration data
 type AppEnv struct {
-	Render  *render.Render
-	Version string
-	Env     string
-	Port    string
-	DB      DataStorer
+	Render    *render.Render
+	Version   string
+	Env       string
+	Port      string
+	UserStore models.UserStorage
 }
 ```
 
-And in our `func main()` function we initialise that struct:
+And in our `func main()` function (in `cmd/api-service/main.go`) we initialise that struct:
 
 ```
 // initialse application context
-appEnv := server.AppEnv{
-	Render:  render.New(),
-	Version: version,
-	Env:     env,
-	Port:    port,
-	DB:      db,
+appEnv := passport.AppEnv{
+	Render:    render.New(),
+	Version:   version,
+	Env:       env,
+	Port:      port,
+	UserStore: userStore,
 }
 ```
 
-Our handler looks now like this:
+Our handler looks like this now:
 
 ```
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
@@ -667,9 +670,9 @@ In the previous examples we've ignored the implementation of the `ListUsersHandl
 ```
 // ListUsersHandler returns a list of users
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-  list, err := appEnv.DB.ListUsers()
+	list, err := appEnv.UserStore.ListUsers()
 	if err != nil {
-		response := models.Status{
+		response := status.Response{
 			Status:  strconv.Itoa(http.StatusNotFound),
 			Message: "can't find any users",
 		}
@@ -693,16 +696,16 @@ So this code:
 
 ```
 if err != nil {
-  response := models.Status{
-    Status:  strconv.Itoa(http.StatusNotFound),
-    Message: "can't find any users",
-  }
-  log.WithFields(log.Fields{
-    "env":    appEnv.Env,
-    "status": http.StatusNotFound,
-  }).Error("Can't find any users")
-  appEnv.Render.JSON(w, http.StatusNotFound, response)
-  return
+	response := status.Response{
+		Status:  strconv.Itoa(http.StatusNotFound),
+		Message: "can't find any users",
+	}
+	log.WithFields(log.Fields{
+		"env":    appEnv.Env,
+		"status": http.StatusNotFound,
+	}).Error("Can't find any users")
+	appEnv.Render.JSON(w, http.StatusNotFound, response)
+	return
 }
 ```
 
@@ -720,8 +723,9 @@ Route{"Healthcheck", "GET", "/healthcheck", HealthcheckHandler},
 Monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 200 OK when the service is up and running and will also say what the application name is and the version number.
 
 ```
+// HealthcheckHandler returns useful info about the app
 func HealthcheckHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	check := models.Healthcheck{
+	check := health.Check{
 		AppName: "go-rest-api-template",
 		Version: appEnv.Version,
 	}
@@ -729,7 +733,7 @@ func HealthcheckHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv)
 }
 ```
 
-This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your DevOps colleagues will be very grateful for this. (Don't forget to change your HTTP status code to 200 if you want to report on the various components that your health check is checking.)
+This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your platform/infra colleagues will be very grateful for this. 
 
 ### Returning Data
 
@@ -737,7 +741,23 @@ Let's have a look at interacting with our data. Returning a list of users is qui
 
 ```
 func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-  appEnv.render.JSON(w, http.StatusOK, db.List())
+	list, err := appEnv.UserStore.ListUsers()
+	if err != nil {
+		response := status.Response{
+			Status:  strconv.Itoa(http.StatusNotFound),
+			Message: "can't find any users",
+		}
+		log.WithFields(log.Fields{
+			"env":    appEnv.Env,
+			"status": http.StatusNotFound,
+		}).Error("Can't find any users")
+		appEnv.Render.JSON(w, http.StatusNotFound, response)
+		return
+	}
+	responseObject := make(map[string]interface{})
+	responseObject["users"] = list
+	responseObject["count"] = len(list)
+	appEnv.Render.JSON(w, http.StatusOK, responseObject)
 }
 ```
 
@@ -852,12 +872,13 @@ appEnv.Render.JSON(w, http.StatusOK, responseObject)
 Another example is the retrieval of a specific object:
 
 ```
+// GetUserHandler returns a user object
 func GetUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
 	vars := mux.Vars(req)
 	uid, _ := strconv.Atoi(vars["uid"])
-	user, err := appEnv.DB.GetUser(uid)
+	user, err := appEnv.UserStore.GetUser(uid)
 	if err != nil {
-		response := models.Status{
+		response := status.Response{
 			Status:  strconv.Itoa(http.StatusNotFound),
 			Message: "can't find user",
 		}
@@ -897,7 +918,7 @@ Let's start with some simple curl tests. Open your terminal and try the followin
 Retrieve a list of users:
 
 ```
-curl -X GET http://localhost:3009/users | python -mjson.tool
+curl -X GET http://localhost:3001/users | python -mjson.tool
 ```
 
 That should result in the following result:
@@ -905,22 +926,23 @@ That should result in the following result:
 ```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-100   216  100   216    0     0  14466      0 --:--:-- --:--:-- --:--:-- 15428
+100   246  100   246    0     0  14470      0 --:--:-- --:--:-- --:--:-- 15375
 {
+    "count": 2,
     "users": [
         {
-            "dateOfBirth": "1992-01-01T00:00:00Z",
-            "firstName": "Jane",
-            "id": 1,
+            "id": 0,
+            "firstName": "John",
             "lastName": "Doe",
-            "locationOfBirth": "Milton Keynes"
+            "dateOfBirth": "1985-12-31T00:00:00Z",
+            "locationOfBirth": "London"
         },
         {
-            "dateOfBirth": "1985-12-31T00:00:00Z",
-            "firstName": "John",
-            "id": 0,
+            "id": 1,
+            "firstName": "Jane",
             "lastName": "Doe",
-            "locationOfBirth": "London"
+            "dateOfBirth": "1992-01-01T00:00:00Z",
+            "locationOfBirth": "Milton Keynes"
         }
     ]
 }
@@ -937,7 +959,7 @@ So not that easy to read as the earlier nicely formatted example.
 Get a specific user:
 
 ```
-curl -X GET http://localhost:3009/users/0 | python -mjson.tool
+curl -X GET http://localhost:3001/users/0 | python -mjson.tool
 ```
 
 Results in:
@@ -957,31 +979,34 @@ Results in:
 
 ### Testing the Database
 
-There are lots of opinions on testing, how much you should be testing, which layers of your applications, etc. When I'm working with micro services, I tend to focus on two types of tests to start with: testing the data access layer and testing the actual HTTP service.
+There are lots of opinions on testing, how much you should be testing, which layers of your applications, etc. When I'm working with API services, I tend to focus on two types of tests to start with: testing the data access layer and testing the actual HTTP service.
 
-In this example, we want to test the List, Add, Get, Update and Delete operations on our in-memory document database. The data access code is stored in the `database.go` file, so following Go convention we will create a new file called `database_test.go`.
+In this example, we want to test the List, Add, Get, Update and Delete operations on our in-memory document database. The data access code is stored in the `internal/passport/db_user.go` file, so following Go convention we will create a new file called `internal/passport/db_user_test.go`.
 
-Before we can run the tests in `database_test.go` we need to make sure that we have a valid application context with a mock database initialised. I've added a helper function in `helpers.go` named `CreateContextForTestSetup` and that takes care of both the database setup as well as the AppEnv.
+Before we can run the tests in `db_user_test.go` we need to make sure that we have a valid application context with a mock database initialised. I've added a helper function in `internal/passport/appenv.go` named `CreateContextForTestSetup` and that takes care of both the database setup as well as the AppEnv.
 
 ```
 // CreateContextForTestSetup initialises an application context struct
 // for testing purposes
 func CreateContextForTestSetup() AppEnv {
 	testVersion := "0.0.0"
-	db := CreateMockDatabase()
 	appEnv := AppEnv{
-		Render:  render.New(),
-		Version: testVersion,
-		Env:     local,
-		Port:    "3001",
-		DB:      db,
+		Render:    render.New(),
+		Version:   testVersion,
+		Env:       "LOCAL",
+		Port:      "3001",
+		UserStore: NewUserService(CreateMockDataSet()),
 	}
 	return appEnv
 }
+```
 
-// CreateMockDatabase initialises a database for test purposes
-func CreateMockDatabase() *MockDB {
-  list := make(map[int]models.User)
+We then have a helper function in `internal/passport/db_user.go` that sets up a mock data set:
+
+```
+// CreateMockDataSet initialises a database for test purposes
+func CreateMockDataSet() map[int]models.User {
+	list := make(map[int]models.User)
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	list[0] = models.User{
 		ID:              0,
@@ -997,7 +1022,7 @@ func CreateMockDatabase() *MockDB {
 		DateOfBirth:     dt,
 		LocationOfBirth: "Milton Keynes",
 	}
-	return &MockDB{list, 1}
+	return list
 }
 ```
 
@@ -1005,14 +1030,14 @@ Let's have a look at the easiest test where we list the elements in our database
 
 ```
 func TestListUsers(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
-	list, _ := appEnv.DB.ListUsers()
+	appEnv := CreateContextForTestSetup()
+	list, _ := appEnv.UserStore.ListUsers()
 	count := len(list)
 	assert.Equal(t, 2, count, "There should be 2 items in the list.")
 }
 ```
 
-This first calls `CreateContextForTestSetup()` the create the application context and mock database, then the `appEnv.DB.ListUsers()` function, which returns a list of users. We then count the number of elements and last but not least we then check whether that count equals 2.
+This first calls `CreateContextForTestSetup()` the create the application context and mock database, then the `appEnv.UserStore.ListUsers()` function, which returns a list of users. We then count the number of elements and last but not least we then check whether that count equals 2.
 
 In standard Go, you would actually write something like:
 
@@ -1034,14 +1059,14 @@ This is our test code for the Delete functionality:
 
 ```
 func TestDeleteUserSuccess(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
-	err := appEnv.DB.DeleteUser(1)
+	appEnv := CreateContextForTestSetup()
+	err := appEnv.UserStore.DeleteUser(1)
 	assert.Nil(t, err)
 }
 
 func TestDeleteUserFail(t *testing.T) {
-	appEnv := server.CreateContextForTestSetup()
-	err := appEnv.DB.DeleteUser(10)
+	appEnv := CreateContextForTestSetup()
+	err := appEnv.UserStore.DeleteUser(10)
 	assert.NotNil(t, err)
 }
 ```
@@ -1065,24 +1090,33 @@ go test ./... -v
 Which will give you:
 
 ```
-=== RUN TestList
---- PASS: TestList (0.00s)
-=== RUN TestGetSuccess
---- PASS: TestGetSuccess (0.00s)
-=== RUN TestGetFail
---- PASS: TestGetFail (0.00s)
-=== RUN TestAdd
---- PASS: TestAdd (0.00s)
-=== RUN TestUpdateSuccess
---- PASS: TestUpdateSuccess (0.00s)
-=== RUN TestUpdateFail
---- PASS: TestUpdateFail (0.00s)
-=== RUN TestDeleteSuccess
---- PASS: TestDeleteSuccess (0.00s)
-=== RUN TestDeleteFail
---- PASS: TestDeleteFail (0.00s)
+?   	github.com/leeprovoost/go-rest-api-template/cmd/api-service	[no test files]
+=== RUN   TestListUsers
+--- PASS: TestListUsers (0.00s)
+=== RUN   TestGetUserSuccess
+--- PASS: TestGetUserSuccess (0.00s)
+=== RUN   TestGetUserFail
+--- PASS: TestGetUserFail (0.00s)
+=== RUN   TestAddUser
+--- PASS: TestAddUser (0.00s)
+=== RUN   TestUpdateUserSuccess
+--- PASS: TestUpdateUserSuccess (0.00s)
+=== RUN   TestUpdateUserFail
+--- PASS: TestUpdateUserFail (0.00s)
+=== RUN   TestDeleteUserSuccess
+--- PASS: TestDeleteUserSuccess (0.00s)
+=== RUN   TestDeleteUserFail
+--- PASS: TestDeleteUserFail (0.00s)
+=== RUN   TestHealthcheckHandler
+--- PASS: TestHealthcheckHandler (0.00s)
+=== RUN   TestListUsersHandler
+--- PASS: TestListUsersHandler (0.00s)
 PASS
-ok    github.com/leeprovoost/go-rest-api-template 0.008s
+ok  	github.com/leeprovoost/go-rest-api-template/internal/passport	0.222s
+?   	github.com/leeprovoost/go-rest-api-template/internal/passport/models	[no test files]
+?   	github.com/leeprovoost/go-rest-api-template/pkg/health	[no test files]
+?   	github.com/leeprovoost/go-rest-api-template/pkg/status	[no test files]
+?   	github.com/leeprovoost/go-rest-api-template/pkg/version	[no test files]
 ```
 
 Do you want to get some more info on your code coverage? No worries, Go has you covered (no pun intended):
@@ -1094,18 +1128,21 @@ go test ./... -cover
 This will give you:
 
 ```
-PASS
-coverage: 34.9% of statements
-ok    github.com/leeprovoost/go-rest-api-template 0.009s
+?   	github.com/leeprovoost/go-rest-api-template/cmd/api-service	[no test files]
+ok  	github.com/leeprovoost/go-rest-api-template/internal/passport	0.165s	coverage: 38.3% of statements
+?   	github.com/leeprovoost/go-rest-api-template/internal/passport/models	[no test files]
+?   	github.com/leeprovoost/go-rest-api-template/pkg/health	[no test files]
+?   	github.com/leeprovoost/go-rest-api-template/pkg/status	[no test files]
+?   	github.com/leeprovoost/go-rest-api-template/pkg/version	[no test files]
 ```
 
 ## Vendoring of dependencies
 
-Before we wrap up, I'd like to briefly talk about vendoring. Most software relies on some third-party (open source) software. In the Node.js world they are called npm packages, in the Java world they are MAven packages and in Go they are just called a Go package.
+Before we wrap up, I'd like to briefly talk about vendoring. Most software relies on some third-party (open source) software. In the Node.js world they are called npm packages, in the Java world they are Maven packages and in Go they are just called a Go package.
 
 What you commonly see in the Node.js world is that people push their own code to a server and then run `npm install` on that server. There have been a few instances where some npm packages disappeared and that caused a lot of problems for people who all of a sudden couldn't install their software anymore.
 
-One way to solve it is to simply a copy of the third-party dependency into your own project and treat it as you would treat the code you've written yourself. They're part of the git project and checked in together. Since Go 1.5, the Go world has agreed to use the `/vendor` folder in your project for this. (Before Go 1.5 it was the wild wild west...)
+One way to solve it is to simply store a copy of the third-party dependency into your own project and treat it as you would treat the code you've written yourself. They're part of the git project and checked in together. Since Go 1.5, the Go world has agreed to use the `/vendor` folder in your project for this, as well as introduced a common go modules approach. 
 
 If you want to add a package to your `/vendor` folder, then just run `go get your/desired/package`
 
@@ -1119,22 +1156,22 @@ go mod tidy
 go mod vendor
 ```
 
-Side note: if you are upgrading from a pre-go mod project (in my case govendor) then that's quite easy. Enter the following commands step by step:
+Side note: if you are upgrading from a pre-go mod project (in my case govendor) then that's quite easy. Enter the following commands in the root of your project step by step:
 
 ```
 go mod init github.com/leeprovoost/go-rest-api-template
 go mod tidy
-rm ./vendor/vendor.jsonn
+rm ./vendor/vendor.json
 go mod vendor
 ```
 
-This is documented [here](https://blog.golang.org/migrating-to-go-modules) and the last `go mod vendor` is menntioned [here](https://github.com/golang/go/issues/37734#issuecomment-596695647).
+This is documented [here](https://blog.golang.org/migrating-to-go-modules) and the last `go mod vendor` is mentioned [here](https://github.com/golang/go/issues/37734#issuecomment-596695647).
 
 ## Starting the app on a production server
 
 This is how you could run your app on a server:
 
-First, you copy the binary and the `fixtures.json` + `VERSION` files into a directory, e.g. `/opt/go-rest-api-template`.
+First, you copy the binary and the `VERSION` file into a directory, e.g. `/opt/go-rest-api-template`.
 
 Then start the app as a service. Store the app's PID in a text file so we can kill it later.
 
@@ -1143,18 +1180,17 @@ Then start the app as a service. Store the app's PID in a text file so we can ki
 export ENV=DEV
 export PORT=8080
 export VERSION=/opt/go-rest-api-template/VERSION
-export FIXTURES=/opt/go-rest-api-template/fixtures.json
-sudo nohup /opt/go-rest-api-template/go-rest-api-template >> /var/log/go-rest-api-template.log 2>&1&
-echo $! > /opt/go-rest-api-template/go-rest-api-template-pid.txt
+sudo nohup /opt/go-rest-api-template/api-service >> /var/log/go-rest-api-template.log 2>&1&
+echo $! > /opt/go-rest-api-template/api-service-pid.txt
 ```
 
 When you want to kill your app later during a redeployment or a server shutdown, then you can kill the app by looking up the previously stored PID:
 
 ```
 #!/bin/bash
-if [ -f /opt/go-rest-api-template/go-rest-api-template-pid.txt ]; then
-  kill -9 `cat /opt/go-rest-api-template/go-rest-api-template-pid.txt`
-  rm -f /opt/go-rest-api-template/go-rest-api-template-pid.txt
+if [ -f /opt/go-rest-api-template/api-service-pid.txt ]; then
+  kill -9 `cat /opt/go-rest-api-template/api-service-pid.txt`
+  rm -f /opt/go-rest-api-template/api-service-pid.txt
 fi
 ```
 

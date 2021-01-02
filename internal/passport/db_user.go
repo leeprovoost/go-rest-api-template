@@ -17,10 +17,10 @@ type UserService struct {
 }
 
 // NewUserService creates a new Carer Service with the system's database connection
-func NewUserService(list map[int]models.User) models.UserStorage {
+func NewUserService(list map[int]models.User, count int) models.UserStorage {
 	return &UserService{
 		UserList:  list,
-		MaxUserID: 0,
+		MaxUserID: count,
 	}
 }
 
@@ -71,8 +71,9 @@ func (service *UserService) DeleteUser(i int) error {
 	return nil
 }
 
-// CreateMockDataSet initialises a database for test purposes
-func CreateMockDataSet() map[int]models.User {
+// CreateMockDataSet initialises a database for test purposes. It returns a list of User objects
+// as well as the new max object count
+func CreateMockDataSet() (map[int]models.User, int) {
 	list := make(map[int]models.User)
 	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
 	list[0] = models.User{
@@ -84,10 +85,11 @@ func CreateMockDataSet() map[int]models.User {
 	}
 	dt, _ = time.Parse(time.RFC3339, "1992-01-01T00:00:00Z")
 	list[1] = models.User{
-		ID: 1, FirstName: "Jane",
+		ID:              1,
+		FirstName:       "Jane",
 		LastName:        "Doe",
 		DateOfBirth:     dt,
 		LocationOfBirth: "Milton Keynes",
 	}
-	return list
+	return list, len(list) - 1
 }

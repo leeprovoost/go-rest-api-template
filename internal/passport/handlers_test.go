@@ -2,7 +2,6 @@ package passport
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -57,6 +56,4 @@ func TestListUsersHandler(t *testing.T) {
 	// parse json body
 	var f interface{}
 	json.Unmarshal(w.Body.Bytes(), &f)
-	m := f.(map[string]interface{})
-	log.Println(m["users"])
 }
