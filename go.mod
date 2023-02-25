@@ -10,6 +10,6 @@ require (
 	github.com/unrolled/render v1.0.3
 	github.com/unrolled/secure v1.0.8
 	github.com/urfave/negroni v1.0.0
-	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
