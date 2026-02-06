@@ -1,28 +1,26 @@
 package passport
 
-// Route is the model for the router setup
-type Route struct {
-	Name        string
-	Method      string
-	Pattern     string
-	HandlerFunc HandlerFunc
-}
+import "net/http"
 
-// Routes are the main setup for our Router
-type Routes []Route
+func (s *Server) routes() http.Handler {
+	mux := http.NewServeMux()
 
-var routes = Routes{
-	Route{"Healthcheck", "GET", "/healthcheck", HealthcheckHandler},
-	//=== USERS ===
-	Route{"ListUsers", "GET", "/users", ListUsersHandler},
-	Route{"GetUser", "GET", "/users/{uid:[0-9]+}", GetUserHandler},
-	Route{"CreateUser", "POST", "/users", CreateUserHandler},
-	Route{"UpdateUser", "PUT", "/users/{uid:[0-9]+}", UpdateUserHandler},
-	Route{"DeleteUser", "DELETE", "/users/{uid:[0-9]+}", DeleteUserHandler},
-	//=== PASSPORTS === Not implemented yet, defaulting to unimplemented PassportsHandler
-	Route{"GetUserPassport", "GET", "/users/{uid}/passports", PassportsHandler},
-	Route{"GetPassport", "GET", "/passports/{pid:[0-9]+}", PassportsHandler},
-	Route{"CreateUserPassport", "POST", "/users/{uid}/passports", PassportsHandler},
-	Route{"UpdatePassport", "PUT", "/passports/{pid:[0-9]+}", PassportsHandler},
-	Route{"DeletePassport", "DELETE", "/passports/{pid:[0-9]+}", PassportsHandler},
+	mux.HandleFunc("GET /healthcheck", s.handleHealthcheck)
+	mux.HandleFunc("GET /ready", s.handleReady)
+
+	// Users
+	mux.HandleFunc("GET /users", s.handleListUsers)
+	mux.HandleFunc("GET /users/{id}", s.handleGetUser)
+	mux.HandleFunc("POST /users", s.handleCreateUser)
+	mux.HandleFunc("PUT /users/{id}", s.handleUpdateUser)
+	mux.HandleFunc("DELETE /users/{id}", s.handleDeleteUser)
+
+	// Passports
+	mux.HandleFunc("GET /users/{uid}/passports", s.handleListUserPassports)
+	mux.HandleFunc("GET /passports/{id}", s.handleGetPassport)
+	mux.HandleFunc("POST /users/{uid}/passports", s.handleCreatePassport)
+	mux.HandleFunc("PUT /passports/{id}", s.handleUpdatePassport)
+	mux.HandleFunc("DELETE /passports/{id}", s.handleDeletePassport)
+
+	return mux
 }

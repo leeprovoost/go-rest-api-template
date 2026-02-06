@@ -1,29 +1,27 @@
 package version
 
 import (
-	"io/ioutil"
+	"fmt"
+	"os"
 	"regexp"
 	"strings"
-
-	"github.com/palantir/stacktrace"
 )
 
-// ParseVersionFile returns the version as a string, parsing and validating a file given the path
+// ParseVersionFile returns the version as a string, parsing and validating a file given the path.
 func ParseVersionFile(versionPath string) (string, error) {
-	dat, err := ioutil.ReadFile(versionPath)
+	dat, err := os.ReadFile(versionPath)
 	if err != nil {
-		return "", stacktrace.Propagate(err, "error reading version file")
+		return "", fmt.Errorf("reading version file: %w", err)
 	}
-	version := string(dat)
-	version = strings.Trim(strings.Trim(version, "\n"), " ")
-	// regex pulled from official https://github.com/sindresorhus/semver-regex
+	version := strings.TrimSpace(string(dat))
+	// regex pulled from https://github.com/sindresorhus/semver-regex
 	semverRegex := `^v?(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[\da-z\-]+(?:\.[\da-z\-]+)*)?(?:\+[\da-z\-]+(?:\.[\da-z\-]+)*)?$`
 	match, err := regexp.MatchString(semverRegex, version)
 	if err != nil {
-		return "", stacktrace.Propagate(err, "error executing regex match")
+		return "", fmt.Errorf("executing regex match: %w", err)
 	}
 	if !match {
-		return "", stacktrace.NewError("string in VERSION is not a valid version number")
+		return "", fmt.Errorf("string in VERSION is not a valid version number: %q", version)
 	}
 	return version, nil
 }

@@ -1,1226 +1,896 @@
 # go-rest-api-template
 
-A template for building REST Web Services in Go. Uses gorilla/mux as a router/dispatcher and Negroni as a middleware handler. Tested against `go1.15.6 darwin/amd64`.
+A template for building REST web services in Go using the standard library, [x/time](https://pkg.go.dev/golang.org/x/time/rate) for rate limiting, and [testify](https://github.com/stretchr/testify) for testing. Requires Go 1.23+.
 
 ## Introduction
 
 ### Why?
 
-After writing many REST APIs with Java Dropwizard, Node.js/Express and Go, I wanted to distill my lessons learned into a reusable template for writing REST APIs, in the Go language.
+After writing many REST APIs with Java Dropwizard, Node.js/Express and Go, I wanted to distil my lessons learned into a reusable template for writing REST APIs in Go.
 
-It's mainly for myself. I don't want to keep reinventing the wheel and just want to get the foundation of my REST API 'ready to go' so I can focus on the business logic and integration with other systems and data stores.
+It's mainly for myself. I don't want to keep reinventing the wheel and just want to get the foundation of my REST API "ready to go" so I can focus on the business logic and integration with other systems and data stores.
 
-Just to be clear: this is not a framework, library, package or anything like that. This tries to use a couple of very good Go packages and libraries that I like and cobbled them together.
+This is not a framework. It uses Go's excellent standard library for almost everything:
 
-The main ones are:
+* `net/http` with the enhanced `ServeMux` (Go 1.22+) for routing with method and path parameter support
+* `log/slog` for structured logging (Go 1.21+)
+* `encoding/json` for JSON serialisation
+* Standard middleware pattern using `http.Handler` wrapping
+* [stretchr/testify](https://github.com/stretchr/testify) for readable test assertions
+* [golang.org/x/time/rate](https://pkg.go.dev/golang.org/x/time/rate) for per-IP rate limiting
 
-* [gorilla/mux](http://www.gorillatoolkit.org/pkg/mux) for routing
-* [urfave/negroni](https://github.com/urfave/negroni) as a middleware handler
-* [strechr/testify](https://github.com/stretchr/testify) for writing easier test assertions
-* [unrolled/render](https://github.com/unrolled/render) for HTTP response rendering
-* [palantir/stacktrace](https://github.com/palantir/stacktrace) to provide more context to error messages
-* [unrolled/secure](https://github.com/unrolled/secure) to improve API security
-* [sirupsen/logrus](https://github.com/sirupsen/logrus) for structured logging
+### Previous versions
 
-Whilst working on this, I've tried to write up my thought process as much as possible. Everything from the design of the API and routes, some details of the Go code like JSON formatting in structs and my thoughts on testing. However, if you feel that there is something missing, send a PR or raise an issue.
-
-Last but not least: I'm occasionally writing about my lessons learned developing Go applications and Amazon Web Services systems on [Medium](https://medium.com/@leeprovoost).
+Previous versions of this template used external packages such as gorilla/mux, negroni, logrus, and unrolled/render. Since Go 1.22, the standard library's `net/http.ServeMux` supports method-based routing and path parameters, making most routing libraries unnecessary. Similarly, `log/slog` (Go 1.21+) provides structured logging out of the box. This version has been modernised to rely on the standard library wherever possible.
 
 ### Knowledge of Go
 
-If you're new to programming in Go, I would highly recommend you to read the following resources:
+If you're new to programming in Go, I would highly recommend these resources:
 
-* [A Tour of Go](https://tour.golang.org/welcome/1)
-* [Effective Go](https://golang.org/doc/effective_go.html)
-* [50 Shades of Go: Traps, Gotchas, and Common Mistakes for New Golang Devs](http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/)
+* [A Tour of Go](https://go.dev/tour/)
+* [Effective Go](https://go.dev/doc/effective_go)
+* [Go by Example](https://gobyexample.com/)
 * [Learn X in Y Minutes](https://learnxinyminutes.com/docs/go/)
+* [50 Shades of Go](http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/)
 
-You can work your way through those in two to three days. I did try out a couple of books but didn't find them that useful. If you really want to get some books, there is a [github](https://github.com/dariubs/GoBooks) repo that tries to list the main ones.
-
-A good project to keep on eye on to discover new Go packages and software is [awesome-go](https://github.com/avelino/awesome-go). The maintainers enforce strict standards around documentation, tests, structure, etc. so they are doing a brilliant job improving the overall quality of code in the Go community. It's not easy to keep track of the high rate of change on that project, so my suggestion would be to track new additions using the [changedetection.com](https://www.changedetection.com/) website.
+A good project to discover Go packages is [awesome-go](https://github.com/avelino/awesome-go).
 
 ### Development tools
 
-The choice of an editor/IDE is a personal one, so the only advice I can give you is to try different ones. It looks like currently the following seem to be the most mature:
+The choice of editor is personal, but these are the most popular:
 
-* [Atom](https://atom.io/) with [go-plus](https://github.com/joefitzgerald/go-plus) 
-* vim with [vim-go](https://github.com/fatih/vim-go)
-* Microsoft did a pretty good job with their [Visual Studio Code](https://code.visualstudio.com/) and then install the [Go plugin](https://code.visualstudio.com/docs/languages/go)
-* IntelliJ [Goland](https://www.jetbrains.com/go/)
+* [Visual Studio Code](https://code.visualstudio.com/) with the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.go)
+* IntelliJ [GoLand](https://www.jetbrains.com/go/)
+* Neovim with [gopls](https://github.com/golang/tools/tree/master/gopls)
 
 ### How to run
 
-`go run main.go` works fine if you have a single file or a script you're working on, but once you have a more complex project with lots of files then you'll have to start using the proper go build tool and run the compiled executable:
+Using the root Makefile:
 
+```bash
+make run
 ```
-go build && ./api-service
-```
 
-Which is faster than first typing `go build` to generate an executable called `api-service` and then run that executable by typing `./api-service`.
+Or manually from the `cmd/api-service` directory:
 
-The `api-service` app will bind itself to the port that you have defined in your environment variables or your Makefile (in our case `3001`). You can copy paste the following in your terminal to run the application (ensure you are in the `cmd/api-service` folder):
-
-```
+```bash
 export ENV=LOCAL
-export VERSION=VERSION
 export PORT=3001
-export FIXTURES=./fixtures.json
-go build && ./api-service
+export VERSION=VERSION
+go run .
 ```
 
-One comment from a security point of view: you will commonly read that port 80 is the default port for HTTP (and 443 for HTTPS), it's usually not recommended to actually bind your application to that port when it runs on a server instance like AWS EC2. That's because ports below 1024 are privileged ports and require elevated privileges for the app to bind itself to such port. If someone compromises your app, it could potentially take advantage of the application user with the elevated privileges. Instead, run it on a higher port like 8001 and run it with a newly created restricted user (instead of using the root user). You can then use a load balancer or a proxy (e.g. AWS ELB/ALB, HAProxy, nginx) to accept your incoming request from the internet on port 80 or 443 and then forward that to your application port.
+The app will bind to `localhost:3001` in LOCAL mode. In other environments (DEV, STG, PRD) it binds to `0.0.0.0:<PORT>`, which is appropriate when running behind a load balancer or proxy.
 
-### Live Code Reloading
+> **Security note:** Don't bind your application to ports below 1024 on a server. Those are privileged ports that require elevated privileges. Run your app on a higher port (e.g. 8080) with a restricted user, and use a reverse proxy (nginx, AWS ALB, etc.) to handle ports 80/443.
 
-Manually stopping and restarting your server during development can get quite annoying after a while, so let's set up a task runner that automatically restarts the server when it detects changes. People from the JavaScript world will be quite familiar with tools like gulp. I've chosen a Go native task runner called fresh.
+### Build and test
 
-Install [fresh](https://github.com/pilu/fresh):
+```bash
+# Build binary
+make build
 
-```
-go get github.com/pilu/fresh
-```
+# Run tests
+make test
 
-And during development, you can now just type in the following command in your project root directory:
+# Run linter (requires golangci-lint)
+make lint
 
-```
-fresh
-```
+# Build Docker image
+make docker
 
-You should see following output if all goes well:
-
-```
-Loading settings from ./runner.conf
-11:10:42 runner      | InitFolders
-11:10:42 runner      | mkdir ./tmp
-11:10:42 runner      | mkdir ./tmp: file exists
-11:10:42 watcher     | Watching .
-11:10:42 watcher     | Watching vendor
-11:10:42 watcher     | Watching vendor/github.com
-11:10:42 watcher     | Watching vendor/github.com/codegangsta
-11:10:42 watcher     | Watching vendor/github.com/codegangsta/negroni
-11:10:42 watcher     | Watching vendor/github.com/davecgh
-11:10:42 watcher     | Watching vendor/github.com/davecgh/go-spew
-11:10:42 watcher     | Watching vendor/github.com/davecgh/go-spew/spew
-11:10:42 watcher     | Watching vendor/github.com/gorilla
-11:10:42 watcher     | Watching vendor/github.com/gorilla/context
-11:10:42 watcher     | Watching vendor/github.com/gorilla/mux
-11:10:42 watcher     | Watching vendor/github.com/palantir
-11:10:42 watcher     | Watching vendor/github.com/palantir/stacktrace
-11:10:42 watcher     | Watching vendor/github.com/palantir/stacktrace/cleanpath
-11:10:42 watcher     | Watching vendor/github.com/pmezard
-11:10:42 watcher     | Watching vendor/github.com/pmezard/go-difflib
-11:10:42 watcher     | Watching vendor/github.com/pmezard/go-difflib/difflib
-11:10:42 watcher     | Watching vendor/github.com/stretchr
-11:10:42 watcher     | Watching vendor/github.com/stretchr/testify
-11:10:42 watcher     | Watching vendor/github.com/stretchr/testify/assert
-11:10:42 watcher     | Watching vendor/github.com/unrolled
-11:10:42 watcher     | Watching vendor/github.com/unrolled/render
-11:10:42 watcher     | Watching vendor/github.com/unrolled/secure
-11:10:42 main        | Waiting (loop 1)...
-11:10:42 main        | receiving first event /
-11:10:42 main        | sleeping for 600 milliseconds
-11:10:42 main        | flushing events
-11:10:42 main        | Started! (75 Goroutines)
-11:10:42 main        | remove tmp/go-rest-api-template.log: no such file or directory
-11:10:42 build       | Building...
-11:10:48 runner      | Running...
-11:10:48 main        | --------------------
-11:10:48 main        | Waiting (loop 2)...
-11:10:48 app         | [negroni] listening on localhost:3001
-11:10:48 app         | 2016/09/28 11:10:48 ===> Starting app (v0.2.0) on port 3001 in LOCAL mode.
+# Clean build artefacts
+make clean
 ```
 
-Fresh should work without any configuration, but to make it more explicit you can add a `runner.conf` file in your project root:
+### Docker
 
-```
-root:              .
-tmp_path:          ./tmp
-build_name:        api-service
-build_log:         api-service.log
-valid_ext:         .go, .tpl, .tmpl, .html, .mod, .sum, modules.txt
-build_delay:       600
-colors:            1
-log_color_main:    cyan
-log_color_build:   yellow
-log_color_runner:  green
-log_color_watcher: magenta
+Build and run in a container:
+
+```bash
+docker build -t go-rest-api-template .
+docker run -p 8080:8080 go-rest-api-template
 ```
 
-As you can see, it creates a `tmp` directory in your project root and a log file. You can tell `.gitignore` to stop checking it into your git repository by adding the following lines in your `.gitignore` file:
+The Dockerfile uses a multi-stage build: a `golang:1.23-alpine` builder stage compiles the binary with `CGO_ENABLED=0`, then the final image is based on `alpine:3.20` (a few MB in size).
+
+## Project Structure
 
 ```
-# fresh
-tmp
-api-service.log
+.
+├── api/
+│   └── openapi.yaml           # OpenAPI 3.1 specification
+├── cmd/
+│   └── api-service/
+│       ├── main.go             # Application entry point: config, logging, startup
+│       ├── Makefile             # Build and run tasks
+│       └── VERSION              # Semantic version file
+├── internal/
+│   └── passport/
+│       ├── models/
+│       │   ├── user.go          # User struct and UserStorage interface
+│       │   └── passport.go      # Passport struct and PassportStorage interface
+│       ├── server.go            # Server struct, constructor, middleware, graceful shutdown
+│       ├── routes.go            # Route registration (maps URLs to handlers)
+│       ├── handlers.go          # HTTP handler implementations
+│       ├── handlers_test.go     # Handler integration tests
+│       ├── middleware.go        # Request ID, CORS, rate limiting middleware
+│       ├── middleware_test.go   # Middleware unit tests
+│       ├── server_test.go       # Server configuration tests
+│       ├── db_user.go           # In-memory UserStorage implementation
+│       ├── db_user_test.go      # User storage unit tests
+│       ├── db_passport.go       # In-memory PassportStorage implementation
+│       └── db_passport_test.go  # Passport storage unit tests
+├── pkg/
+│   ├── health/
+│   │   └── check.go             # Health check response struct
+│   ├── status/
+│   │   └── response.go          # Error/validation response struct
+│   └── version/
+│       ├── parser.go            # VERSION file parser with semver validation
+│       └── parser_test.go       # Version parser tests
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # GitHub Actions CI pipeline
+├── .golangci.yml                # Linter configuration
+├── Dockerfile                   # Multi-stage Docker build
+├── Makefile                     # Root build tasks
+├── .gitignore
+├── go.mod
+├── go.sum
+├── LICENSE
+└── README.md
 ```
 
-I've added a simple task to our `Makefile` that allows you to run the app with all the correct environment variables. Just run:
+**Directory conventions:**
+- `cmd/` - Application entry points. Each subdirectory is a separate binary.
+- `internal/` - Application code that should not be imported by other projects. The Go compiler enforces this.
+- `pkg/` - Library code that could be reused by other projects.
+- `api/` - API specification files (OpenAPI/Swagger).
 
-```
-make fresh
-```
+## Architecture
 
-Where I work, we've hit the limitations of fresh and have switched to Gulp as a task runner. Our Gulp setup takes care of running tests, using OSX notifications to warn you of build failures, etc. 
+### The Server struct
 
-### High-level Code Structure
+The central concept is the `Server` struct in `internal/passport/server.go`:
 
-The following structure is something that has been evolved over the years. Back when I started writing Go applications, we didn't have best practices like this project ```https://github.com/golang-standards/project-layout```. I will sound very old now, but "back in the olden days", Go didn't even have a proper package/module management system, so we've come a long way. Let me first show the project structure and explain what the key folders do, immediately followed by some explanation what each file does:
-
-```
-- cmd --> folder that has one or more application entry points
-  |- api-service
-     |- tmp
-     |- fixtures.json
-     |- main.go
-     |- Makefile
-     |- runner.conf
-     |- VERSION
-- internal --> folder where we store application code that should not be reused by other applications
-  |- passport
-     |- models
-        |- passport.go
-        |- user.go
-     |- appenv.go
-     |- db_user_test.go
-     |- db_user.go
-     |- handlers_test.go
-     |- handlers.go
-     |- main.go
-     |- routes.go
-- pkg --> folder where we store application code that can be reused by other applications
-  |- health
-     |- check.go
-  |- status
-     |- response.go
-  |- version
-     |- parser.go
-- vendor --> directory where we store the vendored modules
-- .gitignore
-- go.mod
-- go.sum
-- LICENSE
-- README.md
-```
-
-And now with some annotations:
-
-```
-- cmd
-  |- api-service --> folder for our passport api
-     |- tmp --> temporary folder for our fresh task runner
-     |- fixtures.json --> test data in JSON format
-     |- main.go --> this ties all the various application logic packages together and loads the correct environment variables
-     |- Makefile --> Makefile that describes some tasks:
-     |- runner.conf --> configuration file for [fresh](go get github.com/pilu/fresh)
-     |- VERSION --> defines application version using semantic versioning
-- internal 
-  |- passport
-     |- models
-        |- passport.go --> passport data structure definition
-        |- user.go --> user data structure definition
-     |- appenv.go --> defines the application context object
-     |- db_user_test.go --> tests our mock/fake database
-     |- db_user.go --> our mock/fake database implementation
-     |- handlers_test.go --> tests for our route handlers
-     |- handlers.go --> defines the actual logic that gets executed when you visit a route and takes care of the response to the client
-     |- main.go --> actual server initialisation is happening here: mainly loading of routes and middleware
-     |- routes.go --> server routes, e.g. GET /healthcheck, and binding of those routes to the correct route handlers
-- pkg 
-  |- health
-     |- check.go --> healthcheck data structure definition
-  |- status
-     |- response.go --> status data structure definition
-  |- version
-     |- parser.go --> parses VERSION file
-- vendor
-- .gitignore --> define what files git should ignore and not check in
-- go.mod --> Go modules definition file 
-- go.sum --> Go modules definition file 
-- LICENSE --> (optional) License file
-- README.md --> this document
-```
-
-### Starting the application
-
-The main entry point to our app is `cmd/api-service/main.go` where we take care of the following:
-
-Configuring our logrus structured logging package. Instead of using the standard log package, we use logrus that allows us to print information in a JSON format. However, during development, we just want to see a human-readable format:
-
-```
-func init() {
-	if "LOCAL" == strings.ToUpper(os.Getenv("ENV")) {
-		log.SetFormatter(&log.TextFormatter{})
-		log.SetLevel(log.DebugLevel)
-	} else {
-		log.SetFormatter(&log.JSONFormatter{})
-		log.SetLevel(log.InfoLevel)
-	}
+```go
+type Server struct {
+    userStore     models.UserStorage
+    passportStore models.PassportStorage
+    logger        *slog.Logger
+    version       string
+    env           string
+    port          string
+    corsOrigins   string
+    rateLimiter   *rateLimiter
 }
 ```
 
-Next up is to load our environment variables. The default values that we are using during development are defined in our `Makefile`.
+This holds all application dependencies and provides HTTP handlers as methods. This pattern avoids global variables and makes dependencies explicit. In Go, this is the idiomatic alternative to dependency injection frameworks - you simply pass dependencies through struct fields.
 
-```
-var (
-  // try to read environment variables
-  env      = os.Getenv("ENV")      // LOCAL, DEV, STG, PRD
-  port     = os.Getenv("PORT")     // server traffic on this port
-  version  = os.Getenv("VERSION")  // path to VERSION file
-  fixtures = os.Getenv("FIXTURES") // path to fixtures file
-)
-```
+The server is configured through `ServerOptions`:
 
-I'm using the environment variables technique to tell the app in what environment it lives:
-
-* `LOCAL`: local development environment
-* `DEV`: development or integration server
-* `STG`: staging servers
-* `PRD`: production servers
-
-We then load our version file. I have added a helper function in `pkg/version/parse.go` that can parse a `VERSION` file using semantic versioning.
-
-```
-// reading version from file
-version, err := vparse.ParseVersionFile(version)
-if err != nil {
-  log.WithFields(log.Fields{
-    "env":  env,
-    "err":  err,
-    "path": os.Getenv("VERSION"),
-  }).Fatal("Can't find a VERSION file")
-  return
+```go
+type ServerOptions struct {
+    Version     string
+    Env         string
+    Port        string
+    CORSOrigins string
+    RateLimit   float64 // requests per second; 0 disables rate limiting
+    RateBurst   int     // burst size for rate limiter
 }
-log.WithFields(log.Fields{
-  "env":     env,
-  "path":    os.Getenv("VERSION"),
-  "version": version,
-}).Info("Loaded VERSION file")
+
+srv := passport.NewServer(userStore, passportStore, logger, passport.ServerOptions{
+    Version:     version,
+    Env:         env,
+    Port:        port,
+    CORSOrigins: corsOrigins,
+    RateLimit:   rateLimit,
+    RateBurst:   rateBurst,
+})
 ```
 
-When we can't find a version file, then we throw an error. When we do find a version file, then we're just writing a log entry.
+### Routing with net/http (Go 1.22+)
 
-The check for error (`if err != nil`) is a common Go way of handling return values that contain errors. the `main` function is one of the few places where I use log.Fatal in my application. `log.Fatal` logs your file to the console, but also exits your application. This is for me the correct behaviour here because without a correct `VERSION` file, the app shouldn't work. It's too risky that you may have deployed the incorrect application version.
+Since Go 1.22, the standard `net/http.ServeMux` supports method-based routing and path parameters:
 
-This API doesn't talk to a real database but to a very simple in-memory mock database. The data is hardcoded into the `CreateMockDataSet()` function and loaded at application start time. I will change this with an actual database at some point. 
+```go
+func (s *Server) routes() http.Handler {
+    mux := http.NewServeMux()
 
-```
-userStore := passport.NewUserService(passport.CreateMockDataSet())
-```
+    mux.HandleFunc("GET /healthcheck", s.handleHealthcheck)
+    mux.HandleFunc("GET /ready", s.handleReady)
 
-Note that `func NewUserService(list map[int]models.User, count int) models.UserStorage` expects two parameters, but it looks like we are only passing one? That's because the `func CreateMockDataSet() (map[int]models.User, int) ` function returns two results. The first one is the list of users, the second one is the count. Hence why this satisfies the type signature of `NewUserService`.
+    // Users
+    mux.HandleFunc("GET /users", s.handleListUsers)
+    mux.HandleFunc("GET /users/{id}", s.handleGetUser)
+    mux.HandleFunc("POST /users", s.handleCreateUser)
+    mux.HandleFunc("PUT /users/{id}", s.handleUpdateUser)
+    mux.HandleFunc("DELETE /users/{id}", s.handleDeleteUser)
 
-Once all the data is read from our environment variables and the mock data has been loaded, we can then initialise our application context. `AppEnv` is a struct that holds some application info that we can pass around (e,g, provide to our handlers). It's a neat way to avoid using global variables and avoiding that you have application variables all over the place.
+    // Passports
+    mux.HandleFunc("GET /users/{uid}/passports", s.handleListUserPassports)
+    mux.HandleFunc("GET /passports/{id}", s.handleGetPassport)
+    mux.HandleFunc("POST /users/{uid}/passports", s.handleCreatePassport)
+    mux.HandleFunc("PUT /passports/{id}", s.handleUpdatePassport)
+    mux.HandleFunc("DELETE /passports/{id}", s.handleDeletePassport)
 
-I have defined the `AppEnv` struct in `internal/passport/appenv.go`:
-
-```
-// AppEnv holds application configuration data
-type AppEnv struct {
-	Render  *render.Render
-	Version string
-	Env     string
-	Port    string
-	DB      DataStorer
+    return mux
 }
 ```
 
-`Render` helps us with rendering the correct response to the client, e.g. JSON, XML, etc. Version holds the path to our `VERSION` file. `Env` holds information about our platform environment (e.g. STG, DEV). `Port` is the server port that our application binds to. `DB` is our database struct that provides a data abstraction layer.
+Path parameters are accessed via `r.PathValue("id")` in handlers. This eliminates the need for external routers like gorilla/mux.
 
-Once all of that is set up properly, we can now start the server. The `StartServer` function takes our `AppEnv` struct and initialises all our routes and starts our `negroni` server. This is all defined in `internal/passport/main.go`.
+### Middleware
 
-Most `negroni` code examples ([like the one on the official GitHub repo](https://github.com/urfave/negroni)) will start the application using:
+Middleware uses the standard `http.Handler` wrapping pattern. Each middleware function takes a handler and returns a new handler:
 
-```
-n := negroni.Classic()
-```
-
-When you look at our `internal/passport/main.go` file, then you'll see that we do it slightly differently:
-
-```
-// start now
-n := negroni.New()
-```
-
-`negroni.Classic()` adds a little bit of magic in the background and for instance loads the `/public` folder as the location of your static files. I personally don't like that and prefer to make things more explicit. It's up to you to decide which one you prefer, as long as you are aware what exactly happens when you play with magic.
-
-One important thing worth mentioning is the way we run the application and bind the app to a given port. It's common to see Go apps being started as:
-
-```
-n.Run(":3001")
+```go
+func securityHeaders(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("X-Content-Type-Options", "nosniff")
+        w.Header().Set("X-Frame-Options", "DENY")
+        next.ServeHTTP(w, r)
+    })
+}
 ```
 
-However, when you're running this on OSX, you will get constant warnings about accepting incoming connections. I've written a piece on [Medium](https://medium.com/@leeprovoost/suppressing-accept-incoming-network-connections-warnings-on-osx-7665b33927ca#.crake4bm9) about this but the tl;dr solution is to explicitly bind your application to `localhost`:
+The middleware chain is composed in `server.go`:
+
+```go
+func (s *Server) middleware(next http.Handler) http.Handler {
+    h := next
+    h = clacksOverhead(h)
+    h = securityHeaders(h)
+    if s.corsOrigins != "" {
+        h = cors(s.corsOrigins)(h)
+    }
+    if s.rateLimiter != nil {
+        h = s.rateLimiter.middleware(h)
+    }
+    h = s.requestLogger(h)
+    h = requestID(h)
+    return h
+}
+```
+
+This chains six middleware layers (in order of execution):
+1. **Request ID** - reads `X-Request-ID` from the incoming request or generates a UUID using `crypto/rand`
+2. **Request logging** - logs method, path, status code, duration and request ID using `slog`
+3. **Rate limiting** (optional) - per-IP token bucket rate limiter using `golang.org/x/time/rate`
+4. **CORS** (optional) - sets `Access-Control-Allow-*` headers and handles OPTIONS preflight requests
+5. **Security headers** - sets `X-Content-Type-Options` and `X-Frame-Options`
+6. **Clacks overhead** - adds `X-Clacks-Overhead: GNU Terry Pratchett` (a [Terry Pratchett tribute](http://www.gnuterrypratchett.com/))
+
+### Input validation
+
+Create and update handlers validate the request body and return `422 Unprocessable Entity` with field-level errors:
+
+```go
+func validateUser(u models.User) []string {
+    var errs []string
+    if u.FirstName == "" {
+        errs = append(errs, "firstName is required")
+    }
+    // ...
+    return errs
+}
+```
+
+Response for a failed validation:
+
+```json
+{
+    "status": "422",
+    "message": "validation failed",
+    "errors": [
+        "firstName is required",
+        "lastName is required",
+        "dateOfBirth is required",
+        "locationOfBirth is required"
+    ]
+}
+```
+
+### Pagination
+
+The `GET /users` endpoint supports offset/limit pagination:
 
 ```
-n.Run("localhost:3001")
+GET /users?offset=0&limit=10
 ```
 
-Last but not least, a big thank you to [edoardo849](https://github.com/edoardo849) for providing some great feedback on structuring the API and reducing `main.go` complexity.
+Defaults: `offset=0`, `limit=25`. Values outside 1–100 reset to the default of 25. The response includes metadata:
+
+```json
+{
+    "users": [...],
+    "count": 10,
+    "total": 42,
+    "offset": 0,
+    "limit": 10
+}
+```
+
+### Structured logging with slog
+
+Go 1.21 introduced `log/slog`, a structured logging package in the standard library. It outputs text in LOCAL mode and JSON in other environments:
+
+```go
+// LOCAL mode (human-readable)
+var logger *slog.Logger
+if env == "LOCAL" {
+    logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+        Level: slog.LevelDebug,
+    }))
+} else {
+    logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+        Level: slog.LevelInfo,
+    }))
+}
+```
+
+Usage in handlers:
+
+```go
+s.logger.Error("user not found", "id", uid, "error", err)
+s.logger.Info("request", "method", r.Method, "path", r.URL.Path, "duration", elapsed)
+```
+
+### Graceful shutdown
+
+The server handles `SIGINT` and `SIGTERM` signals for graceful shutdown, giving in-flight requests up to 30 seconds to complete:
+
+```go
+func (s *Server) Run() error {
+    srv := &http.Server{
+        Addr:         s.addr(),
+        Handler:      s.middleware(s.routes()),
+        ReadTimeout:  10 * time.Second,
+        WriteTimeout: 10 * time.Second,
+        IdleTimeout:  120 * time.Second,
+    }
+
+    // Start server in background
+    errCh := make(chan error, 1)
+    go func() {
+        errCh <- srv.ListenAndServe()
+    }()
+
+    // Wait for interrupt
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+    select {
+    case err := <-errCh:
+        return err
+    case <-quit:
+        // Graceful shutdown with timeout
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+        return srv.Shutdown(ctx)
+    }
+}
+```
+
+### Environment configuration
+
+The application is configured through environment variables:
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `ENV` | Environment name (controls logging format and bind address) | - | `LOCAL`, `DEV`, `STG`, `PRD` |
+| `PORT` | Server port | - | `3001` |
+| `VERSION` | Path to the VERSION file | - | `VERSION` |
+| `CORS_ORIGINS` | Allowed CORS origin (empty disables CORS) | - | `http://localhost:3000` |
+| `RATE_LIMIT` | Requests per second per IP (0 disables) | `0` | `10` |
+| `RATE_BURST` | Burst size for rate limiter | `0` | `20` |
+
+- **LOCAL**: Text logging at DEBUG level, binds to `localhost:PORT`
+- **Other**: JSON logging at INFO level, binds to `:PORT` (all interfaces)
 
 ## Data
 
 ### Data model
 
-We are going to use a travel Passport for our example. I've chosen Id as the unique key for the passport because (in the UK), passport book numbers these days have a unique 9 character field length (e.g. 012345678). A passport belongs to a user and a user can have one or more passports. We'll define this in `internal/passport/models/passport.go` and `internal/passport/models/user.go`.
+We use a travel Passport for our example. A passport belongs to a user and a user can have one or more passports.
 
-```
+```go
 type User struct {
-  ID              int       `json:"id"`
-  FirstName       string    `json:"firstName"`
-  LastName        string    `json:"lastName"`
-  DateOfBirth     time.Time `json:"dateOfBirth"`
-  LocationOfBirth string    `json:"locationOfBirth"`
+    ID              int       `json:"id"`
+    FirstName       string    `json:"firstName"`
+    LastName        string    `json:"lastName"`
+    DateOfBirth     time.Time `json:"dateOfBirth"`
+    LocationOfBirth string    `json:"locationOfBirth"`
 }
 
 type Passport struct {
-  ID           string    `json:"id"`
-  DateOfIssue  time.Time `json:"dateOfIssue"`
-  DateOfExpiry time.Time `json:"dateOfExpiry"`
-  Authority    string    `json:"authority"`
-  UserID       int       `json:"userId"`
+    ID           string    `json:"id"`
+    DateOfIssue  time.Time `json:"dateOfIssue"`
+    DateOfExpiry time.Time `json:"dateOfExpiry"`
+    Authority    string    `json:"authority"`
+    UserID       int       `json:"userId"`
 }
 ```
 
-The first time you create a struct, you may not be aware that uppercasing and lowercasing your field names have a meaning in Go. It's similar to public and private members in Java. Uppercase = public, lowercase = private. There are some good discussions on Stackoverflow about [this](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character). The gist is that field names that start with a lowercase letter will not be visible to json.Marshal.
+**JSON field naming:** Field names use camelCase (e.g. `firstName`) because the "JS" in JSON stands for JavaScript, where camelCase is the convention.
 
-You may not want to expose your data to the consumer of your web service in this format, so you can override the way your fields are marshalled by adding ``json:"firstName"`` to each field with the desired name. I admit that in the past I had the habit of using underscores for my json field names, e.g. `first_name`. However after reading [this](http://www.slideshare.net/stormpath/rest-jsonapis) excellent presentation on API design, I got reminded that the JS in JSON stands for JavaScript and in the JavaScript world, it's common to use camelCasing so the preferred way of writing the same field name would be: `firstName`.
+**Exported vs unexported:** In Go, uppercase field names are exported (public) and lowercase are unexported (private). Fields must be exported for `encoding/json` to marshal them. The `json:"..."` struct tags control the JSON field names.
 
-Note the use of `time.Time` for the dates instead of using a standard `string` type. We'll discuss the pain of marshalling and unmarshalling of JSON dates a bit later.
+**Dates:** We use `time.Time` which automatically marshals to/from RFC 3339 format (`2006-01-02T15:04:05Z07:00`). This is an unambiguous international standard (ISO 8601).
 
-If you want to prevent a certain struct field to be marshalled/unmarshalled then use `json:"-"`.
+### Data access layer
 
-During development, it can be useful to print the contents of some variables to your console. We've added a little helper so Go knows how to properly display the contents of the structs. See this example in `models/user.go`:
+Storage interfaces in `internal/passport/models/` define the contracts for data operations:
 
-```
-// User holds personal user information
-type User struct {
-	ID              int       `json:"id"`
-	FirstName       string    `json:"firstName"`
-	LastName        string    `json:"lastName"`
-	DateOfBirth     time.Time `json:"dateOfBirth"`
-	LocationOfBirth string    `json:"locationOfBirth"`
-}
-
-// GoString implements the GoStringer interface so we can display the full struct during debugging
-// usage: fmt.Printf("%#v", i)
-// ensure that i is a pointer, so might need to do &i in some cases
-func (u *User) GoString() string {
-	return fmt.Sprintf(`
-{
-	ID: %d,
-	FirstName: %s,
-	LastName: %s,
-	DateOfBirth: %s,
-	LocationOfBirth: %s,
-}`,
-		u.ID,
-		u.FirstName,
-		u.LastName,
-		u.DateOfBirth,
-		u.LocationOfBirth,
-	)
-}
-```
-
-### Operations on our (mock) database
-
-I wanted to create a template REST API that didn't depend on a database, so started with creating a simple in-memory database that we can work with. I admit that this was mainly to satisfy my own curiosity. I might change that in the future to using an off-the-shelf in-memory Go database.
-
-The good thing is that this will be the start of a so-called data access layer that abstracts away the underlying data store. We can achieve that by starting with creating an interface (which is a good practice in Go anyway). 
-
-Open the `internal/passport/models/user.go` file and you will see:
-
-```
-// UserStorage defines all the database operations
+```go
 type UserStorage interface {
-	ListUsers() ([]User, error)
-	GetUser(i int) (User, error)
-	AddUser(u User) (User, error)
-	UpdateUser(u User) (User, error)
-	DeleteUser(i int) error
+    ListUsers(ctx context.Context) ([]User, error)
+    GetUser(ctx context.Context, id int) (User, error)
+    AddUser(ctx context.Context, u User) (User, error)
+    UpdateUser(ctx context.Context, u User) (User, error)
+    DeleteUser(ctx context.Context, id int) error
+}
+
+type PassportStorage interface {
+    ListPassportsByUser(ctx context.Context, userID int) ([]Passport, error)
+    GetPassport(ctx context.Context, id string) (Passport, error)
+    AddPassport(ctx context.Context, p Passport) (Passport, error)
+    UpdatePassport(ctx context.Context, p Passport) (Passport, error)
+    DeletePassport(ctx context.Context, id string) error
 }
 ```
 
-This allows us to define a set of operations on the data as a contract, without people having to worry about the actual implementation of how the data is stored and accessed. I've added the basic operations to list, retrieve, create, update and delete data, so the standard CRUD-style operations (accepting that CRUD has some subtle differences with REST).
+All methods accept `context.Context` as their first parameter, following Go conventions. This allows propagating request cancellation and timeouts to the data layer, which becomes essential when you swap the in-memory store for a real database.
 
-Let's now have a look at the type signature of the `Get` operation:
+These interfaces allow swapping the implementation. Currently we use in-memory mocks (`UserService` and `PassportService`), but you could implement the same interfaces for PostgreSQL, SQLite, or any other store.
 
-```
-GetUser(i int) (User, error)
-```
+**Compile-time interface check:** To ensure an implementation satisfies its interface, we use this pattern:
 
-What this tells us is that it is expecting an integer as an argument (which will be the User id in our case), and returns a pair of values: a User object and an error object. Returning pairs of values is a nice Go feature and is often used to return information about errors.
-
-An example of how this could be used is in `internal/passport/handlers.go:
-
-```
-// GetUserHandler returns a user object
-func GetUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	vars := mux.Vars(req)
-	uid, _ := strconv.Atoi(vars["uid"])
-	user, err := appEnv.UserStore.GetUser(uid)
-	if err != nil {
-		response := status.Response{
-			Status:  strconv.Itoa(http.StatusNotFound),
-			Message: "can't find user",
-		}
-		log.WithFields(log.Fields{
-			"env":    appEnv.Env,
-			"status": http.StatusNotFound,
-		}).Error("Can't find user")
-		appEnv.Render.JSON(w, http.StatusNotFound, response)
-		return
-	}
-	appEnv.Render.JSON(w, http.StatusOK, user)
-}
-```
-
-We check whether the error object is nil. If it is, then we return a HTTP 200 OK, if not then we return HTTP 404 Not Found. Let's go into more detail when we talk about our API handlers.
-
-BTW in other languages you might be used to write the above as:
-
-```
-user, err := appEnv.UserStore.GetUser(uid)
-if err == nil {
-  ctx.render.JSON(w, http.StatusOK, user)
-} else {
-  ctx.render.JSON(w, http.StatusNotFound, err)
-}
-```
-
-But the Go way is to check if an error exists and handle that immediately. If there is no error, just continue with the normal application flow.
-
-Let's have a look at the actual mock in-memory database. We need to create a struct that will hold the data:
-
-```
-// UserService will hold the connection and key db info
-type UserService struct {
-	UserList  map[int]models.User
-	MaxUserID int
-}
-```
-The UserList will hold a list of User structs and the MaxUserID holds the latest used integer. MaxUserID mimics the behaviour of an auto-generated ID in conventional databases. In this case MaxUserID represents the highest used database ID.
-
-Let's have a closer at the `GetUser` function:
-
-```
-// GetUser returns a single JSON document
-func (service *UserService) GetUser(i int) (models.User, error) {
-	user, ok := service.UserList[i]
-	if !ok {
-		return models.User{}, stacktrace.NewError("Failure trying to retrieve user")
-	}
-	return user, nil
-}
-```
-
-* `func (service *UserService)`: This might be something new for you and I admit that it took me a little while to appreciate this. It's called a pointer receiver and is part of [A Tour of Go](https://tour.golang.org/methods/4). This means that the `GetUser` function can work on a `UserService` struct. For people coming from languages that use objects and methods, it's similar. 
-* `GetUser(i int) (models.User, error)`: This is the function signature and says that we have a function named `GetUser` that accepts one argument of the type `int` (e.g. 0, 1, 2, 3) and will return two variables. The first one is a `User` struct, the second one is an `error` struct.
-* `return models.User{}, stacktrace.NewError("Failure trying to retrieve user")`: In case there is an error, we return an empty `User` object and an `error`. We have to return an `User` object because that's what the function signature enforces, but this will be empty and frankly doesn't really matter. It doesn't matter because we will first check the `error` struct. The basic `error` struct in Go doesn't really say much, which is why we use here Palantir's `stacktrace` package. It adds some more contextual information about where the issue occured.
-* `return user, nil`: If everything goes well, then we just return the user data as well as an empty error (nil).
-
-Before we move on to loading the mock data, I wanted to briefly touch on the `UserStorage` interface. One of the advantages of using an interface is that you can swap out the implementation. This can be useful for testing. So instead of `GetUser` calling the actual datastore, you could write a different implementation that just returns a hardcoded `User` struct. However, Go has a implicit way of linking the interface to the struct. Unlike in Java where you have to explicitly state that a Class implements an Interface (and thus you benefit from the IDE checking whether you have implemented all the methods), Go just tries to figure out whether there are structs that match the definition of your interface. In order to make this more explicit, I always add a small test, see at the top of `internal/passport/db_user.go`:
-
-```
-// Compile-time proof of interface implementation
+```go
 var _ models.UserStorage = (*UserService)(nil)
+var _ models.PassportStorage = (*PassportService)(nil)
 ```
 
-This tries to typecast the `UserService` pointer to the `UserStorage` interface. If you haven't implemented your interface functions properly, then your Go tests will complain.
+This causes a compile error if any interface method is missing. This is important because Go uses implicit interface satisfaction - there's no `implements` keyword like in Java.
 
 ### Mock data
 
-In order to make it a bit more useful, we will initialise it with some user objects. I've created a helper function in `internal/passport/db_user.go` called `CreateMockDataSet` that just loads some test data. The structure of that data looks as follows:
+The `CreateMockDataSet()` and `CreateMockPassportDataSet()` functions initialise test data:
 
-```
-dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
+```go
+// Users
 list[0] = models.User{
-	ID:              0,
-	FirstName:       "John",
-	LastName:        "Doe",
-	DateOfBirth:     dt,
-	LocationOfBirth: "London",
+    ID:              0,
+    FirstName:       "John",
+    LastName:        "Doe",
+    DateOfBirth:     dt,  // 1985-12-31T00:00:00Z
+    LocationOfBirth: "London",
+}
+
+// Passports
+list["012345678"] = models.Passport{
+    ID:           "012345678",
+    DateOfIssue:  doi, // 2020-01-15T00:00:00Z
+    DateOfExpiry: doe, // 2030-01-15T00:00:00Z
+    Authority:    "HMPO",
+    UserID:       0,
 }
 ```
 
-The date string looks a bit odd. Why not just use `31-12-1985` or `1985-12-31`? The first is discouraged altogether because that's a European way of writing dates and will cause confusion around the world. Imagine you have 3-4-2015. Is it April the third or March the fourth? Unfortunately there isn't an "enforced standard" for dates in JSON, so I've tried to use one that is commonly used and also understood by Go's `json.Marshaler` and `json.Unmarshaler` to avoid that we have to write our own custom marshaler/unmarshaler.
+## API
 
-If you have a look at Go's `time/format` [code](http://golang.org/src/time/format.go) then you'll see on line 54:
+### Routes
 
-```
-54    RFC3339     = "2006-01-02T15:04:05Z07:00"
-```
+| Method | Path | Handler | Description |
+|--------|------|---------|-------------|
+| GET | `/healthcheck` | `handleHealthcheck` | Health check with app name and version |
+| GET | `/ready` | `handleReady` | Readiness probe (returns `{"status":"ok"}`) |
+| GET | `/users` | `handleListUsers` | List all users (paginated) |
+| GET | `/users/{id}` | `handleGetUser` | Get a single user |
+| POST | `/users` | `handleCreateUser` | Create a new user (validates input) |
+| PUT | `/users/{id}` | `handleUpdateUser` | Update an existing user (validates input) |
+| DELETE | `/users/{id}` | `handleDeleteUser` | Delete a user |
+| GET | `/users/{uid}/passports` | `handleListUserPassports` | List passports for a user |
+| GET | `/passports/{id}` | `handleGetPassport` | Get a single passport |
+| POST | `/users/{uid}/passports` | `handleCreatePassport` | Create a passport for a user (validates input) |
+| PUT | `/passports/{id}` | `handleUpdatePassport` | Update a passport (validates input) |
+| DELETE | `/passports/{id}` | `handleDeletePassport` | Delete a passport |
 
-That's the one we need. It has the following format:
+The full API is documented in [api/openapi.yaml](api/openapi.yaml) (OpenAPI 3.1).
 
-```
-year-month-day
-T (for time)
-hour:minutes:seconds
-Z (for time zone)
-offset from UTC
-```
+### Handlers
 
-## Defining the API
+Handlers are methods on the `Server` struct, giving them access to the stores, logger, and configuration:
 
-### API Routes
-
-Now that we have defined the data access layer, we need to translate that to a REST interface:
-
-* Retrieve a list of all users: `GET /users` -> The `GET` just refers to the HTTP action you would use. If you want to test this in the command line, then you can use curl: `curl -X GET http://localhost:3009/users`
-* Retrieve the details of an individual user: `GET /users/{uid}` -> {uid} allows us to create a variable, named uid, that we can use in our code. An example of this url would be `GET /users/1`
-* Create a new user: `POST /users`
-* Update a user: `PUT /users/{uid}`
-* Delete a user: `DELETE /users/{uid}`
-
-We now need to do the same for handling passports. Don't forget that a passport belongs to a user, so to retrieve a list of all passports for a given user, we would use `GET /users/{uid}/passports`.
-
-When we want to retrieve an specific passport, we don't need to prefix the route with `/users/{uid}` anymore because we know exactly which passport we want to retrieve. So, instead of `GET /users/{uid}/passports/{pid}`, we can just use `GET /passports/{pid}`.
-
-Once you have the API design sorted, it's just a matter of creating the code that gets called when a specific route is hit. We implement those with Handlers and those routes are defined in `routes.go`:
-
-```
-Route{"Healthcheck", "GET", "/healthcheck", HealthcheckHandler},
-//=== USERS ===
-Route{"ListUsers", "GET", "/users", ListUsersHandler},
-Route{"GetUser", "GET", "/users/{uid:[0-9]+}", GetUserHandler},
-Route{"CreateUser", "POST", "/users", CreateUserHandler},
-Route{"UpdateUser", "PUT", "/users/{uid:[0-9]+}", UpdateUserHandler},
-Route{"DeleteUser", "DELETE", "/users/{uid:[0-9]+}", DeleteUserHandler},
-```
-
-In order to make our code more robust, I've added pattern matching in the routes.  This `[0-9]+` pattern says that we only accept digits from 0 to 9 and we can have one or more digits. Everything else will most likely trigger an HTTP 404 Not Found status code being returned to the client.
-
-### API Handlers
-
-Most Go code that show HandleFunc examples, will show something slightly different, something more like this:
-
-```
-router.HandleFunc("/users", ListUsersHandler).Methods("GET")
-```
-
-So Go's HandleFunc function takes two arguments, one string that defines the route and a second argument of the type `http.HandleFunc(w http.ResponseWriter, r *http.Request)`. This works very well, but doesn't allow you to pass any extra data to your handlers. So for instance when you want to use the `unrolled/render` package, then you'd have to define in your `main.go` file a global variable like this: `var Render  *render.Render`, then initialise that in your `func main()` so that your handlers can access this global variable later on. Using global variables in Go is not a good practice (there are exceptions like certain database drivers, but that's a different discussion).
-
-So our initial handler function for returning a list of users was:
-
-```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request) {
-  // return user data
+```go
+func (s *Server) handleGetUser(w http.ResponseWriter, r *http.Request) {
+    uid, err := strconv.Atoi(r.PathValue("id"))
+    if err != nil {
+        respond(w, http.StatusBadRequest, status.Response{
+            Status:  strconv.Itoa(http.StatusBadRequest),
+            Message: "invalid user id",
+        })
+        return
+    }
+    user, err := s.userStore.GetUser(r.Context(), uid)
+    if err != nil {
+        s.logger.Error("user not found", "id", uid, "error", err)
+        respond(w, http.StatusNotFound, status.Response{
+            Status:  strconv.Itoa(http.StatusNotFound),
+            Message: "can't find user",
+        })
+        return
+    }
+    respond(w, http.StatusOK, user)
 }
 ```
 
-Where the `render` variable is a global variable. We'd prefer to pass the Render variable to that function so will rewrite it to:
+**Error handling pattern:** Check for errors immediately and return early. Don't leak internal error details to the client - log the real error server-side and send a sanitised `status.Response` to the client.
 
-```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, render Render) {
-  // return user data
+**JSON responses:** The `respond` helper sets `Content-Type: application/json` and encodes the response:
+
+```go
+func respond(w http.ResponseWriter, code int, data any) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(code)
+    if data != nil {
+        json.NewEncoder(w).Encode(data)
+    }
 }
 ```
 
-Perfect. Or, is it? What if we want to pass more variables to the handler function? Like Metrics? Or some environment variables? We'd continuously have to change ALL our handlers and the type signature will become quite long and hard to maintain. An alternative is to create a server or an environment struct and use that as a container for our variables we want to pass around the system.
+### Health check and readiness
 
-In our `internal/passport/appenv.go` we'll add:
+Two operational endpoints are provided:
 
-```
-// AppEnv holds application configuration data
-type AppEnv struct {
-	Render    *render.Render
-	Version   string
-	Env       string
-	Port      string
-	UserStore models.UserStorage
-}
-```
+- **`GET /healthcheck`** - returns the app name and version. Useful for monitoring tools and smoke tests in deployment pipelines.
+- **`GET /ready`** - returns `{"status":"ok"}` when the service is ready to accept traffic. Use this for Kubernetes readiness probes or load balancer health checks.
 
-And in our `func main()` function (in `cmd/api-service/main.go`) we initialise that struct:
+`GET /healthcheck`:
 
-```
-// initialse application context
-appEnv := passport.AppEnv{
-	Render:    render.New(),
-	Version:   version,
-	Env:       env,
-	Port:      port,
-	UserStore: userStore,
-}
-```
-
-Our handler looks like this now:
-
-```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-  // return user data
-}
-```
-
-The only problem is that this handler's type signature is not `http.ResponseWriter, *http.Request` but `http.ResponseWriter, *http.Request, appContext` so Go's HandleFunc function will complain about this. That's why we are introducing a helper function `MakeHandler` that takes our appContext struct and our handlers with the special type signature and converts it to `func(w http.ResponseWriter, r *http.Request)`:
-
-```
-func MakeHandler(appEnv AppEnv, fn func(http.ResponseWriter, *http.Request, AppEnv)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fn(w, r, appEnv)
-	}
-}
-```
-
-We can use this `MakeHandler` function now in our `handlers.go` when we initialise all the routes and the corresponding route handlers.
-
-In the previous examples we've ignored the implementation of the `ListUsersHandler`, but let's have a closer look at that now:
-
-```
-// ListUsersHandler returns a list of users
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	list, err := appEnv.UserStore.ListUsers()
-	if err != nil {
-		response := status.Response{
-			Status:  strconv.Itoa(http.StatusNotFound),
-			Message: "can't find any users",
-		}
-		log.WithFields(log.Fields{
-			"env":    appEnv.Env,
-			"status": http.StatusNotFound,
-		}).Error("Can't find any users")
-		appEnv.Render.JSON(w, http.StatusNotFound, response)
-		return
-	}
-	responseObject := make(map[string]interface{})
-	responseObject["users"] = list
-	responseObject["count"] = len(list)
-	appEnv.Render.JSON(w, http.StatusOK, responseObject)
-}
-```
-
-After we retrieve the data from our database, we check whether there are errors in the response. Rather than passing on the response to the user, we create a new custom `Status` struct with a new bespoke error message. Why? That's to avoid that we're leaking sensitive information from our systems to the user. It's the equivalent of sending back a Java stacktrace to a user. It can disclose information to people that are trying to hack into your system by exposing some of the weaknesses.
-
-So this code:
-
-```
-if err != nil {
-	response := status.Response{
-		Status:  strconv.Itoa(http.StatusNotFound),
-		Message: "can't find any users",
-	}
-	log.WithFields(log.Fields{
-		"env":    appEnv.Env,
-		"status": http.StatusNotFound,
-	}).Error("Can't find any users")
-	appEnv.Render.JSON(w, http.StatusNotFound, response)
-	return
-}
-```
-
-constructs a new `Status` response struct. Adds a 404 status so that computers can understand it, but also adds a human-readable message. We need to convert the `http.StatusNotFound` from an integer to a string using `strconv.Itoa` because the status codes in the `Status` object are strings. It then prints the error to the server log. Last but not least you send the `Status` struct as a JSON response back to the client and add the 404 Not Found response to the HTTP headers (using `http.StatusNotFound`).
-
-
-### Special Route: Health-check
-
-When you look at the overview of the handlers in `routes.go`, you will notice a special route:
-
-```
-Route{"Healthcheck", "GET", "/healthcheck", HealthcheckHandler},
-```
-
-Monitoring tools like [Sensu](https://sensuapp.org/) can call: `GET /healthcheck`. The health check route can return a 200 OK when the service is up and running and will also say what the application name is and the version number.
-
-```
-// HealthcheckHandler returns useful info about the app
-func HealthcheckHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	check := health.Check{
-		AppName: "go-rest-api-template",
-		Version: appEnv.Version,
-	}
-	appEnv.Render.JSON(w, http.StatusOK, check)
-}
-```
-
-This health check is very simple. It just checks whether the service is up and running, which can be useful in a build and deployment pipelines where you can check whether your newly deployed API is running (as part of a smoke test). More advanced health checks will also check whether it can reach the database, message queue or anything else you'd like to check. Trust me, your platform/infra colleagues will be very grateful for this. 
-
-### Returning Data
-
-Let's have a look at interacting with our data. Returning a list of users is quite easy, it's just showing the UserList:
-
-```
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	list, err := appEnv.UserStore.ListUsers()
-	if err != nil {
-		response := status.Response{
-			Status:  strconv.Itoa(http.StatusNotFound),
-			Message: "can't find any users",
-		}
-		log.WithFields(log.Fields{
-			"env":    appEnv.Env,
-			"status": http.StatusNotFound,
-		}).Error("Can't find any users")
-		appEnv.Render.JSON(w, http.StatusNotFound, response)
-		return
-	}
-	responseObject := make(map[string]interface{})
-	responseObject["users"] = list
-	responseObject["count"] = len(list)
-	appEnv.Render.JSON(w, http.StatusOK, responseObject)
-}
-```
-
-BTW, did you notice the `appEnv.render.JSON`? That's part of `"github.com/unrolled/render"` and allows us to render JSON output when we send data back to the client.
-
-So, this will return the following to the client:
-
-```
+```json
 {
-    "users": [
-        {
-            "dateOfBirth": "1992-01-01T00:00:00Z",
-            "firstName": "Jane",
-            "id": 1,
-            "lastName": "Doe",
-            "locationOfBirth": "Milton Keynes"
-        },
-        {
-            "dateOfBirth": "1985-12-31T00:00:00Z",
-            "firstName": "John",
-            "id": 0,
-            "lastName": "Doe",
-            "locationOfBirth": "London"
-        }
-    ]
+    "appName": "go-rest-api-template",
+    "version": "1.0.0"
 }
 ```
 
-It may surprise you that we are returning a JSON object that holds an array with multiple JSON objects, rather than an array with multiple JSON objects, as seen in the example below:
+`GET /ready`:
 
-```
+```json
 {
-    [
-        {
-            "dateOfBirth": "1992-01-01T00:00:00Z",
-            "firstName": "Jane",
-            "id": 1,
-            "lastName": "Doe",
-            "locationOfBirth": "Milton Keynes"
-        },
-        {
-            "dateOfBirth": "1985-12-31T00:00:00Z",
-            "firstName": "John",
-            "id": 0,
-            "lastName": "Doe",
-            "locationOfBirth": "London"
-        }
-    ]
+    "status": "ok"
 }
 ```
 
-They're both valid and there are lots of views and opinions (as always in developer / architecture communities!), but the reason why I prefer to wrap the array in a JSON object is because later on we can easily add more data without causing significant changes to the client. What if we want to add the concept of pagination to our API?
+### Example responses
 
-Example:
+**List users** (`GET /users`):
 
-```
-{
-    "offset": 0,
-    "limit":  25,
-    "users":  [
-        {
-            "dateOfBirth": "1992-01-01T00:00:00Z",
-            "firstName": "Jane",
-            "id": 1,
-            "lastName": "Doe",
-            "locationOfBirth": "Milton Keynes"
-        },
-        {
-            "dateOfBirth": "1985-12-31T00:00:00Z",
-            "firstName": "John",
-            "id": 0,
-            "lastName": "Doe",
-            "locationOfBirth": "London"
-        }
-    ]
-}
-```
-
-In this project, we're adding an extra field named `count` so we tell the client how many items they can expect
-
-```
+```json
 {
     "count": 2,
+    "total": 2,
+    "offset": 0,
+    "limit": 25,
     "users": [
         {
-            "dateOfBirth": "1985-12-31T00:00:00Z",
-            "firstName": "John",
             "id": 0,
+            "firstName": "John",
             "lastName": "Doe",
+            "dateOfBirth": "1985-12-31T00:00:00Z",
             "locationOfBirth": "London"
         },
         {
-            "dateOfBirth": "1992-01-01T00:00:00Z",
-            "firstName": "Jane",
             "id": 1,
+            "firstName": "Jane",
             "lastName": "Doe",
+            "dateOfBirth": "1992-01-01T00:00:00Z",
             "locationOfBirth": "Milton Keynes"
         }
     ]
 }
 ```
 
-It's important that we use the `interface{}` type in the map, rather than a specific `[]User` type. Otherwise, we won't be able to assign whatever data we want to the map:
+**List user passports** (`GET /users/0/passports`):
 
-```
-responseObject := make(map[string]interface{})
-responseObject["users"] = list
-responseObject["count"] = len(list)
-appEnv.Render.JSON(w, http.StatusOK, responseObject)
-```
-
-Another example is the retrieval of a specific object:
-
-```
-// GetUserHandler returns a user object
-func GetUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	vars := mux.Vars(req)
-	uid, _ := strconv.Atoi(vars["uid"])
-	user, err := appEnv.UserStore.GetUser(uid)
-	if err != nil {
-		response := status.Response{
-			Status:  strconv.Itoa(http.StatusNotFound),
-			Message: "can't find user",
-		}
-		log.WithFields(log.Fields{
-			"env":    appEnv.Env,
-			"status": http.StatusNotFound,
-		}).Error("Can't find user")
-		appEnv.Render.JSON(w, http.StatusNotFound, response)
-		return
-	}
-	appEnv.Render.JSON(w, http.StatusOK, user)
-}
-```
-
-This reads the uid (User ID) variable from the route (`/users/{uid}`), converts the string to an integer and then looks up the user in our UserList by ID. If the user does not exit, we return a 404 and an error object. If the user exists, we return a 200 and a JSON object with the user.
-
-Example:
-
-```
+```json
 {
-    "dateOfBirth": "1992-01-01T00:00:00Z",
-    "firstName": "Jane",
-    "id": 1,
-    "lastName": "Doe",
-    "locationOfBirth": "Milton Keynes"
+    "count": 1,
+    "passports": [
+        {
+            "id": "012345678",
+            "dateOfIssue": "2020-01-15T00:00:00Z",
+            "dateOfExpiry": "2030-01-15T00:00:00Z",
+            "authority": "HMPO",
+            "userId": 0
+        }
+    ]
 }
 ```
 
-We add the attributes of the user object to the root of the JSON response, rather than wrapping it up in an explicit JSON object. I can quite easily add extra data to the response, without breaking the existing data.
+**Validation error** (`POST /users` with missing required fields):
+
+```json
+{
+    "status": "422",
+    "message": "validation failed",
+    "errors": [
+        "firstName is required",
+        "lastName is required",
+        "dateOfBirth is required",
+        "locationOfBirth is required"
+    ]
+}
+```
+
+**Error response** (`GET /users/99`):
+
+```json
+{
+    "status": "404",
+    "message": "can't find user"
+}
+```
 
 ## Testing
 
-### Manually testing your API routes with curl commands
+### Running tests
 
-Let's start with some simple curl tests. Open your terminal and try the following curl commands.
+```bash
+# Run all tests
+make test
 
-Retrieve a list of users:
-
+# Or directly
+go test ./... -v -cover
 ```
-curl -X GET http://localhost:3001/users | python -mjson.tool
-```
 
-That should result in the following result:
+### Test structure
 
-```
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   246  100   246    0     0  14470      0 --:--:-- --:--:-- --:--:-- 15375
-{
-    "count": 2,
-    "users": [
-        {
-            "id": 0,
-            "firstName": "John",
-            "lastName": "Doe",
-            "dateOfBirth": "1985-12-31T00:00:00Z",
-            "locationOfBirth": "London"
-        },
-        {
-            "id": 1,
-            "firstName": "Jane",
-            "lastName": "Doe",
-            "dateOfBirth": "1992-01-01T00:00:00Z",
-            "locationOfBirth": "Milton Keynes"
-        }
-    ]
+Tests are organised into four categories across six test files:
+
+**Storage layer tests** (`db_user_test.go`, `db_passport_test.go`) - test CRUD operations on the in-memory stores:
+
+```go
+func TestGetUserSuccess(t *testing.T) {
+    srv := NewTestServer()
+    dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
+    u, err := srv.userStore.GetUser(context.Background(), 0)
+    require.NoError(t, err)
+    assert.Equal(t, 0, u.ID)
+    assert.Equal(t, "John", u.FirstName)
+    assert.Equal(t, dt, u.DateOfBirth)
 }
 ```
 
-The `| python -mjson.tool` at the end is for pretty printing (formatting). It essentially tells to pipe the output of the curl command to the SJON formatting tool. If we only typed `curl -X GET http://localhost:3009/users` then we'd have something like this:
+**Handler tests** (`handlers_test.go`) - test HTTP endpoints end-to-end using `httptest`:
 
-```
-{"users":[{"id":0,"firstName":"John","lastName":"Doe","dateOfBirth":"1985-12-31T00:00:00Z","locationOfBirth":"London"},{"id":1,"firstName":"Jane","lastName":"Doe","dateOfBirth":"1992-01-01T00:00:00Z","locationOfBirth":"Milton Keynes"}]}
-```
+```go
+func TestHealthcheckHandler(t *testing.T) {
+    handler := newTestHandler()
+    r := httptest.NewRequest(http.MethodGet, "/healthcheck", nil)
+    w := httptest.NewRecorder()
+    handler.ServeHTTP(w, r)
 
-So not that easy to read as the earlier nicely formatted example.
-
-Get a specific user:
-
-```
-curl -X GET http://localhost:3001/users/0 | python -mjson.tool
-```
-
-Results in:
-
-```
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   104  100   104    0     0   6625      0 --:--:-- --:--:-- --:--:--  6933
-{
-    "dateOfBirth": "1992-01-01T00:00:00Z",
-    "firstName": "Jane",
-    "id": 1,
-    "lastName": "Doe",
-    "locationOfBirth": "Milton Keynes"
+    assert.Equal(t, http.StatusOK, w.Code)
+    assert.Equal(t, "GNU Terry Pratchett", w.Header().Get("X-Clacks-Overhead"))
+    assert.NotEmpty(t, w.Header().Get("X-Request-ID"))
 }
 ```
 
-### Testing the Database
+**Middleware tests** (`middleware_test.go`) - test request ID generation, CORS headers, and rate limiting behaviour.
 
-There are lots of opinions on testing, how much you should be testing, which layers of your applications, etc. When I'm working with API services, I tend to focus on two types of tests to start with: testing the data access layer and testing the actual HTTP service.
+**Server and utility tests** (`server_test.go`, `pkg/version/parser_test.go`) - test server configuration and the VERSION file parser.
 
-In this example, we want to test the List, Add, Get, Update and Delete operations on our in-memory document database. The data access code is stored in the `internal/passport/db_user.go` file, so following Go convention we will create a new file called `internal/passport/db_user_test.go`.
+The `NewTestServer()` helper creates a fully configured server with mock data, making tests self-contained. Handler tests go through the full middleware chain (including request ID, logging, security headers) for realistic integration testing.
 
-Before we can run the tests in `db_user_test.go` we need to make sure that we have a valid application context with a mock database initialised. I've added a helper function in `internal/passport/appenv.go` named `CreateContextForTestSetup` and that takes care of both the database setup as well as the AppEnv.
+**Current coverage:** 72 tests, 93.5% coverage on `internal/passport`, 90.9% on `pkg/version`.
 
-```
-// CreateContextForTestSetup initialises an application context struct
-// for testing purposes
-func CreateContextForTestSetup() AppEnv {
-	testVersion := "0.0.0"
-	appEnv := AppEnv{
-		Render:    render.New(),
-		Version:   testVersion,
-		Env:       "LOCAL",
-		Port:      "3001",
-		UserStore: NewUserService(CreateMockDataSet()),
-	}
-	return appEnv
-}
-```
+### Manual testing with curl
 
-We then have a helper function in `internal/passport/db_user.go` that sets up a mock data set:
+```bash
+# Health check
+curl -s http://localhost:3001/healthcheck | jq
 
-```
-// CreateMockDataSet initialises a database for test purposes
-func CreateMockDataSet() map[int]models.User {
-	list := make(map[int]models.User)
-	dt, _ := time.Parse(time.RFC3339, "1985-12-31T00:00:00Z")
-	list[0] = models.User{
-		ID:              0,
-		FirstName:       "John",
-		LastName:        "Doe",
-		DateOfBirth:     dt,
-		LocationOfBirth: "London",
-	}
-	dt, _ = time.Parse(time.RFC3339, "1992-01-01T00:00:00Z")
-	list[1] = models.User{
-		ID: 1, FirstName: "Jane",
-		LastName:        "Doe",
-		DateOfBirth:     dt,
-		LocationOfBirth: "Milton Keynes",
-	}
-	return list
-}
-```
+# Readiness
+curl -s http://localhost:3001/ready | jq
 
-Let's have a look at the easiest test where we list the elements in our database:
+# List all users
+curl -s http://localhost:3001/users | jq
 
-```
-func TestListUsers(t *testing.T) {
-	appEnv := CreateContextForTestSetup()
-	list, _ := appEnv.UserStore.ListUsers()
-	count := len(list)
-	assert.Equal(t, 2, count, "There should be 2 items in the list.")
-}
+# List users with pagination
+curl -s "http://localhost:3001/users?offset=0&limit=1" | jq
+
+# Get a specific user
+curl -s http://localhost:3001/users/0 | jq
+
+# Create a user
+curl -s -X POST http://localhost:3001/users \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"Apple","lastName":"Jack","dateOfBirth":"1972-03-07T00:00:00Z","locationOfBirth":"Cambridge"}' | jq
+
+# Update a user
+curl -s -X PUT http://localhost:3001/users/0 \
+  -H "Content-Type: application/json" \
+  -d '{"id":0,"firstName":"John","lastName":"Updated","dateOfBirth":"1985-12-31T00:00:00Z","locationOfBirth":"Manchester"}' | jq
+
+# Delete a user
+curl -s -X DELETE http://localhost:3001/users/1 -w "\n%{http_code}\n"
+
+# List passports for a user
+curl -s http://localhost:3001/users/0/passports | jq
+
+# Get a passport
+curl -s http://localhost:3001/passports/012345678 | jq
+
+# Create a passport
+curl -s -X POST http://localhost:3001/users/0/passports \
+  -H "Content-Type: application/json" \
+  -d '{"id":"111222333","dateOfIssue":"2024-01-01T00:00:00Z","dateOfExpiry":"2034-01-01T00:00:00Z","authority":"HMPO"}' | jq
+
+# Delete a passport
+curl -s -X DELETE http://localhost:3001/passports/012345678 -w "\n%{http_code}\n"
 ```
 
-This first calls `CreateContextForTestSetup()` the create the application context and mock database, then the `appEnv.UserStore.ListUsers()` function, which returns a list of users. We then count the number of elements and last but not least we then check whether that count equals 2.
+## CI/CD
 
-In standard Go, you would actually write something like:
+### GitHub Actions
 
-```
-if 2 != count {
-  t.Errorf("Expected 2 elements in the list, instead got %v", count)
-}
-```
+The project includes a GitHub Actions workflow (`.github/workflows/ci.yml`) that runs on every push and pull request to `master`:
 
-However there is a neat Go package called [testify](https://github.com/stretchr/testify) that gives you assertions like Java and that's why we can write cleaner test code like:
+- **test** job: runs `go test ./... -v -cover` and `go vet ./...`
+- **lint** job: runs [golangci-lint](https://golangci-lint.run/) with the configuration in `.golangci.yml`
 
-```
-assert.Equal(t, 2, count, "There should be 2 items in the list.")
-```
+Enabled linters: `errcheck`, `govet`, `staticcheck`, `unused`, `gosimple`, `ineffassign`.
 
-The `TestList` is only testing for a positive result, but we really need to test for failures as well.
+## Production deployment
 
-This is our test code for the Delete functionality:
+### Binary
 
-```
-func TestDeleteUserSuccess(t *testing.T) {
-	appEnv := CreateContextForTestSetup()
-	err := appEnv.UserStore.DeleteUser(1)
-	assert.Nil(t, err)
-}
+Copy the binary and VERSION file to your server:
 
-func TestDeleteUserFail(t *testing.T) {
-	appEnv := CreateContextForTestSetup()
-	err := appEnv.UserStore.DeleteUser(10)
-	assert.NotNil(t, err)
-}
+```bash
+# Build
+make build
+
+# Deploy
+scp bin/api-service cmd/api-service/VERSION yourserver:/opt/go-rest-api-template/
 ```
 
-The first test function `TestDeleteSuccess` tries to delete a known existing user, with id 1. We're expecting that the error object is Nil. The second test function `TestDeleteFail` tries to look up a non-existing user with id 10, and as expected, this should return an actual Error object.
+Run as a systemd service:
 
-How do we run the tests?
+```ini
+[Unit]
+Description=Go REST API Template
+After=network.target
 
-Simple. Open your terminal, go to your project root:
+[Service]
+Type=simple
+User=appuser
+Environment=ENV=PRD
+Environment=PORT=8080
+Environment=VERSION=/opt/go-rest-api-template/VERSION
+ExecStart=/opt/go-rest-api-template/api-service
+Restart=on-failure
+RestartSec=5
 
-```
-go test ./...
-```
-
-We need to add `./...` so that it also runs all the tests in the subpackages. If you want it more verbose, then:
-
-```
-go test ./... -v
-```
-
-Which will give you:
-
-```
-?   	github.com/leeprovoost/go-rest-api-template/cmd/api-service	[no test files]
-=== RUN   TestListUsers
---- PASS: TestListUsers (0.00s)
-=== RUN   TestGetUserSuccess
---- PASS: TestGetUserSuccess (0.00s)
-=== RUN   TestGetUserFail
---- PASS: TestGetUserFail (0.00s)
-=== RUN   TestAddUser
---- PASS: TestAddUser (0.00s)
-=== RUN   TestUpdateUserSuccess
---- PASS: TestUpdateUserSuccess (0.00s)
-=== RUN   TestUpdateUserFail
---- PASS: TestUpdateUserFail (0.00s)
-=== RUN   TestDeleteUserSuccess
---- PASS: TestDeleteUserSuccess (0.00s)
-=== RUN   TestDeleteUserFail
---- PASS: TestDeleteUserFail (0.00s)
-=== RUN   TestHealthcheckHandler
---- PASS: TestHealthcheckHandler (0.00s)
-=== RUN   TestListUsersHandler
---- PASS: TestListUsersHandler (0.00s)
-PASS
-ok  	github.com/leeprovoost/go-rest-api-template/internal/passport	0.222s
-?   	github.com/leeprovoost/go-rest-api-template/internal/passport/models	[no test files]
-?   	github.com/leeprovoost/go-rest-api-template/pkg/health	[no test files]
-?   	github.com/leeprovoost/go-rest-api-template/pkg/status	[no test files]
-?   	github.com/leeprovoost/go-rest-api-template/pkg/version	[no test files]
+[Install]
+WantedBy=multi-user.target
 ```
 
-Do you want to get some more info on your code coverage? No worries, Go has you covered (no pun intended):
+The server handles SIGTERM for graceful shutdown, so systemd's `stop` command will allow in-flight requests to complete.
 
-```
-go test ./... -cover
-```
+### Docker
 
-This will give you:
-
-```
-?   	github.com/leeprovoost/go-rest-api-template/cmd/api-service	[no test files]
-ok  	github.com/leeprovoost/go-rest-api-template/internal/passport	0.165s	coverage: 38.3% of statements
-?   	github.com/leeprovoost/go-rest-api-template/internal/passport/models	[no test files]
-?   	github.com/leeprovoost/go-rest-api-template/pkg/health	[no test files]
-?   	github.com/leeprovoost/go-rest-api-template/pkg/status	[no test files]
-?   	github.com/leeprovoost/go-rest-api-template/pkg/version	[no test files]
+```bash
+docker build -t go-rest-api-template .
+docker run -p 8080:8080 \
+  -e ENV=PRD \
+  -e PORT=8080 \
+  -e CORS_ORIGINS="https://myapp.example.com" \
+  -e RATE_LIMIT=10 \
+  -e RATE_BURST=20 \
+  go-rest-api-template
 ```
 
-## Vendoring of dependencies
+## What changed from the previous version?
 
-Before we wrap up, I'd like to briefly talk about vendoring. Most software relies on some third-party (open source) software. In the Node.js world they are called npm packages, in the Java world they are Maven packages and in Go they are just called a Go package.
+The entire codebase was refactored and modernised using [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Anthropic's CLI tool for Claude. The refactoring covered upgrading all dependencies, rewriting every source file to follow current idiomatic Go, expanding the test suite, and rewriting this README.
 
-What you commonly see in the Node.js world is that people push their own code to a server and then run `npm install` on that server. There have been a few instances where some npm packages disappeared and that caused a lot of problems for people who all of a sudden couldn't install their software anymore.
+### Summary of changes
 
-One way to solve it is to simply store a copy of the third-party dependency into your own project and treat it as you would treat the code you've written yourself. They're part of the git project and checked in together. Since Go 1.5, the Go world has agreed to use the `/vendor` folder in your project for this, as well as introduced a common go modules approach. 
+**Go version and dependencies:**
+- Upgraded from Go 1.15 to Go 1.23+
+- Removed 6 external dependencies (gorilla/mux, urfave/negroni, unrolled/render, unrolled/secure, sirupsen/logrus, palantir/stacktrace)
+- Only 2 dependencies remain: stretchr/testify (testing) and golang.org/x/time (rate limiting)
+- Removed the `/vendor` directory (modern Go uses the module cache)
 
-If you want to add a package to your `/vendor` folder, then just run `go get your/desired/package`
+**Code modernisation:**
+- Replaced gorilla/mux with `net/http.ServeMux` (Go 1.22+ supports `"GET /users/{id}"` routing)
+- Replaced logrus with `log/slog` (structured logging in the stdlib since Go 1.21)
+- Replaced unrolled/render with `encoding/json`
+- Replaced palantir/stacktrace with `fmt.Errorf` and `%w` error wrapping
+- Replaced `ioutil.ReadFile` with `os.ReadFile` (ioutil deprecated since Go 1.16)
+- Replaced the AppEnv struct + MakeHandler closure with a Server struct and handler methods (cleaner dependency injection)
+- Replaced urfave/negroni with stdlib middleware using the standard `http.Handler` wrapping pattern
+- Replaced unrolled/secure with a simple custom middleware for security headers
+- Added `context.Context` to all storage interface methods
 
-This project has already all its dependencies vendored into the `/vendor` folder, so no need to do it again.
+**New features:**
+- Full passport CRUD endpoints (previously returned 501 Not Implemented)
+- `PassportStorage` interface with in-memory implementation
+- Input validation returning 422 with field-level errors
+- Pagination on list endpoints (offset/limit)
+- Request ID middleware (generates UUID via `crypto/rand`)
+- CORS middleware (configurable allowed origins)
+- Per-IP rate limiting middleware (token bucket via `golang.org/x/time/rate`)
+- `/ready` endpoint for Kubernetes readiness probes
+- `ServerOptions` configuration pattern
+- Graceful shutdown with SIGINT/SIGTERM signal handling
+- HTTP server timeouts (read, write, idle) for production safety
+- Request logging middleware with status code, duration, and request ID
 
-When you want to upgrade a module:
+**Infrastructure:**
+- Root Makefile with run, build, test, lint, docker, clean targets
+- Multi-stage Dockerfile (alpine-based, ~10MB image)
+- GitHub Actions CI pipeline (test + lint on push/PR)
+- golangci-lint configuration
+- OpenAPI 3.1 specification
 
-```
-go get -u github.com/unnrolled/render
-go mod tidy
-go mod vendor
-```
+**Testing:**
+- 72 tests, 93.5% coverage on `internal/passport`, 90.9% on `pkg/version`
+- Handler tests cover: healthcheck, readiness, user CRUD, pagination, validation errors, passport CRUD
+- Tests go through the full middleware chain for realistic integration testing
+- Added `require.NoError` for clearer test failure messages
 
-Side note: if you are upgrading from a pre-go mod project (in my case govendor) then that's quite easy. Enter the following commands in the root of your project step by step:
+### Migration table
 
-```
-go mod init github.com/leeprovoost/go-rest-api-template
-go mod tidy
-rm ./vendor/vendor.json
-go mod vendor
-```
-
-This is documented [here](https://blog.golang.org/migrating-to-go-modules) and the last `go mod vendor` is mentioned [here](https://github.com/golang/go/issues/37734#issuecomment-596695647).
-
-## Starting the app on a production server
-
-This is how you could run your app on a server:
-
-First, you copy the binary and the `VERSION` file into a directory, e.g. `/opt/go-rest-api-template`.
-
-Then start the app as a service. Store the app's PID in a text file so we can kill it later.
-
-```
-#!/bin/bash
-export ENV=DEV
-export PORT=8080
-export VERSION=/opt/go-rest-api-template/VERSION
-sudo nohup /opt/go-rest-api-template/api-service >> /var/log/go-rest-api-template.log 2>&1&
-echo $! > /opt/go-rest-api-template/api-service-pid.txt
-```
-
-When you want to kill your app later during a redeployment or a server shutdown, then you can kill the app by looking up the previously stored PID:
-
-```
-#!/bin/bash
-if [ -f /opt/go-rest-api-template/api-service-pid.txt ]; then
-  kill -9 `cat /opt/go-rest-api-template/api-service-pid.txt`
-  rm -f /opt/go-rest-api-template/api-service-pid.txt
-fi
-```
+| Before | After | Why |
+|--------|-------|-----|
+| Go 1.15 | Go 1.23+ | Access to modern stdlib features |
+| gorilla/mux | `net/http.ServeMux` | Go 1.22+ has method routing and path params |
+| urfave/negroni | stdlib middleware | Standard `http.Handler` wrapping is simpler |
+| unrolled/render | `encoding/json` | No need for external JSON rendering |
+| sirupsen/logrus | `log/slog` | Structured logging in the stdlib since Go 1.21 |
+| palantir/stacktrace | `fmt.Errorf` with `%w` | Standard error wrapping is idiomatic |
+| unrolled/secure | Custom middleware | Simple headers don't need a library |
+| Vendor directory | Go module cache | Modern Go doesn't need vendoring |
+| `ioutil.ReadFile` | `os.ReadFile` | `ioutil` deprecated since Go 1.16 |
+| AppEnv + MakeHandler | Server struct with methods | Cleaner dependency injection pattern |
+| No graceful shutdown | Signal handling + `srv.Shutdown` | Production-ready server lifecycle |
+| Passport stubs (501) | Full passport CRUD | Complete domain model implementation |
+| No validation | 422 with field-level errors | Proper input validation |
+| No pagination | offset/limit pagination | Scalable list endpoints |
+| No CI | GitHub Actions | Automated testing and linting |
+| No Dockerfile | Multi-stage Dockerfile | Container-ready deployment |
 
 ## Useful references
 
-### General
+### Go standard library
+
+* [net/http ServeMux routing](https://pkg.go.dev/net/http#ServeMux) - Go 1.22+ enhanced routing
+* [log/slog](https://pkg.go.dev/log/slog) - Structured logging
+* [encoding/json](https://pkg.go.dev/encoding/json) - JSON encoding/decoding
+* [net/http/httptest](https://pkg.go.dev/net/http/httptest) - HTTP testing utilities
+
+### General Go
 
 * [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
-* [Structuring applications in Go](https://medium.com/@benbjohnson/structuring-applications-in-go-3b04be4ff091)
-* [Writing modular GO REST APIs](http://thenewstack.io/make-a-restful-json-api-go/)
+* [Effective Go](https://go.dev/doc/effective_go)
+* [Standard Go Project Layout](https://github.com/golang-standards/project-layout)
 
-### HTTP, REST and JSON
+### HTTP and REST
 
-* [Structs and JSON formatting](http://stackoverflow.com/questions/21825322/why-golang-cannot-generate-json-from-struct-with-front-lowercase-character)
-* [JSON and Go](http://blog.golang.org/json-and-go)
-* [Design beautiful REST + JSON APIs](http://www.slideshare.net/stormpath/rest-jsonapis)
-* [Use render for generating JSON](https://github.com/unrolled/render/issues/7) for use of global variable
-* [Read JSON POST body](http://stackoverflow.com/questions/15672556/handling-json-post-request-in-go)
-* [How to pass a parameter to a Http handler function](https://groups.google.com/forum/#!topic/golang-nuts/SGn1gd290zI)
-* Go and datetime parsing/formatting: [ISO 8601, the International Standard for the representation of dates and times](http://www.w3.org/TR/NOTE-datetime), [Go by Example: Time Formatting / Parsing](https://gobyexample.com/time-formatting-parsing), [JSON datetime formatting](http://stackoverflow.com/a/15952652), [src/time/format.go](http://golang.org/src/time/format.go)
+* [JSON and Go](https://go.dev/blog/json)
+* [Go by Example: HTTP Server](https://gobyexample.com/http-servers)
 
 ### Testing
 
-* [Testing techniques](https://talks.golang.org/2014/testing.slide#1)
-* [Testing Go HTTP API](http://dennissuratna.com/testing-in-go/)
-* [Great overview of HTTP response codes](http://stackoverflow.com/a/2342631)
+* [Testing in Go](https://go.dev/doc/tutorial/add-a-test)
+* [testify](https://github.com/stretchr/testify) - Test assertions
 
-### Go core language concepts
+## License
 
-* [Understanding method receivers and pointers](http://nathanleclaire.com/blog/2014/08/09/dont-get-bitten-by-pointer-vs-non-pointer-method-receivers-in-golang/)
-* [HTTP Closures gist](https://gist.github.com/tsenart/5fc18c659814c078378d)
-* [Introducing Function Literals and Closures](https://golang.org/doc/articles/wiki/)
-* [Custom Handlers and Avoiding Globals in Go Web Applications](https://elithrar.github.io/article/custom-handlers-avoiding-globals/)
+MIT

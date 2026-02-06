@@ -1,67 +1,63 @@
 package main
 
 import (
+	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 
 	passport "github.com/leeprovoost/go-rest-api-template/internal/passport"
 	vparse "github.com/leeprovoost/go-rest-api-template/pkg/version"
-	log "github.com/sirupsen/logrus"
-	"github.com/unrolled/render"
 )
 
-func init() {
-	if "LOCAL" == strings.ToUpper(os.Getenv("ENV")) {
-		log.SetFormatter(&log.TextFormatter{})
-		log.SetLevel(log.DebugLevel)
-	} else {
-		log.SetFormatter(&log.JSONFormatter{})
-		log.SetLevel(log.InfoLevel)
-	}
-}
-
 func main() {
-	// ===========================================================================
-	// Load environment variables
-	// ===========================================================================
-	var (
-		env     = strings.ToUpper(os.Getenv("ENV")) // LOCAL, DEV, STG, PRD
-		port    = os.Getenv("PORT")                 // server traffic on this port
-		version = os.Getenv("VERSION")              // path to VERSION file
-	)
-	// ===========================================================================
-	// Read version information
-	// ===========================================================================
-	version, err := vparse.ParseVersionFile(version)
+	env := strings.ToUpper(os.Getenv("ENV"))
+	port := os.Getenv("PORT")
+	versionPath := os.Getenv("VERSION")
+	corsOrigins := os.Getenv("CORS_ORIGINS")
+	rateLimit, _ := strconv.ParseFloat(os.Getenv("RATE_LIMIT"), 64)
+	rateBurst, _ := strconv.Atoi(os.Getenv("RATE_BURST"))
+
+	// Configure structured logging
+	var logger *slog.Logger
+	if env == "LOCAL" {
+		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		}))
+	} else {
+		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		}))
+	}
+	slog.SetDefault(logger)
+
+	// Read version
+	version, err := vparse.ParseVersionFile(versionPath)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"env":  env,
-			"err":  err,
-			"path": os.Getenv("VERSION"),
-		}).Fatal("Can't find a VERSION file")
-		return
+		logger.Error("can't find VERSION file",
+			"env", env,
+			"path", versionPath,
+			"error", err,
+		)
+		os.Exit(1)
 	}
-	log.WithFields(log.Fields{
-		"env":     env,
-		"path":    os.Getenv("VERSION"),
-		"version": version,
-	}).Info("Loaded VERSION file")
-	// ===========================================================================
+	logger.Info("loaded VERSION file", "env", env, "version", version)
+
 	// Initialise data storage
-	// ===========================================================================
 	userStore := passport.NewUserService(passport.CreateMockDataSet())
-	// ===========================================================================
-	// Initialise application context
-	// ===========================================================================
-	appEnv := passport.AppEnv{
-		Render:    render.New(),
-		Version:   version,
-		Env:       env,
-		Port:      port,
-		UserStore: userStore,
+	passportStore := passport.NewPassportService(passport.CreateMockPassportDataSet())
+
+	// Create and run server
+	srv := passport.NewServer(userStore, passportStore, logger, passport.ServerOptions{
+		Version:     version,
+		Env:         env,
+		Port:        port,
+		CORSOrigins: corsOrigins,
+		RateLimit:   rateLimit,
+		RateBurst:   rateBurst,
+	})
+	if err := srv.Run(); err != nil {
+		logger.Error("server error", "error", err)
+		os.Exit(1)
 	}
-	// ===========================================================================
-	// Start application
-	// ===========================================================================
-	passport.StartServer(appEnv)
 }

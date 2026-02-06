@@ -1,0 +1,420 @@
+openapi: "3.1.0"
+info:
+  title: Go REST API Template
+  description: A template REST API for managing users and passports.
+  version: "1.0.0"
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3001
+    description: Local development
+
+paths:
+  /healthcheck:
+    get:
+      summary: Health check
+      description: Returns the application name and version.
+      operationId: healthcheck
+      tags: [ops]
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthCheck"
+
+  /ready:
+    get:
+      summary: Readiness check
+      description: Returns ok when the service is ready to accept traffic.
+      operationId: ready
+      tags: [ops]
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /users:
+    get:
+      summary: List users
+      description: Returns a paginated list of all users.
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: A paginated list of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+                  count:
+                    type: integer
+                    description: Number of users in the current page
+                  total:
+                    type: integer
+                    description: Total number of users
+                  offset:
+                    type: integer
+                  limit:
+                    type: integer
+    post:
+      summary: Create a user
+      operationId: createUser
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Malformed request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get a user
+      operationId: getUser
+      tags: [users]
+      responses:
+        "200":
+          description: A single user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: Update a user
+      operationId: updateUser
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Malformed request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+    delete:
+      summary: Delete a user
+      operationId: deleteUser
+      tags: [users]
+      responses:
+        "204":
+          description: User deleted
+
+  /users/{uid}/passports:
+    parameters:
+      - name: uid
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: List passports for a user
+      operationId: listUserPassports
+      tags: [passports]
+      responses:
+        "200":
+          description: Passports belonging to the user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  passports:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Passport"
+                  count:
+                    type: integer
+        "400":
+          description: Invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      summary: Create a passport for a user
+      operationId: createPassport
+      tags: [passports]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PassportInput"
+      responses:
+        "201":
+          description: Passport created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passport"
+        "400":
+          description: Malformed request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Passport ID already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+
+  /passports/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get a passport
+      operationId: getPassport
+      tags: [passports]
+      responses:
+        "200":
+          description: A single passport
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passport"
+        "404":
+          description: Passport not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: Update a passport
+      operationId: updatePassport
+      tags: [passports]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PassportInput"
+      responses:
+        "200":
+          description: Passport updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passport"
+        "400":
+          description: Malformed request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+    delete:
+      summary: Delete a passport
+      operationId: deletePassport
+      tags: [passports]
+      responses:
+        "204":
+          description: Passport deleted
+
+components:
+  schemas:
+    HealthCheck:
+      type: object
+      properties:
+        appName:
+          type: string
+          example: go-rest-api-template
+        version:
+          type: string
+          example: "1.0.0"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 0
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        dateOfBirth:
+          type: string
+          format: date-time
+          example: "1985-12-31T00:00:00Z"
+        locationOfBirth:
+          type: string
+          example: London
+
+    UserInput:
+      type: object
+      required: [firstName, lastName, dateOfBirth, locationOfBirth]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date-time
+        locationOfBirth:
+          type: string
+
+    Passport:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "012345678"
+        dateOfIssue:
+          type: string
+          format: date-time
+          example: "2020-01-15T00:00:00Z"
+        dateOfExpiry:
+          type: string
+          format: date-time
+          example: "2030-01-15T00:00:00Z"
+        authority:
+          type: string
+          example: HMPO
+        userId:
+          type: integer
+          example: 0
+
+    PassportInput:
+      type: object
+      required: [id, dateOfIssue, dateOfExpiry, authority]
+      properties:
+        id:
+          type: string
+        dateOfIssue:
+          type: string
+          format: date-time
+        dateOfExpiry:
+          type: string
+          format: date-time
+        authority:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "404"
+        message:
+          type: string
+          example: "can't find user"
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "422"
+        message:
+          type: string
+          example: validation failed
+        errors:
+          type: array
+          items:
+            type: string
+          example:
+            - "firstName is required"
+            - "lastName is required"

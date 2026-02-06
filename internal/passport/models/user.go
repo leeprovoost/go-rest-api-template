@@ -1,11 +1,11 @@
 package models
 
 import (
-	"fmt"
+	"context"
 	"time"
 )
 
-// User holds personal user information
+// User holds personal user information.
 type User struct {
 	ID              int       `json:"id"`
 	FirstName       string    `json:"firstName"`
@@ -14,31 +14,11 @@ type User struct {
 	LocationOfBirth string    `json:"locationOfBirth"`
 }
 
-// UserStorage defines all the database operations
+// UserStorage defines all the database operations for users.
 type UserStorage interface {
-	ListUsers() ([]User, error)
-	GetUser(i int) (User, error)
-	AddUser(u User) (User, error)
-	UpdateUser(u User) (User, error)
-	DeleteUser(i int) error
-}
-
-// GoString implements the GoStringer interface so we can display the full struct during debugging
-// usage: fmt.Printf("%#v", i)
-// ensure that i is a pointer, so might need to do &i in some cases
-func (u *User) GoString() string {
-	return fmt.Sprintf(`
-{
-	ID: %d,
-	FirstName: %s,
-	LastName: %s,
-	DateOfBirth: %s,
-	LocationOfBirth: %s,
-}`,
-		u.ID,
-		u.FirstName,
-		u.LastName,
-		u.DateOfBirth,
-		u.LocationOfBirth,
-	)
+	ListUsers(ctx context.Context) ([]User, error)
+	GetUser(ctx context.Context, id int) (User, error)
+	AddUser(ctx context.Context, u User) (User, error)
+	UpdateUser(ctx context.Context, u User) (User, error)
+	DeleteUser(ctx context.Context, id int) error
 }

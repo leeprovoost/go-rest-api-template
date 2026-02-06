@@ -1,9 +1,15 @@
-.PHONY: fresh
+.PHONY: run build test
 
 SHELL := /bin/bash
 
-fresh:
+run:
 	ENV=LOCAL \
 	PORT=3001 \
 	VERSION=VERSION \
-	fresh
+	go run .
+
+build:
+	go build -o api-service .
+
+test:
+	go test ../../...

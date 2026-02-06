@@ -5,171 +5,331 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
-	models "github.com/leeprovoost/go-rest-api-template/internal/passport/models"
+	"github.com/leeprovoost/go-rest-api-template/internal/passport/models"
 	"github.com/leeprovoost/go-rest-api-template/pkg/health"
 	"github.com/leeprovoost/go-rest-api-template/pkg/status"
-	log "github.com/sirupsen/logrus"
 )
 
-// HandlerFunc is a custom implementation of the http.HandlerFunc
-type HandlerFunc func(http.ResponseWriter, *http.Request, AppEnv)
-
-// MakeHandler allows us to pass an environment struct to our handlers, without resorting to global
-// variables. It accepts an environment (Env) struct and our own handler function. It returns
-// a function of the type http.HandlerFunc so can be passed on to the HandlerFunc in main.go.
-func MakeHandler(appEnv AppEnv, fn func(http.ResponseWriter, *http.Request, AppEnv)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Terry Pratchett tribute
-		w.Header().Set("X-Clacks-Overhead", "GNU Terry Pratchett")
-		// return function with AppEnv
-		fn(w, r, appEnv)
+// respond writes a JSON response with the given status code.
+func respond(w http.ResponseWriter, code int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	if data != nil {
+		json.NewEncoder(w).Encode(data)
 	}
 }
 
-// HealthcheckHandler returns useful info about the app
-func HealthcheckHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	check := health.Check{
+// --- Health & readiness ---
+
+func (s *Server) handleHealthcheck(w http.ResponseWriter, r *http.Request) {
+	respond(w, http.StatusOK, health.Check{
 		AppName: "go-rest-api-template",
-		Version: appEnv.Version,
-	}
-	appEnv.Render.JSON(w, http.StatusOK, check)
+		Version: s.version,
+	})
 }
 
-// ListUsersHandler returns a list of users
-func ListUsersHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	list, err := appEnv.UserStore.ListUsers()
+func (s *Server) handleReady(w http.ResponseWriter, _ *http.Request) {
+	respond(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// --- Users ---
+
+func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request) {
+	list, err := s.userStore.ListUsers(r.Context())
 	if err != nil {
-		response := status.Response{
-			Status:  strconv.Itoa(http.StatusNotFound),
-			Message: "can't find any users",
-		}
-		log.WithFields(log.Fields{
-			"env":    appEnv.Env,
-			"status": http.StatusNotFound,
-		}).Error("Can't find any users")
-		appEnv.Render.JSON(w, http.StatusNotFound, response)
+		s.logger.Error("failed to list users", "error", err)
+		respond(w, http.StatusInternalServerError, status.Response{
+			Status:  strconv.Itoa(http.StatusInternalServerError),
+			Message: "failed to list users",
+		})
 		return
 	}
-	responseObject := make(map[string]interface{})
-	responseObject["users"] = list
-	responseObject["count"] = len(list)
-	appEnv.Render.JSON(w, http.StatusOK, responseObject)
+
+	// Pagination
+	total := len(list)
+	offset, limit := parsePagination(r)
+	if offset > len(list) {
+		list = []models.User{}
+	} else {
+		end := offset + limit
+		if end > len(list) {
+			end = len(list)
+		}
+		list = list[offset:end]
+	}
+
+	respond(w, http.StatusOK, map[string]any{
+		"users":  list,
+		"count":  len(list),
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+	})
 }
 
-// GetUserHandler returns a user object
-func GetUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	vars := mux.Vars(req)
-	uid, _ := strconv.Atoi(vars["uid"])
-	user, err := appEnv.UserStore.GetUser(uid)
+func (s *Server) handleGetUser(w http.ResponseWriter, r *http.Request) {
+	uid, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		response := status.Response{
+		respond(w, http.StatusBadRequest, status.Response{
+			Status:  strconv.Itoa(http.StatusBadRequest),
+			Message: "invalid user id",
+		})
+		return
+	}
+	user, err := s.userStore.GetUser(r.Context(), uid)
+	if err != nil {
+		s.logger.Error("user not found", "id", uid, "error", err)
+		respond(w, http.StatusNotFound, status.Response{
 			Status:  strconv.Itoa(http.StatusNotFound),
 			Message: "can't find user",
-		}
-		log.WithFields(log.Fields{
-			"env":    appEnv.Env,
-			"status": http.StatusNotFound,
-		}).Error("Can't find user")
-		appEnv.Render.JSON(w, http.StatusNotFound, response)
+		})
 		return
 	}
-	appEnv.Render.JSON(w, http.StatusOK, user)
+	respond(w, http.StatusOK, user)
 }
 
-// CreateUserHandler adds a new user
-func CreateUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	decoder := json.NewDecoder(req.Body)
+func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	var u models.User
-	err := decoder.Decode(&u)
-	if err != nil {
-		response := status.Response{
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		s.logger.Error("malformed user object", "error", err)
+		respond(w, http.StatusBadRequest, status.Response{
 			Status:  strconv.Itoa(http.StatusBadRequest),
 			Message: "malformed user object",
-		}
-		log.WithFields(log.Fields{
-			"env":    appEnv.Env,
-			"status": http.StatusBadRequest,
-		}).Error("malformed user object")
-		appEnv.Render.JSON(w, http.StatusBadRequest, response)
+		})
 		return
 	}
-	user := models.User{
-		ID:              -1,
-		FirstName:       u.FirstName,
-		LastName:        u.LastName,
-		DateOfBirth:     u.DateOfBirth,
-		LocationOfBirth: u.LocationOfBirth,
+	if errs := validateUser(u); len(errs) > 0 {
+		respond(w, http.StatusUnprocessableEntity, status.Response{
+			Status:  strconv.Itoa(http.StatusUnprocessableEntity),
+			Message: "validation failed",
+			Errors:  errs,
+		})
+		return
 	}
-	user, _ = appEnv.UserStore.AddUser(user)
-	appEnv.Render.JSON(w, http.StatusCreated, user)
+	u.ID = -1 // will be assigned by store
+	user, _ := s.userStore.AddUser(r.Context(), u)
+	respond(w, http.StatusCreated, user)
 }
 
-// UpdateUserHandler updates a user object
-func UpdateUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	decoder := json.NewDecoder(req.Body)
+func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	var u models.User
-	err := decoder.Decode(&u)
-	if err != nil {
-		response := status.Response{
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		s.logger.Error("malformed user object", "error", err)
+		respond(w, http.StatusBadRequest, status.Response{
 			Status:  strconv.Itoa(http.StatusBadRequest),
 			Message: "malformed user object",
-		}
-		log.WithFields(log.Fields{
-			"env":    appEnv.Env,
-			"status": http.StatusBadRequest,
-		}).Error("malformed user object")
-		appEnv.Render.JSON(w, http.StatusBadRequest, response)
+		})
 		return
 	}
-	user := models.User{
-		ID:              u.ID,
-		FirstName:       u.FirstName,
-		LastName:        u.LastName,
-		DateOfBirth:     u.DateOfBirth,
-		LocationOfBirth: u.LocationOfBirth,
+	if errs := validateUser(u); len(errs) > 0 {
+		respond(w, http.StatusUnprocessableEntity, status.Response{
+			Status:  strconv.Itoa(http.StatusUnprocessableEntity),
+			Message: "validation failed",
+			Errors:  errs,
+		})
+		return
 	}
-	user, err = appEnv.UserStore.UpdateUser(user)
+	user, err := s.userStore.UpdateUser(r.Context(), u)
 	if err != nil {
-		response := status.Response{
+		s.logger.Error("failed to update user", "error", err)
+		respond(w, http.StatusInternalServerError, status.Response{
 			Status:  strconv.Itoa(http.StatusInternalServerError),
 			Message: "something went wrong",
-		}
-		log.WithFields(log.Fields{
-			"env":    appEnv.Env,
-			"status": http.StatusInternalServerError,
-		}).Error("something went wrong")
-		appEnv.Render.JSON(w, http.StatusInternalServerError, response)
+		})
 		return
 	}
-	appEnv.Render.JSON(w, http.StatusOK, user)
+	respond(w, http.StatusOK, user)
 }
 
-// DeleteUserHandler deletes a user
-func DeleteUserHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	vars := mux.Vars(req)
-	uid, _ := strconv.Atoi(vars["uid"])
-	err := appEnv.UserStore.DeleteUser(uid)
+func (s *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
+	uid, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		response := status.Response{
+		respond(w, http.StatusBadRequest, status.Response{
+			Status:  strconv.Itoa(http.StatusBadRequest),
+			Message: "invalid user id",
+		})
+		return
+	}
+	if err := s.userStore.DeleteUser(r.Context(), uid); err != nil {
+		s.logger.Error("failed to delete user", "error", err)
+		respond(w, http.StatusInternalServerError, status.Response{
 			Status:  strconv.Itoa(http.StatusInternalServerError),
 			Message: "something went wrong",
-		}
-		log.WithFields(log.Fields{
-			"env":    appEnv.Env,
-			"status": http.StatusInternalServerError,
-		}).Error("something went wrong")
-		appEnv.Render.JSON(w, http.StatusInternalServerError, response)
+		})
 		return
 	}
-	appEnv.Render.Text(w, http.StatusNoContent, "")
+	w.WriteHeader(http.StatusNoContent)
 }
 
-// PassportsHandler not implemented yet
-func PassportsHandler(w http.ResponseWriter, req *http.Request, appEnv AppEnv) {
-	log.WithFields(log.Fields{
-		"env":    appEnv.Env,
-		"status": http.StatusInternalServerError,
-	}).Error("Handling Passports - Not implemented yet")
-	appEnv.Render.Text(w, http.StatusNotImplemented, "")
+// --- Passports ---
+
+func (s *Server) handleListUserPassports(w http.ResponseWriter, r *http.Request) {
+	uid, err := strconv.Atoi(r.PathValue("uid"))
+	if err != nil {
+		respond(w, http.StatusBadRequest, status.Response{
+			Status:  strconv.Itoa(http.StatusBadRequest),
+			Message: "invalid user id",
+		})
+		return
+	}
+	passports, err := s.passportStore.ListPassportsByUser(r.Context(), uid)
+	if err != nil {
+		s.logger.Error("failed to list passports", "userId", uid, "error", err)
+		respond(w, http.StatusInternalServerError, status.Response{
+			Status:  strconv.Itoa(http.StatusInternalServerError),
+			Message: "failed to list passports",
+		})
+		return
+	}
+	respond(w, http.StatusOK, map[string]any{
+		"passports": passports,
+		"count":     len(passports),
+	})
+}
+
+func (s *Server) handleGetPassport(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	passport, err := s.passportStore.GetPassport(r.Context(), id)
+	if err != nil {
+		s.logger.Error("passport not found", "id", id, "error", err)
+		respond(w, http.StatusNotFound, status.Response{
+			Status:  strconv.Itoa(http.StatusNotFound),
+			Message: "can't find passport",
+		})
+		return
+	}
+	respond(w, http.StatusOK, passport)
+}
+
+func (s *Server) handleCreatePassport(w http.ResponseWriter, r *http.Request) {
+	uid, err := strconv.Atoi(r.PathValue("uid"))
+	if err != nil {
+		respond(w, http.StatusBadRequest, status.Response{
+			Status:  strconv.Itoa(http.StatusBadRequest),
+			Message: "invalid user id",
+		})
+		return
+	}
+	var p models.Passport
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		s.logger.Error("malformed passport object", "error", err)
+		respond(w, http.StatusBadRequest, status.Response{
+			Status:  strconv.Itoa(http.StatusBadRequest),
+			Message: "malformed passport object",
+		})
+		return
+	}
+	p.UserID = uid
+	if errs := validatePassport(p); len(errs) > 0 {
+		respond(w, http.StatusUnprocessableEntity, status.Response{
+			Status:  strconv.Itoa(http.StatusUnprocessableEntity),
+			Message: "validation failed",
+			Errors:  errs,
+		})
+		return
+	}
+	passport, err := s.passportStore.AddPassport(r.Context(), p)
+	if err != nil {
+		s.logger.Error("failed to create passport", "error", err)
+		respond(w, http.StatusConflict, status.Response{
+			Status:  strconv.Itoa(http.StatusConflict),
+			Message: err.Error(),
+		})
+		return
+	}
+	respond(w, http.StatusCreated, passport)
+}
+
+func (s *Server) handleUpdatePassport(w http.ResponseWriter, r *http.Request) {
+	var p models.Passport
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		s.logger.Error("malformed passport object", "error", err)
+		respond(w, http.StatusBadRequest, status.Response{
+			Status:  strconv.Itoa(http.StatusBadRequest),
+			Message: "malformed passport object",
+		})
+		return
+	}
+	p.ID = r.PathValue("id")
+	if errs := validatePassport(p); len(errs) > 0 {
+		respond(w, http.StatusUnprocessableEntity, status.Response{
+			Status:  strconv.Itoa(http.StatusUnprocessableEntity),
+			Message: "validation failed",
+			Errors:  errs,
+		})
+		return
+	}
+	passport, err := s.passportStore.UpdatePassport(r.Context(), p)
+	if err != nil {
+		s.logger.Error("failed to update passport", "error", err)
+		respond(w, http.StatusInternalServerError, status.Response{
+			Status:  strconv.Itoa(http.StatusInternalServerError),
+			Message: "something went wrong",
+		})
+		return
+	}
+	respond(w, http.StatusOK, passport)
+}
+
+func (s *Server) handleDeletePassport(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := s.passportStore.DeletePassport(r.Context(), id); err != nil {
+		s.logger.Error("failed to delete passport", "error", err)
+		respond(w, http.StatusInternalServerError, status.Response{
+			Status:  strconv.Itoa(http.StatusInternalServerError),
+			Message: "something went wrong",
+		})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// --- Validation ---
+
+func validateUser(u models.User) []string {
+	var errs []string
+	if u.FirstName == "" {
+		errs = append(errs, "firstName is required")
+	}
+	if u.LastName == "" {
+		errs = append(errs, "lastName is required")
+	}
+	if u.DateOfBirth.IsZero() {
+		errs = append(errs, "dateOfBirth is required")
+	}
+	if u.LocationOfBirth == "" {
+		errs = append(errs, "locationOfBirth is required")
+	}
+	return errs
+}
+
+func validatePassport(p models.Passport) []string {
+	var errs []string
+	if p.ID == "" {
+		errs = append(errs, "id is required")
+	}
+	if p.DateOfIssue.IsZero() {
+		errs = append(errs, "dateOfIssue is required")
+	}
+	if p.DateOfExpiry.IsZero() {
+		errs = append(errs, "dateOfExpiry is required")
+	}
+	if p.Authority == "" {
+		errs = append(errs, "authority is required")
+	}
+	return errs
+}
+
+// --- Helpers ---
+
+func parsePagination(r *http.Request) (offset, limit int) {
+	offset, _ = strconv.Atoi(r.URL.Query().Get("offset"))
+	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
+	if offset < 0 {
+		offset = 0
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 25
+	}
+	return offset, limit
 }

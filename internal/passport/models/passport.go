@@ -1,11 +1,11 @@
 package models
 
 import (
-	"fmt"
+	"context"
 	"time"
 )
 
-// Passport holds passport data
+// Passport holds passport data.
 type Passport struct {
 	ID           string    `json:"id"`
 	DateOfIssue  time.Time `json:"dateOfIssue"`
@@ -14,22 +14,11 @@ type Passport struct {
 	UserID       int       `json:"userId"`
 }
 
-// GoString implements the GoStringer interface so we can display the full struct during debugging
-// usage: fmt.Printf("%#v", i)
-// ensure that i is a pointer, so might need to do &i in some cases
-func (p *Passport) GoString() string {
-	return fmt.Sprintf(`
-{
-	ID: %s,
-	DateOfIssue: %s,
-	DateOfExpiry: %s,
-	Authority: %s,
-	UserID: %d,
-}`,
-		p.ID,
-		p.DateOfIssue,
-		p.DateOfExpiry,
-		p.Authority,
-		p.UserID,
-	)
+// PassportStorage defines all the database operations for passports.
+type PassportStorage interface {
+	ListPassportsByUser(ctx context.Context, userID int) ([]Passport, error)
+	GetPassport(ctx context.Context, id string) (Passport, error)
+	AddPassport(ctx context.Context, p Passport) (Passport, error)
+	UpdatePassport(ctx context.Context, p Passport) (Passport, error)
+	DeletePassport(ctx context.Context, id string) error
 }
